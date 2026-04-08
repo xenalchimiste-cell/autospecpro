@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     ];
     const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
 
-    // --- SOURCE 1 : CARTER-CASH (Très stable, souvent le modèle est dans le titre) ---
+    // --- SOURCE 1 : CARTER-CASH (Stable, souvent le modèle est dans le titre) ---
     try {
       const ccUrl = `https://www.carter-cash.com/recherche/plaque/${plate}`;
       const ccRes = await fetch(ccUrl, { 
@@ -28,19 +28,33 @@ export default async function handler(req, res) {
       });
       if (ccRes.ok) {
         const html = await ccRes.text();
-        // Extraction du titre qui contient souvent le véhicule
         const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
-        if (titleMatch && titleMatch[1] && titleMatch[1].toLowerCase().includes('pièces auto pour')) {
+        if (titleMatch && titleMatch[1] && titleMatch[1].toLowerCase().includes('pour')) {
           let model = titleMatch[1]
-            .replace(/Pièces auto pour votre | | Pièces détachées | Carter-Cash/gi, ' ')
+            .replace(/Pièces auto pour votre | | Pièces détachées | Carter-Cash| |/gi, ' ')
             .replace(/ - /g, ' ')
+            .replace(/ +/g, ' ')
             .trim();
-          if (model.length > 5) return res.status(200).json({ model, source: 'carter-cash' });
+          if (model.length > 5 && !model.includes('404')) return res.status(200).json({ model, source: 'carter-cash' });
         }
       }
     } catch (e) { console.error('Echec CarterCash'); }
 
-    // --- SOURCE 2 : Vroomly (Extraction directe) ---
+    // --- SOURCE 2 : Mister-Auto (Excellent complément) ---
+    try {
+      const maUrl = `https://www.mister-auto.com/recherche-par-immatriculation/?plate=${plate}`;
+      const maRes = await fetch(maUrl, { headers: { 'User-Agent': ua } });
+      if (maRes.ok) {
+        const html = await maRes.text();
+        const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+        if (titleMatch && titleMatch[1] && !titleMatch[1].includes('immatriculation')) {
+          let model = titleMatch[1].replace(/Pièces auto pour | - Mister-Auto|Mister Auto/gi, '').trim();
+          if (model.length > 5) return res.status(200).json({ model, source: 'mister-auto' });
+        }
+      }
+    } catch (e) { console.error('Echec MisterAuto'); }
+
+    // --- SOURCE 3 : Vroomly (Extraction directe) ---
     try {
       const vroomlyUrl = `https://www.vroomly.com/plaque/${plate}/`;
       const vRes = await fetch(vroomlyUrl, { headers: { 'User-Agent': ua } });
@@ -54,17 +68,20 @@ export default async function handler(req, res) {
       }
     } catch (e) { console.error('Echec Vroomly'); }
 
-    // --- SOURCE 3 : DuckDuckGo Lite (Recherche de secours) ---
+    // --- SOURCE 4 : DuckDuckGo Lite (Recherche de secours ciblée) ---
     try {
-      const ddgUrl = `https://lite.duckduckgo.com/lite/?q=${plate}+"carte+grise"`;
+      // Recherche ciblée sur Oscaro qui a souvent des titres très propres
+      const ddgUrl = `https://lite.duckduckgo.com/lite/?q=site:oscaro.com+${plate}`;
       const ddgRes = await fetch(ddgUrl, { headers: { 'User-Agent': ua } });
-      const html = await ddgRes.text();
-      const match = html.match(/class='result-link'[^>]*>([^<]+)/i);
-      if (match && match[1]) {
-        let detected = match[1].replace(/plaque d'immatriculation|vroomly|oscaro|pièces auto/gi, '').trim();
-        if (detected.length > 5) return res.status(200).json({ model: detected, source: 'search' });
+      if (ddgRes.ok) {
+        const html = await ddgRes.text();
+        const match = html.match(/class='result-link'[^>]*>([^<]+)/i);
+        if (match && match[1]) {
+          let detected = match[1].replace(/Oscaro.com|Plaque|Pièces auto|en ligne/gi, '').trim();
+          if (detected.length > 5) return res.status(200).json({ model: detected, source: 'oscaro-proxy' });
+        }
       }
-    } catch (e) { console.error('Echec DDG'); }
+    } catch (e) { console.error('Echec DDG Proxy'); }
 
     return res.status(404).json({ error: 'identification_failed' });
 
