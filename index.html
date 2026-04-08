@@ -1271,6 +1271,28 @@ function renderCard(c){
   </div></div>
   ${fuel.remarque?`<div class="fuel-remarque">💡 ${fuel.remarque}</div>`:''}`;
 
+  // ── PANEL ENTRETIEN ──
+  const vigItems = (ent.points_vigilance||[]).map(pt => `<li>${pt}</li>`).join('');
+  const panelEntretien = `
+  <div class="fuel-hero" style="background:rgba(212,168,67,0.05); border:1px solid rgba(212,168,67,0.1); margin-top:0;">
+    <div class="fuel-item"><div class="fuel-icon">🛢️</div><div class="fuel-label">Huile Moteur</div><div class="fuel-val" style="font-size:16px;">${v(ent.huile_viscosite)}</div><div class="fuel-sub">${v(ent.huile_norme)}</div></div>
+    <div class="fuel-item"><div class="fuel-icon">📅</div><div class="fuel-label">Vidange</div><div class="fuel-val" style="font-size:16px;">${v(ent.frequence_vidange)}</div></div>
+    <div class="fuel-item"><div class="fuel-icon">⚙️</div><div class="fuel-label">Distribution</div><div class="fuel-val" style="font-size:14px; line-height:1.2;">${v(ent.distribution)}</div></div>
+  </div>
+  <div class="section"><div class="sec-title">Préconisations Maintenance</div><div class="kv">
+    <div class="kv-row"><span class="kv-k">Bougies d'allumage</span><span class="kv-v">${v(ent.bougies)}</span></div>
+    <div class="kv-row"><span class="kv-k">Liquide de freins</span><span class="kv-v">${v(ent.freins)}</span></div>
+  </div></div>
+  ${vigItems ? `
+  <div class="section" style="background:rgba(231,76,60,0.05); border-radius:12px; padding:1.25rem;">
+    <div class="sec-title" style="color:#e74c3c; display:flex; align-items:center; gap:8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Points de Vigilance
+    </div>
+    <ul style="color:var(--text2); font-size:13px; padding-left:1.5rem; margin-top:0.5rem; line-height:1.6;">${vigItems}</ul>
+  </div>` : ''}
+  <div class="footer-note" style="margin-top:1rem;">Données basées sur les périodicités constructeur standard.</div>`;
+
   return`<div class="card fade" id="${cardId}">
   <div class="card-head">
     <div class="car-name">${v(c.nom)} ${badge(c.energie)}</div>
