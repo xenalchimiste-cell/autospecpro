@@ -495,8 +495,6 @@
     </main>
 
     <script>
-        const ANTHROPIC_API_KEY = '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'; // 👈 Collez votre clé API Anthropic ici (Supprimée pour le push GitHub)
-
         function qs(t) { document.getElementById('q').value = t; run(); }
         document.getElementById('go').onclick = run;
         document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
@@ -512,29 +510,39 @@ Réponds UNIQUEMENT avec un objet JSON brut, sans markdown, sans backticks, sans
 Structure exacte (remplace toutes les valeurs, N/A si inconnu):
 {"nom":"Marque Modele version","annee":"XXXX","type":"Berline/SUV/Coupé/Roadster/etc","pays":"Pays d'origine","energie":"Essence/Diesel/Hybride/Electrique","prix":"ex: 97 000 €","moteur":{"type":"ex: 6 cyl. en ligne biturbo","cylindree":"ex: 2993 cc","puissance_ch":"XXX","puissance_kw":"XXX","couple_nm":"XXX","regime_puissance":"ex: 6250 tr/min","regime_couple":"ex: 2750-5500 tr/min","alimentation":"ex: Injection directe"},"transmission":{"boite":"ex: Automatique 8 rapports","entrainement":"Propulsion/Traction/Intégrale","differentiel":"ex: Autobloquant actif"},"performances":{"zero_cent":"X.X s","vitesse_max":"XXX km/h","zero_deux_cent":"XX.X s"},"consommation":{"mixte":"X.X L/100km","urbaine":"X.X L/100km","autoroute":"X.X L/100km","co2":"XXX g/km"},"chassis":{"longueur":"XXXX mm","largeur":"XXXX mm","hauteur":"XXXX mm","empattement":"XXXX mm","masse":"XXXX kg","coffre":"XXX L"},"suspensions":{"avant":"ex: Double triangulation","arriere":"ex: Multibras","freins_avant":"ex: Disques ventilés 380 mm","freins_arriere":"ex: Disques ventilés 370 mm"},"pneus":{"avant":"ex: 275/40 ZR18","arriere":"ex: 285/35 ZR19"},"anecdote":"Une anecdote courte et intéressante sur ce modèle."}`;
 
-                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                const res = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': ANTHROPIC_API_KEY,
-                        'anthropic-version': '2023-06-01',
-                        'anthropic-dangerous-direct-browser-access': 'true'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: 'claude-haiku-4-5-20251001',
-                        max_tokens: 1200,
-                        messages: [{ role: 'user', content: prompt }]
+                        model: 'llama-3.3-70b-versatile',
+                        max_tokens: 1500,
+                        messages: [
+                            { role: 'system', content: 'Réponds UNIQUEMENT en JSON brut, sans markdown, sans backticks.' },
+                            { role: 'user', content: prompt }
+                        ]
                     })
                 });
 
-                if (!res.ok) throw new Error('api_error');
-                const data = await res.json();
-                const raw = data.content.map(i => i.text || '').join('');
+                const text = await res.text();
+                if (!text || text.trim() === '') {
+                  throw new Error(`Réponse vide du serveur`);
+                }
+
+                let data;
+                try { data = JSON.parse(text); }
+                catch(e) { throw new Error(`Réponse invalide`); }
+
+                if (!res.ok) {
+                    const errorMsg = (data && data.error) ? (typeof data.error === 'string' ? data.error : data.error.message) : `Erreur serveur HTTP ${res.status}`;
+                    throw new Error(errorMsg);
+                }
+
+                const raw = data.choices[0].message.content;
                 const clean = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
                 const car = JSON.parse(clean);
                 render(car);
             } catch (e) {
-                document.getElementById('out').innerHTML = `<div class="card"><div class="err">❌ Erreur : vérifiez votre clé API ou reformulez votre recherche.</div></div>`;
+                document.getElementById('out').innerHTML = `<div class="card"><div class="err">❌ Erreur : ${e.message || 'vérifiez la configuration serveur.'}</div></div>`;
             }
         }
 
