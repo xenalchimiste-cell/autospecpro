@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>AutoSpec Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js" integrity="sha512-kNj//1nFhDBP6PjE+iFq2ZfKjFMW4zQv1ZqP9g52x5gU5cT+fMlw6uS4gL7rN+78Z2uM144aI9n+S17Qy3HofA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 :root {
   --bg:    #0b0b0b;
@@ -1126,9 +1127,9 @@ function renderCard(c){
   <div class="fiche-panel active" data-panel="specs">${panelSpecs}</div>
   <div class="fiche-panel" data-panel="stage">${panelStage}</div>
   <div class="fiche-panel" data-panel="carburant">${panelFuel}</div>
-  <button onclick="openCertificat('${cardId}')" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin: 1.5rem 2rem; padding: 1rem; background: rgba(91, 191, 133, 0.1); border: 1px solid var(--green); color: var(--green); border-radius: 10px; width: calc(100% - 4rem); cursor: pointer; text-decoration: none; font-weight: 600; font-family: inherit; transition: all 0.2s; font-size: 14px;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-    Générer le certificat AutoSpec
+  <button id="btn-cert-${cardId}" onclick="openCertificat('${cardId}')" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin: 1.5rem 2rem; padding: 1rem; background: rgba(91, 191, 133, 0.1); border: 1px solid var(--green); color: var(--green); border-radius: 10px; width: calc(100% - 4rem); cursor: pointer; text-decoration: none; font-weight: 600; font-family: inherit; transition: all 0.2s; font-size: 14px;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+    Télécharger la fiche client (PDF)
   </button>
   <div class="footer-note">Données générées par IA — à titre indicatif.</div>
 </div>`;
@@ -1780,57 +1781,120 @@ updateSim();
 updateEntretien();
 renderConv(1);
 
-// ── CERTIFICAT ──
+// ── FICHE CLIENT PDF ──
 function openCertificat(cardId) {
   const c = window.carCache[cardId];
   if(!c) return;
-  document.getElementById('cert-overlay').classList.add('open');
-  document.getElementById('cert-content').innerHTML = `
-    <div class="cert-loader">
-      <div class="spinner"></div>
-      <div style="font-weight:600;margin-top:1rem;">Scan de certification en cours...</div>
-      <div style="font-size:12px;">Interrogation croisée des bases de données techniques...</div>
-    </div>
-    <div class="cert-scan"></div>
-  `;
-  setTimeout(() => {
-    document.getElementById('cert-content').innerHTML = `
-      <div style="font-size:22px;font-weight:800;margin-bottom:4px;color:var(--text);">${v(c.nom)} ${v(c.annee)}</div>
-      <div style="color:var(--text2);font-size:13px;margin-bottom:1.5rem;">Identifiant de certification #${Math.floor(Math.random()*900000)+100000}</div>
-      
-      <div class="cert-data-row"><div class="cert-data-k">Moteur</div><div class="cert-data-v">${v(c.moteur?.type)} (${v(c.moteur?.cylindree)})</div></div>
-      <div class="cert-data-row"><div class="cert-data-k">Puissance max</div><div class="cert-data-v">${v(c.moteur?.puissance_ch)} ch @ ${v(c.moteur?.regime_puissance)}</div></div>
-      <div class="cert-data-row"><div class="cert-data-k">Couple max</div><div class="cert-data-v">${v(c.moteur?.couple_nm)} @ ${v(c.moteur?.regime_couple)}</div></div>
-      <div class="cert-data-row"><div class="cert-data-k">Transmission</div><div class="cert-data-v">${v(c.transmission?.boite)} • ${v(c.transmission?.entrainement)}</div></div>
-      <div class="cert-data-row"><div class="cert-data-k">0 à 100 km/h</div><div class="cert-data-v">${v(c.performances?.zero_cent)}</div></div>
-      <div class="cert-data-row"><div class="cert-data-k">Vitesse max</div><div class="cert-data-v">${v(c.performances?.vitesse_max)}</div></div>
-      <div class="cert-data-row"><div class="cert-data-k">Masse à vide</div><div class="cert-data-v">${v(c.chassis?.masse)}</div></div>
-      <div class="cert-data-row"><div class="cert-data-k">Prix neuf estimé</div><div class="cert-data-v">${v(c.prix)}</div></div>
-      
-      <div class="cert-seal">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="margin-bottom:8px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-        <div style="font-weight:800;letter-spacing:1px;color:var(--green);margin-bottom:6px;">DONNÉES VÉRIFIÉES</div>
-        <div style="font-size:11px;color:var(--text2);line-height:1.4;">Les spécifications techniques affichées ont fait l'objet d'une analyse automatisée approfondie par les algorithmes exclusifs AutoSpec. Intervalle de confiance estimé : 99.8%.</div>
-      </div>
-    `;
-  }, 2200);
-}
 
-function closeCert() {
-  document.getElementById('cert-overlay').classList.remove('open');
+  const btn = document.getElementById('btn-cert-' + cardId);
+  const oldHtml = btn.innerHTML;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border:2px solid var(--green);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div> Génération du PDF...';
+  btn.style.pointerEvents = 'none';
+
+  // Construction du template A4
+  const pdfContainer = document.getElementById('pdf-wrapper');
+  pdfContainer.innerHTML = `
+    <div id="pdf-template" style="width: 794px; background: #ffffff; color: #1a1a1a; padding: 40px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box;">
+      <!-- En-tête -->
+      <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #5bbf85; padding-bottom: 20px; margin-bottom: 30px;">
+        <div>
+          <div style="font-family: 'DM Serif Display', serif; font-size: 32px; font-weight: bold; color: #1a1a1a;">AutoSpec <span style="color:#5bbf85;">Pro</span></div>
+          <div style="font-size: 14px; color: #666; margin-top: 5px;">Dossier d'Analyse Technique Client</div>
+        </div>
+        <div style="text-align: right; font-size: 14px; color: #666;">
+          <div>Réf: AS-${Math.floor(Math.random()*90000)+10000}</div>
+          <div>Édité le: ${new Date().toLocaleDateString('fr-FR')}</div>
+        </div>
+      </div>
+
+      <!-- Identité du Véhicule -->
+      <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin-bottom: 30px; border-left: 5px solid #5bbf85;">
+        <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">${v(c.nom)} ${v(c.annee)}</div>
+        <div style="font-size: 16px; color: #555;">${v(c.type)} • ${v(c.energie)} • ${v(c.pays)}</div>
+        <div style="font-size: 14px; color: #888; margin-top: 10px;">Valeur catalogue indicative : ${v(c.prix)}</div>
+      </div>
+
+      <!-- Données Techniques GRID -->
+      <div style="display: flex; gap: 30px; margin-bottom: 30px;">
+        
+        <!-- Colonne 1 -->
+        <div style="flex: 1;">
+          <div style="font-size: 18px; font-weight: bold; color: #1a1a1a; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Motorisation</div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 30px;">
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Architecture</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.moteur?.type)}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Cylindrée</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.moteur?.cylindree)}</td></tr>
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Puissance max</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.moteur?.puissance_ch)} ch @ ${v(c.moteur?.regime_puissance)}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Couple max</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.moteur?.couple_nm)} @ ${v(c.moteur?.regime_couple)}</td></tr>
+            <tr><td style="padding:8px 0; color:#555;">Alimentation</td><td style="padding:8px 0; font-weight:bold; text-align:right;">${v(c.moteur?.alimentation)}</td></tr>
+          </table>
+
+          <div style="font-size: 18px; font-weight: bold; color: #1a1a1a; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Consommation & Autonomie</div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Mixte</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.consommation?.mixte)}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Émissions CO₂</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.consommation?.co2)}</td></tr>
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Réservoir</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.carburant?.reservoir)}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555;">Autonomie ext.</td><td style="padding:8px 0; font-weight:bold; text-align:right;">${v(c.carburant?.autonomie_estimee)}</td></tr>
+          </table>
+        </div>
+
+        <!-- Colonne 2 -->
+        <div style="flex: 1;">
+          <div style="font-size: 18px; font-weight: bold; color: #1a1a1a; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Performances & Transmission</div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 30px;">
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Vitesse max</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.performances?.vitesse_max)}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">0 à 100 km/h</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.performances?.zero_cent)}</td></tr>
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Boîte</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.transmission?.boite)}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555;">Motricité</td><td style="padding:8px 0; font-weight:bold; text-align:right;">${v(c.transmission?.entrainement)}</td></tr>
+          </table>
+
+          <div style="font-size: 18px; font-weight: bold; color: #1a1a1a; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Châssis & Dimensions</div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">L x l x h</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.chassis?.longueur)} x ${v(c.chassis?.largeur)} x ${v(c.chassis?.hauteur)}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Empattement</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.chassis?.empattement)}</td></tr>
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Masse à vide</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.chassis?.masse)}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Volume coffre</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.chassis?.coffre)}</td></tr>
+            <tr><td style="padding:8px 0; color:#555;">Pneus (AV/AR)</td><td style="padding:8px 0; font-weight:bold; text-align:right;">${v(c.pneus?.avant)} / ${v(c.pneus?.arriere)}</td></tr>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- Sceau de validation -->
+      <div style="margin-top: 40px; text-align: left; padding: 20px; background: rgba(91, 191, 133, 0.05); border-radius: 8px; border: 1px solid rgba(91, 191, 133, 0.3);">
+        <div style="font-weight: bold; color: #5bbf85; margin-bottom: 5px; font-size: 14px; display:flex; align-items:center; gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          ÉTAT : DOCUMENT CERTIFIÉ CONFORME
+        </div>
+        <div style="font-size: 12px; color: #666; line-height: 1.5;">
+          Les données techniques intégrées dans ce rapport ont été agrégées par les algorithmes d'analyse intelligence artificielle AutoSpec. Bien que croisées pour maximiser l'exactitude, elles sont fournies à titre indicatif et ne remplacent pas un certificat de conformité constructeur officiel.
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Génération du PDF
+  const element = document.getElementById('pdf-template');
+  const filename = `AutoSpec_${v(c.nom).replace(/\s+/g, '_')}.pdf`;
+
+  html2pdf().set({
+    margin:       0,
+    filename:     filename,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'pt', format: 'a4', orientation: 'portrait' }
+  }).from(element).save().then(() => {
+    // Restaure le bouton
+    btn.innerHTML = oldHtml;
+    btn.style.pointerEvents = 'auto';
+  }).catch(err => {
+    console.error('Erreur PDF:', err);
+    btn.innerHTML = '❌ Erreur de génération';
+    setTimeout(() => { btn.innerHTML = oldHtml; btn.style.pointerEvents = 'auto'; }, 3000);
+  });
 }
 </script>
 
-<div id="cert-overlay" class="cert-overlay">
-  <div class="cert-modal">
-    <div class="cert-header">
-      <div style="font-family:'DM Serif Display',serif; font-size:22px; color:var(--text);">AutoSpec</div>
-      <div class="cert-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> CERTIFIÉ</div>
-    </div>
-    <div class="cert-content" id="cert-content"></div>
-    <button class="cert-close" onclick="closeCert()">Masquer le certificat</button>
-  </div>
-</div>
+<div id="pdf-wrapper" style="position: absolute; left: -9999px; top: -9999px;"></div>
 
 </body>
 </html>
