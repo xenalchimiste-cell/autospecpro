@@ -425,7 +425,11 @@ async function searchFiche() {
       }, 700);
 
       try {
-        const plateRes = await fetch(`/api/plate?q=${encodeURIComponent(q)}`);
+        // En local (file://), les fonctions Vercel ne sont pas disponibles.
+        // On détecte l'environnement et on utilise l'URL absolue si disponible.
+        const isLocal = window.location.protocol === 'file:';
+        const apiBase = isLocal ? 'https://autospecpro.vercel.app' : '';
+        const plateRes = await fetch(`${apiBase}/api/plate?q=${encodeURIComponent(q)}`);
         const plateData = await plateRes.json();
         
         clearInterval(msgInterval);
