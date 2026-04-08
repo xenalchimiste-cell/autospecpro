@@ -30,6 +30,7 @@ export default async function handler(req, res) {
           model: body.model || 'llama-3.3-70b-versatile',
           max_tokens: body.max_tokens || 1500,
           messages: body.messages,
+          response_format: { type: "json_object" },
         }),
       });
   
