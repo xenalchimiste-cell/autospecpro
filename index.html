@@ -916,7 +916,10 @@ async function callGroq(userPrompt, systemPrompt=''){
     throw new Error(`Réponse invalide du serveur : ${text.slice(0, 120)}`);
   }
 
-  if (!res.ok) throw new Error(data.error?.message || `Erreur serveur HTTP ${res.status}`);
+  if (!res.ok) {
+    const errorMsg = (data && data.error) ? (typeof data.error === 'string' ? data.error : data.error.message) : `Erreur serveur HTTP ${res.status}`;
+    throw new Error(errorMsg || `Erreur serveur HTTP ${res.status}`);
+  }
   if (!data.choices?.[0]?.message?.content) {
     throw new Error('Réponse inattendue de l\'API — aucun contenu retourné.');
   }
