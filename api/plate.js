@@ -68,20 +68,45 @@ export default async function handler(req, res) {
       }
     } catch (e) { console.error('Echec Vroomly'); }
 
-    // --- SOURCE 4 : DuckDuckGo Lite (Recherche de secours ciblée) ---
+    // --- SOURCE 4 : PiecesAuto.fr (Très fiable) ---
     try {
-      // Recherche ciblée sur Oscaro qui a souvent des titres très propres
-      const ddgUrl = `https://lite.duckduckgo.com/lite/?q=site:oscaro.com+${plate}`;
+      const paUrl = `https://www.piecesauto.fr/ajax/plate-number?plate=${plate}`;
+      const paRes = await fetch(paUrl, { headers: { 'User-Agent': ua, 'X-Requested-With': 'XMLHttpRequest' } });
+      if (paRes.ok) {
+        const data = await paRes.json();
+        if (data && data.car_name) return res.status(200).json({ model: data.car_name, source: 'pieces-auto' });
+      }
+    } catch (e) { console.error('Echec PiecesAuto'); }
+
+    // --- SOURCE 5 : Eurorepar (Maintenance Stellantis) ---
+    try {
+      const erUrl = `https://www.eurorepar.fr/recherche/plaque/${plate}`;
+      const erRes = await fetch(erUrl, { headers: { 'User-Agent': ua } });
+      if (erRes.ok) {
+        const html = await erRes.text();
+        const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+        if (titleMatch && titleMatch[1] && !titleMatch[1].includes('Eurorepar')) {
+          let model = titleMatch[1].replace(/Pièces auto | - Eurorepar/gi, '').trim();
+          if (model.length > 5) return res.status(200).json({ model, source: 'eurorepar' });
+        }
+      }
+    } catch (e) { console.error('Echec Eurorepar'); }
+
+    // --- SOURCE 6 : DuckDuckGo Lite (Recherche Multi-Domaines) ---
+    try {
+      // On cherche sur plusieurs sites à la fois pour maximiser la chance de trouver le modèle dans un titre
+      const query = `site:oscaro.com OR site:norauto.fr OR site:feuvert.fr "${plate}"`;
+      const ddgUrl = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`;
       const ddgRes = await fetch(ddgUrl, { headers: { 'User-Agent': ua } });
       if (ddgRes.ok) {
         const html = await ddgRes.text();
         const match = html.match(/class='result-link'[^>]*>([^<]+)/i);
         if (match && match[1]) {
-          let detected = match[1].replace(/Oscaro.com|Plaque|Pièces auto|en ligne/gi, '').trim();
-          if (detected.length > 5) return res.status(200).json({ model: detected, source: 'oscaro-proxy' });
+          let detected = match[1].replace(/Oscaro.com|Norauto|Feu Vert|Plaque|Pièces auto|en ligne/gi, '').trim();
+          if (detected.length > 5) return res.status(200).json({ model: detected, source: 'search-multi' });
         }
       }
-    } catch (e) { console.error('Echec DDG Proxy'); }
+    } catch (e) { console.error('Echec DDG Multi'); }
 
     return res.status(404).json({ error: 'identification_failed' });
 

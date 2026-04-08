@@ -395,10 +395,11 @@ async function searchFiche() {
       "Compilation des données de maintenance..."
     ],
     plate: [
-      "Interrogation du SIV...",
-      "Identification du constructeur...",
-      "Détection de la motorisation...",
-      "Croisement des sources AutoSpec..."
+      "Connexion sécurisée aux bases de données SIV...",
+      "Analyse des registres Eurorepar & Stellantis...",
+      "Détection de la motorisation (PiecesAuto)...",
+      "Calcul des correspondances Oscaro...",
+      "Finalisation de l'identification technique..."
     ]
   };
 
