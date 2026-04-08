@@ -452,6 +452,7 @@ async function searchFiche() {
         setStatus("Génération de la fiche technique haute fidélité...");
       } catch (err) {
         clearInterval(msgInterval);
+        console.error("[AutoSpec] Erreur identification:", err);
         throw err;
       }
     } else {
