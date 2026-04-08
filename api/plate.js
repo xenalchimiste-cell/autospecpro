@@ -21,10 +21,8 @@ export default async function handler(req, res) {
   const commonHeaders = {
     'User-Agent': ua,
     'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-    'sec-ch-ua': '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Windows"',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1'
   };
 
@@ -33,10 +31,10 @@ export default async function handler(req, res) {
     try {
       let r = await op(pSIV);
       if (!r) r = await op(pRaw);
-      if (r && r.length > 5 && !r.toLowerCase().includes('erreur') && !r.toLowerCase().includes('404')) {
+      if (r && r.length > 3 && !r.toLowerCase().includes('erreur') && !r.toLowerCase().includes('404')) {
         return { model: r, source: name };
       }
-      throw new Error(`Invalid result from ${name}`);
+      throw new Error(`Invalid/Empty`);
     } catch (e) {
       logs.push(`${name}: ${e.message}`);
       throw e;
@@ -44,7 +42,7 @@ export default async function handler(req, res) {
   };
 
   const sources = [
-    // --- SOURCE 1 : VROOMLY (Très permissif) ---
+    // --- SOURCE 1 : VROOMLY ---
     fetchSource('vroomly', async (p) => {
       const res = await fetch(`https://www.vroomly.com/plaque/${p}/`, { headers: { ...commonHeaders, 'Referer': 'https://www.vroomly.com/' } });
       if (!res.ok) return null;
@@ -64,60 +62,48 @@ export default async function handler(req, res) {
       return (m && m[1] && !m[1].toLowerCase().includes('recherche')) ? m[1].replace(/ - Moove|Moove/gi, '').trim() : null;
     }),
 
-    // --- SOURCE 3 : ALLOPNEUS ---
-    fetchSource('allopneus', async (p) => {
-      const res = await fetch(`https://www.allopneus.com/recherche-par-plaque/${p}`, { headers: { ...commonHeaders, 'Referer': 'https://www.allopneus.com/' } });
+    // --- SOURCE 3 : PIECES ET PNEUS ---
+    fetchSource('pieces-et-pneus', async (p) => {
+      const res = await fetch(`https://www.piecesetpneus.com/IdentificationPlate?Plate=${p}`, { 
+        headers: { ...commonHeaders, 'Referer': 'https://www.piecesetpneus.com/' } 
+      });
       if (!res.ok) return null;
       const html = await res.text();
       const m = html.match(/<title>([^<]+)<\/title>/i);
-      return (m && m[1] && m[1].includes('|')) ? m[1].split('|')[0].replace(/Pneus pour |Dimensions de /gi, '').trim() : null;
+      return (m && m[1] && !m[1].includes('Identification')) ? m[1].replace(/Pièces auto | - Pieces et Pneus/gi, '').trim() : null;
     }),
 
-    // --- SOURCE 4 : PIECESAUTO (AJAX) ---
+    // --- SOURCE 4 : PIECESAUTO.FR ---
     fetchSource('pieces-auto', async (p) => {
       const res = await fetch(`https://www.piecesauto.fr/ajax/plate-number?plate=${p}`, { 
         headers: { ...commonHeaders, 'X-Requested-With': 'XMLHttpRequest', 'Referer': 'https://www.piecesauto.fr/' } 
       });
       if (!res.ok) return null;
       const data = await res.json();
-      return data && data.car_name ? data.car_name : null;
+      return (data && data.car_name) ? data.car_name : null;
     }),
 
-    // --- SOURCE 5 : AUTOBACS ---
-    fetchSource('autobacs', async (p) => {
-      const res = await fetch(`https://www.autobacs.fr/recherche-plaque/${p}`, { headers: { ...commonHeaders, 'Referer': 'https://www.autobacs.fr/' } });
+    // --- SOURCE 5 : ALLOPNEUS ---
+    fetchSource('allopneus', async (p) => {
+      const res = await fetch(`https://www.allopneus.com/recherche-par-plaque/${p}`, { 
+        headers: { ...commonHeaders, 'Referer': 'https://www.allopneus.com/' } 
+      });
       if (!res.ok) return null;
       const html = await res.text();
       const m = html.match(/<title>([^<]+)<\/title>/i);
-      return (m && m[1] && !m[1].includes('Autobacs')) ? m[1].replace(/Pièces auto | - Autobacs|Détails du véhicule/gi, '').trim() : null;
+      return (m && m[1] && m[1].includes('|')) ? m[1].split('|')[0].replace(/Pneus pour |Dimensions de /gi, '').trim() : null;
     }),
 
-    // --- SOURCE 6 : CARTER-CASH ---
-    fetchSource('carter-cash', async (p) => {
-      const res = await fetch(`https://www.carter-cash.com/recherche/plaque/${p}`, { headers: { ...commonHeaders, 'Referer': 'https://www.carter-cash.com/' } });
-      if (!res.ok) return null;
-      const html = await res.text();
-      const m = html.match(/<title>([^<]+)<\/title>/i);
-      return (m && m[1] && m[1].toLowerCase().includes('pour')) ? m[1].replace(/Pièces auto pour votre | | Pièces détachées | Carter-Cash/gi, ' ').trim() : null;
-    }),
-
-    // --- SOURCE 7 : PIECESAUTO24 ---
-    fetchSource('piecesauto24', async (p) => {
-      const res = await fetch(`https://www.piecesauto24.com/recherche?plate=${p}`, { headers: { ...commonHeaders, 'Referer': 'https://www.piecesauto24.com/' } });
-      if (!res.ok) return null;
-      const html = await res.text();
-      const m = html.match(/<title>([^<]+)<\/title>/i);
-      return (m && m[1] && m[1].toLowerCase().includes('pièces')) ? m[1].replace(/Pièces auto pour | - Piècesauto24.com/gi, '').trim() : null;
-    }),
-
-    // --- SOURCE 8 : DDG SEMANTIC (Indétectable) ---
+    // --- SOURCE 6 : DUCKDUCKGO (Failsafe) ---
     fetchSource('ddg', async (p) => {
-      const query = `"${p}" site:oscaro.com OR site:norauto.fr OR site:mister-auto.com`;
-      const res = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`, { headers: { 'User-Agent': ua, 'Referer': 'https://duckduckgo.com/' } });
+      const q = `"${p}" site:oscaro.com OR site:vroomly.com OR site:norauto.fr`;
+      const res = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(q)}`, { 
+        headers: { 'User-Agent': ua, 'Referer': 'https://duckduckgo.com/' } 
+      });
       if (!res.ok) return null;
       const html = await res.text();
-      const m = html.match(/class='result-link'[^>]*>([^<]+)/i);
-      return m ? m[1].replace(/Oscaro.com|Norauto|Mister Auto|Pièces auto|en ligne/gi, '').trim() : null;
+      const match = html.match(/class='result-link'[^>]*>([^<]+)/i);
+      return match ? match[1].replace(/Oscaro.com|Vroomly|Norauto|Pièces auto|en ligne/gi, '').trim() : null;
     })
   ];
 
