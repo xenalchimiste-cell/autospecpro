@@ -385,6 +385,7 @@ async function searchFiche() {
 
   const stage = document.getElementById('f-stage').value;
   const carb = document.getElementById('f-carburant').value;
+  const out = document.getElementById('out-fiche');
   // ── SÉQUENCE DE LOADER ──
   const statusMessages = {
     car: [
