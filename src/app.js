@@ -395,10 +395,10 @@ async function searchFiche() {
       "Compilation des données de maintenance..."
     ],
     plate: [
-      "Connexion sécurisée aux bases de données SIV...",
-      "Analyse des registres Eurorepar & Stellantis...",
-      "Détection de la motorisation (PiecesAuto)...",
-      "Calcul des correspondances Oscaro...",
+      "Connexion sécurisée aux bases de données Moovelub...",
+      "Analyse technique de la motorisation (Earlweb)...",
+      "Détection des spécifications constructeur...",
+      "Calcul des correspondances SIV secondaires...",
       "Finalisation de l'identification technique..."
     ]
   };

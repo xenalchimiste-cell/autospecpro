@@ -40,9 +40,25 @@ export default async function handler(req, res) {
     }
   };
 
-  // --- DEFINITION DES SOURCES ---
+    // --- DEFINITION DES SOURCES ---
   const sources = [
-    // Source 1 : PiecesAuto.fr (AJAX direct)
+    // Source 1 : Moovelub / Earlweb (PRIORITÉ - Très précis)
+    fetchSource('moovelub', async (p) => {
+      // On utilise le point de terminaison vrm_search qui redirige vers la fiche technique
+      const mooveRes = await fetch(`https://moove-france.ewp.earlweb.net/fr/vrm_search?vrm_type=fre:vrm:chatham&q=${p}`, { 
+        headers: { 'User-Agent': ua, 'Referer': 'https://moovelub.fr/' } 
+      });
+      if (!mooveRes.ok) return null;
+      const html = await mooveRes.text();
+      const match = html.match(/<title>([^<]+)<\/title>/i);
+      if (match && match[1] && !match[1].toLowerCase().includes('recherche')) {
+        // Le titre contient le modèle complet + motorisation
+        return match[1].replace(/ - Moove|Moove/gi, '').trim();
+      }
+      return null;
+    }),
+
+    // Source 2 : PiecesAuto.fr (AJAX direct)
     fetchSource('pieces-auto', async (p) => {
       const paRes = await fetch(`https://www.piecesauto.fr/ajax/plate-number?plate=${p}`, { 
         headers: { 
@@ -56,7 +72,7 @@ export default async function handler(req, res) {
       return data && data.car_name ? data.car_name : null;
     }),
 
-    // Source 2 : Carter-Cash
+    // Source 3 : Carter-Cash
     fetchSource('carter-cash', async (p) => {
       const ccRes = await fetch(`https://www.carter-cash.com/recherche/plaque/${p}`, { 
         headers: { 'User-Agent': ua, 'Referer': 'https://www.carter-cash.com/' } 
@@ -70,7 +86,7 @@ export default async function handler(req, res) {
       return null;
     }),
 
-    // Source 3 : Autobacs (Souvent moins protégé)
+    // Source 4 : Autobacs (Souvent moins protégé)
     fetchSource('autobacs', async (p) => {
       const abRes = await fetch(`https://www.autobacs.fr/recherche-plaque/${p}`, { 
         headers: { 'User-Agent': ua, 'Referer': 'https://www.autobacs.fr/' } 
@@ -84,7 +100,7 @@ export default async function handler(req, res) {
       return null;
     }),
 
-    // Source 4 : Mister-Auto
+    // Source 5 : Mister-Auto
     fetchSource('mister-auto', async (p) => {
       const maRes = await fetch(`https://www.mister-auto.com/recherche-par-immatriculation/?plate=${p}`, { 
         headers: { 'User-Agent': ua, 'Referer': 'https://www.mister-auto.com/' } 
@@ -98,7 +114,7 @@ export default async function handler(req, res) {
       return null;
     }),
 
-    // Source 5 : Vroomly
+    // Source 6 : Vroomly
     fetchSource('vroomly', async (p) => {
       const vRes = await fetch(`https://www.vroomly.com/plaque/${p}/`, { 
         headers: { 'User-Agent': ua, 'Referer': 'https://www.vroomly.com/' } 
@@ -112,7 +128,7 @@ export default async function handler(req, res) {
       return null;
     }),
 
-    // Source 6 : DuckDuckGo Multi-Proxy (Oscaro, Norauto, Feu Vert)
+    // Source 7 : DuckDuckGo Multi-Proxy (Oscaro, Norauto, Feu Vert)
     fetchSource('search-multi', async (p) => {
       const query = `site:oscaro.com OR site:norauto.fr OR site:feuvert.fr "${p}"`;
       const ddgRes = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`, { 
