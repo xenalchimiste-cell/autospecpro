@@ -1787,14 +1787,15 @@ function openCertificat(cardId) {
   if(!c) return;
 
   const btn = document.getElementById('btn-cert-' + cardId);
+  if (!btn) return;
   const oldHtml = btn.innerHTML;
   btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border:2px solid var(--green);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div> Génération du PDF...';
   btn.style.pointerEvents = 'none';
 
-  // Construction du template A4
-  const pdfContainer = document.getElementById('pdf-wrapper');
-  pdfContainer.innerHTML = `
-    <div id="pdf-template" style="width: 794px; background: #ffffff; color: #1a1a1a; padding: 40px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box;">
+  // Construction complète du template A4 dans un noeud virtuel
+  const element = document.createElement('div');
+  element.innerHTML = `
+    <div style="width: 794px; background: #ffffff; color: #1a1a1a; padding: 40px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box;">
       <!-- En-tête -->
       <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #5bbf85; padding-bottom: 20px; margin-bottom: 30px;">
         <div>
@@ -1873,7 +1874,6 @@ function openCertificat(cardId) {
   `;
 
   // Génération du PDF
-  const element = document.getElementById('pdf-template');
   const filename = `AutoSpec_${v(c.nom).replace(/\s+/g, '_')}.pdf`;
 
   // On utilise un timeout pour laisser le temps au navigateur d'afficher le spinner sur le bouton
@@ -1896,8 +1896,6 @@ function openCertificat(cardId) {
   }, 100);
 }
 </script>
-
-<div id="pdf-wrapper" style="position: absolute; left: -9999px; top: -9999px;"></div>
 
 </body>
 </html>
