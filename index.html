@@ -1305,19 +1305,24 @@ async function searchFiche() {
   const out = document.getElementById('out-fiche');
 
   // Affichage du loader
-  out.innerHTML = `<div class="loading"><div class="spin"></div>${searchMode === 'plate' ? 'Identification du véhicule par plaque...' : 'Analyse AutoSpec en cours...'}</div>`;
+  out.innerHTML = `<div class="loading"><div class="spin"></div><span id="load-status">${searchMode === 'plate' ? 'Identification du véhicule par plaque...' : 'Analyse AutoSpec en cours...'}</span></div>`;
 
   try {
     let finalModel = q;
 
     // SI MODE PLAQUE : On identifie d'abord le modèle
     if (searchMode === 'plate') {
+      const statusEl = document.getElementById('load-status');
+      if(statusEl) statusEl.innerHTML = "Scan des bases de données SIV...";
+      
       const plateRes = await fetch(`/api/plate?q=${encodeURIComponent(q)}`);
       const plateData = await plateRes.json();
+      
       if (!plateRes.ok) throw new Error(plateData.error || 'Impossible d\'identifier cette plaque.');
+      
       finalModel = plateData.model;
       // Mise à jour du loader pour montrer qu'on a trouvé
-      out.innerHTML = `<div class="loading"><div class="spin"></div>Véhicule identifié : ${finalModel}<br/><small style="opacity:0.7">Récupération des caractéristiques techniques...</small></div>`;
+      out.innerHTML = `<div class="loading"><div class="spin"></div><span style="color:var(--accent)">Véhicule identifié : ${finalModel}</span><br/><small style="opacity:0.7">Récupération des caractéristiques techniques par IA...</small></div>`;
     }
 
     const raw = await callGroq(getFilteredPromptFor(finalModel, carb, stage));
