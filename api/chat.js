@@ -31,6 +31,8 @@ export default async function handler(req, res) {
           max_tokens: body.max_tokens || 1500,
           messages: body.messages,
           response_format: { type: "json_object" },
+          temperature: 0.1,
+          top_p: 0.2,
         }),
       });
   
