@@ -540,6 +540,66 @@ select.s-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg x
 }
 .cert-close:hover { background: var(--border2); color: #fff; }
 
+/* ── SEARCH MODE TOGGLE ── */
+.search-mode-tabs {
+  display: flex;
+  margin-bottom: 1rem;
+  background: var(--bg3);
+  padding: 4px;
+  border-radius: 12px;
+  width: fit-content;
+  border: 1px solid var(--border);
+}
+.mode-tab {
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mode-tab svg { width: 14px; height: 14px; }
+.mode-tab:hover { color: var(--text); }
+.mode-tab.active {
+  background: var(--bg4);
+  color: var(--accent);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.search-wrap.plate-mode {
+  border-color: var(--accent);
+  box-shadow: 0 0 15px rgba(212, 168, 67, 0.1);
+}
+.search-wrap.plate-mode input {
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* scanner animation */
+@keyframes scanline {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+.scanner-line {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+  height: 2px;
+  z-index: 5;
+  pointer-events: none;
+  display: none;
+}
+.plate-mode .scanner-line { display: block; animation: scanline 1.5s infinite linear; }
+
 .cert-loader { display: flex; flex-direction: column; align-items: center; gap: 1rem; color: var(--text2); padding: 4rem 0; }
 .cert-loader .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 1s linear infinite; }
 
@@ -660,12 +720,24 @@ select.s-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg x
     <button class="filter-reset" onclick="resetFilters()">✕ Réinitialiser</button>
   </div>
 
+  <div class="search-mode-tabs">
+    <button class="mode-tab active" id="mode-car" onclick="setSearchMode('car')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+      Modèle
+    </button>
+    <button class="mode-tab" id="mode-plate" onclick="setSearchMode('plate')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>
+      Plaque
+    </button>
+  </div>
+
   <div class="search-row">
-    <div class="search-wrap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <div class="search-wrap" id="search-container">
+      <div class="scanner-line"></div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input class="s-input" id="q1" placeholder="ex: BMW M3 2023, Peugeot 308 2022…" autocomplete="off" onkeydown="if(event.key==='Enter')searchFiche()"/>
     </div>
-    <button class="btn btn-primary" onclick="searchFiche()">Rechercher</button>
+    <button class="btn btn-primary" id="btn-search" onclick="searchFiche()">Rechercher</button>
   </div>
   <div class="chips">
     <span class="chip" onclick="qf('BMW M3 Competition 2023')">BMW M3 2023</span>
@@ -875,6 +947,49 @@ let carA = null, carB = null;
 window.carCache = window.carCache || {};
 const GROQ_URL = '/api/chat';
 const MODEL = 'llama-3.3-70b-versatile';
+
+// ── SEARCH LOGIC ──
+let searchMode = 'car';
+function setSearchMode(m) {
+  searchMode = m;
+  const input = document.getElementById('q1');
+  const container = document.getElementById('search-container');
+  const icon = document.getElementById('search-icon');
+  
+  document.getElementById('mode-car').classList.toggle('active', m === 'car');
+  document.getElementById('mode-plate').classList.toggle('active', m === 'plate');
+  
+  if (m === 'plate') {
+    input.placeholder = "AA-123-AA";
+    container.classList.add('plate-mode');
+    // Changement d'icône pour une plaque
+    icon.innerHTML = '<rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 12h.01"/><path d="M17 12h.01"/>';
+  } else {
+    input.placeholder = "ex: BMW M3 2023, Peugeot 308 2022…";
+    container.classList.remove('plate-mode');
+    icon.innerHTML = '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
+  }
+}
+
+// Auto-format plaque
+window.addEventListener('DOMContentLoaded', () => {
+  const q1 = document.getElementById('q1');
+  if (q1) {
+    q1.addEventListener('input', function(e) {
+      if (searchMode !== 'plate') return;
+      let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (val.length > 7) val = val.slice(0, 7);
+      
+      let formatted = val;
+      if (val.length > 2 && val.length <= 5) {
+        formatted = val.slice(0, 2) + '-' + val.slice(2);
+      } else if (val.length > 5) {
+        formatted = val.slice(0, 2) + '-' + val.slice(2, 5) + '-' + val.slice(5);
+      }
+      e.target.value = formatted;
+    });
+  }
+});
 
 function showPage(id, btn, fromDrawer=false){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1181,34 +1296,46 @@ function getFilteredPrompt(q){
 
 // ── FICHE ──
 function qf(t){document.getElementById('q1').value=t;searchFiche();}
-async function searchFiche(){
-  const q=document.getElementById('q1').value.trim();
-  if(!q)return;
+async function searchFiche() {
+  const q = document.getElementById('q1').value.trim();
+  if (!q) return;
+
   const stage = document.getElementById('f-stage').value;
   const carb = document.getElementById('f-carburant').value;
-  const out=document.getElementById('out-fiche');
+  const out = document.getElementById('out-fiche');
 
-  // Message de chargement contextuel
-  let loadMsg = 'Analyse en cours…';
-  if(stage && carb) loadMsg = `Recherche ${q} en ${carb} — ${stage}…`;
-  else if(stage) loadMsg = `Recherche ${q} — ${stage}…`;
-  else if(carb) loadMsg = `Recherche ${q} en ${carb}…`;
+  // Affichage du loader
+  out.innerHTML = `<div class="loading"><div class="spin"></div>${searchMode === 'plate' ? 'Identification du véhicule par plaque...' : 'Analyse AutoSpec en cours...'}</div>`;
 
-  out.innerHTML=`<div class="loading"><div class="spin"></div>${loadMsg}</div>`;
-  try{
-    const raw=await callGroq(getFilteredPrompt(q));
-    const car=JSON.parse(raw);
-    // Ouvre automatiquement l'onglet Stage si un stage est sélectionné
+  try {
+    let finalModel = q;
+
+    // SI MODE PLAQUE : On identifie d'abord le modèle
+    if (searchMode === 'plate') {
+      const plateRes = await fetch(`/api/plate?q=${encodeURIComponent(q)}`);
+      const plateData = await plateRes.json();
+      if (!plateRes.ok) throw new Error(plateData.error || 'Impossible d\'identifier cette plaque.');
+      finalModel = plateData.model;
+      // Mise à jour du loader pour montrer qu'on a trouvé
+      out.innerHTML = `<div class="loading"><div class="spin"></div>Véhicule identifié : ${finalModel}<br/><small style="opacity:0.7">Récupération des caractéristiques techniques...</small></div>`;
+    }
+
+    const raw = await callGroq(getFilteredPromptFor(finalModel, carb, stage));
+    const car = JSON.parse(raw);
+    
     const html = renderCard(car);
     out.innerHTML = html;
-    if(stage){
+
+    if (stage) {
       const cardEl = out.querySelector('.card');
-      if(cardEl) ficheTab(cardEl.id, 'stage');
-    } else if(carb){
+      if (cardEl) ficheTab(cardEl.id, 'stage');
+    } else if (carb) {
       const cardEl = out.querySelector('.card');
-      if(cardEl) ficheTab(cardEl.id, 'carburant');
+      if (cardEl) ficheTab(cardEl.id, 'carburant');
     }
-  }catch(e){out.innerHTML=`<div class="card"><div class="err">❌ ${e.message}</div></div>`;}
+  } catch (e) {
+    out.innerHTML = `<div class="card"><div class="err">❌ ${e.message}</div></div>`;
+  }
 }
 
 // ── COMPARATEUR ──
