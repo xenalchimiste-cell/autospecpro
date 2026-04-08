@@ -416,6 +416,7 @@ async function searchFiche() {
 
     // SI MODE PLAQUE : On identifie d'abord le modèle
     if (searchMode === 'plate') {
+      console.log(`[AutoSpec] Recherche par plaque lancée : ${q}`);
       let msgIdx = 0;
       const msgInterval = setInterval(() => {
         if (msgIdx < statusMessages.plate.length) {
