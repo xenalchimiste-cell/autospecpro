@@ -432,6 +432,7 @@ async function searchFiche() {
         
         if (!plateRes.ok) {
           if (plateData.error === 'identification_failed') {
+            if (plateData.diagnostics) console.warn("[AutoSpec Diagnostics]", plateData.diagnostics);
             out.innerHTML = `
               <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
                 <div style="font-size:40px; margin-bottom:1rem;">🛰️</div>
