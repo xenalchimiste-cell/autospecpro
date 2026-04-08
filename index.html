@@ -1318,7 +1318,20 @@ async function searchFiche() {
       const plateRes = await fetch(`/api/plate?q=${encodeURIComponent(q)}`);
       const plateData = await plateRes.json();
       
-      if (!plateRes.ok) throw new Error(plateData.error || 'Impossible d\'identifier cette plaque.');
+      if (!plateRes.ok) {
+        if (plateData.error === 'identification_failed') {
+          out.innerHTML = `
+            <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
+              <div style="font-size:40px; margin-bottom:1rem;">🔍</div>
+              <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Plaque non identifiée automatiquement</div>
+              <div style="color:var(--text3); font-size:13px; margin-bottom:1.5rem;">Désolé, nos sources gratuites n'ont pas trouvé ce véhicule.</div>
+              <button class="btn btn-primary" onclick="setSearchMode('car'); document.getElementById('q1').value=''; document.getElementById('q1').focus();" style="width:auto; padding: 0.5rem 1.5rem;">Passer en recherche manuelle</button>
+            </div>
+          `;
+          return;
+        }
+        throw new Error(plateData.error || 'Erreur lors de l\'identification');
+      }
       
       finalModel = plateData.model;
       // Mise à jour du loader pour montrer qu'on a trouvé

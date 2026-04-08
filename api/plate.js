@@ -12,12 +12,35 @@ export default async function handler(req, res) {
   try {
     const userAgents = [
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1',
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1'
     ];
     const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
 
-    // --- SOURCE 1 : Vroomly (Souvent le plus simple à scraper via URL directe) ---
+    // --- SOURCE 1 : CARTER-CASH (Très stable, souvent le modèle est dans le titre) ---
+    try {
+      const ccUrl = `https://www.carter-cash.com/recherche/plaque/${plate}`;
+      const ccRes = await fetch(ccUrl, { 
+        headers: { 
+          'User-Agent': ua,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'fr-FR,fr;q=0.9'
+        }
+      });
+      if (ccRes.ok) {
+        const html = await ccRes.text();
+        // Extraction du titre qui contient souvent le véhicule
+        const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+        if (titleMatch && titleMatch[1] && titleMatch[1].toLowerCase().includes('pièces auto pour')) {
+          let model = titleMatch[1]
+            .replace(/Pièces auto pour votre | | Pièces détachées | Carter-Cash/gi, ' ')
+            .replace(/ - /g, ' ')
+            .trim();
+          if (model.length > 5) return res.status(200).json({ model, source: 'carter-cash' });
+        }
+      }
+    } catch (e) { console.error('Echec CarterCash'); }
+
+    // --- SOURCE 2 : Vroomly (Extraction directe) ---
     try {
       const vroomlyUrl = `https://www.vroomly.com/plaque/${plate}/`;
       const vRes = await fetch(vroomlyUrl, { headers: { 'User-Agent': ua } });
@@ -25,35 +48,15 @@ export default async function handler(req, res) {
         const html = await vRes.text();
         const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
         if (titleMatch && titleMatch[1] && !titleMatch[1].includes('404')) {
-          let model = titleMatch[1]
-            .replace(/Entretien de votre | - Vroomly|Plaque |Immatriculation /gi, '')
-            .trim();
+          let model = titleMatch[1].replace(/Entretien de votre | - Vroomly|Plaque |Immatriculation /gi, '').trim();
           if (model.length > 5) return res.status(200).json({ model, source: 'vroomly' });
         }
       }
     } catch (e) { console.error('Echec Vroomly'); }
 
-    // --- SOURCE 2 : Mister-Auto (Via redirection vers catalogue) ---
+    // --- SOURCE 3 : DuckDuckGo Lite (Recherche de secours) ---
     try {
-      const maUrl = `https://www.mister-auto.com/r/${plate}`;
-      const maRes = await fetch(maUrl, { 
-        headers: { 'User-Agent': ua },
-        redirect: 'manual' 
-      });
-      const location = maRes.headers.get('location');
-      if (location && location.includes('/pieces-auto/')) {
-        // Ex: /pieces-auto/peugeot/208/208-1-2-puretech-82cv/
-        const match = location.match(/\/pieces-auto\/([^\/]+)\/([^\/]+)\/([^\/]+)/i);
-        if (match) {
-          const model = `${match[1]} ${match[2]} ${match[3].replace(/-/g, ' ')}`.toUpperCase();
-          return res.status(200).json({ model, source: 'mister-auto' });
-        }
-      }
-    } catch (e) { console.error('Echec MisterAuto'); }
-
-    // --- SOURCE 3 : DuckDuckGo Lite (Recherche globale) ---
-    try {
-      const ddgUrl = `https://lite.duckduckgo.com/lite/?q=${plate}+voiture+osc`;
+      const ddgUrl = `https://lite.duckduckgo.com/lite/?q=${plate}+"carte+grise"`;
       const ddgRes = await fetch(ddgUrl, { headers: { 'User-Agent': ua } });
       const html = await ddgRes.text();
       const match = html.match(/class='result-link'[^>]*>([^<]+)/i);
@@ -63,7 +66,7 @@ export default async function handler(req, res) {
       }
     } catch (e) { console.error('Echec DDG'); }
 
-    return res.status(404).json({ error: 'Véhicule non identifié (Sources épuisées). Essayez le mode Manuel.' });
+    return res.status(404).json({ error: 'identification_failed' });
 
   } catch (err) {
     return res.status(500).json({ error: 'Erreur technique : ' + err.message });
