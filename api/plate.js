@@ -14,15 +14,29 @@ export default async function handler(req, res) {
   const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36';
 
   // Fonction pour extraire un nom lisible depuis un slug Earlweb
-  // ex: "rio_hatchback_iii_ub_1_1_crdi_55kw_d3fa" → "Rio Hatchback III 1.1 CRDi 55kW"
+  // ex: "rio_hatchback_iii_ub_1_1_crdi_55kw_d3fa_FawEcBPVK" → "Rio Hatchback III 1.1 CRDi 55kW"
   function slugToModel(slug) {
     return slug
-      .replace(/_[A-Z]{2,10}[A-Z0-9]{2,6}(_|$)/gi, ' ') // supprime codes moteur (ex: _d3fa, _FawEcBPVK)
+      // Supprimer suffixe d'ID aléatoire en fin (ex: _FawEcBPVK)
+      .replace(/_[A-Za-z0-9]{6,}$/, '')
+      // Supprimer les codes moteur (2-4 lettres + chiffres, ex: _d3fa, _b58, _d4fd)
+      .replace(/_[a-z][0-9][a-z]{1,3}(_|$)/gi, ' ')
+      // Convertir underscore en espace
       .replace(/_/g, ' ')
-      .replace(/\b(\d+)\b\s+\b(\d+)\b/g, '$1.$2') // "1 1" → "1.1"
-      .replace(/\b(\d+)\s*kw\b/gi, '$1kW')
-      .replace(/\b(i|ii|iii|iv|v)\b/gi, m => m.toUpperCase())
+      // "1 1" ou "1 5" → "1.1" / "1.5" (moteurs)
+      .replace(/\b([1-9])\s+([0-9])\b(?=\s*(diesel|essence|crdi|tdi|tfsi|tsi|fsi|gdi|jtd|dci|hdi|cdti|tce|vti|thp|e|d|i|t)|\s*$|\s+crdi|\s+dci|\s+tdi|\s+hdi|\s+cdi)/gi, '$1.$2')
+      .replace(/\b([1-9])\s+([0-9])\b/g, '$1.$2')
+      // Supprimer fragments "sb sr" (variantes châssis)
+      .replace(/\b(sb|sr|ql|qle|ub|pa|pa5|b9|zb|gd|nd|lb)\b/gi, '')
+      // Majuscules sur les sigles romains
+      .replace(/\b(i{1,3}|iv|v|vi|vii|viii)\b/gi, m => m.toUpperCase())
+      // CRDi, TDI, etc. → uppercase
+      .replace(/\b(crdi|tdi|tfsi|tsi|fsi|gdi|jtd|dci|hdi|cdti|tce|vti|thp|crd)\b/gi, m => m.toUpperCase())
+      .replace(/\b(\d+)kw\b/gi, '$1kW')
+      // Capitaliser chaque mot
       .replace(/\b\w/g, c => c.toUpperCase())
+      // Nettoyer espaces multiples
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
