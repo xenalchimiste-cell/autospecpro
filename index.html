@@ -1074,7 +1074,7 @@ async function callGroq(userPrompt, systemPrompt=''){
 
   const text = await res.text();
   if (!text || text.trim() === '') {
-    throw new Error(`Réponse vide du serveur (HTTP ${res.status}). Vérifiez que la fonction /api/chat est bien déployée sur Vercel.`);
+  throw new Error(`Réponse vide du serveur (HTTP ${res.status}). Vérifiez que la fonction /api/chat est bien déployée sur Vercel.`);
   }
 
   let data;
@@ -1101,7 +1101,7 @@ L'utilisateur cherche la voiture suivante : "${q}".
 RÈGLE ABSOLUE : Tu DOIS IMPÉRATIVEMENT renvoyer un objet JSON contenant EXACTEMENT toutes les clés ci-dessous, sans aucune exception. Ne supprime AUCUNE clé. Si tu ne connais pas la valeur exacte, fais une estimation experte ultra-réaliste ou écris "N/A", mais LA CLÉ DOIT EXISTER.
 Réponds UNIQUEMENT avec le JSON brut, sans markdown.
 Structure :
-{"nom":"Marque Modele","annee":"XXXX","type":"Berline/SUV/etc","pays":"Pays","energie":"Essence/Diesel/Hybride/Electrique","prix":"XX 000 €","moteur":{"type":"ex: 6 cyl. biturbo","cylindree":"XXXX cc","puissance_ch":"XXX","puissance_kw":"XXX","couple_nm":"XXX","regime_puissance":"XXXX tr/min","regime_couple":"XXXX-XXXX tr/min","alimentation":"Injection directe"},"transmission":{"boite":"Manuelle/Auto X rap.","entrainement":"Propulsion/Traction/Intégrale","differentiel":"type"},"performances":{"zero_cent":"X.X s","vitesse_max":"XXX km/h","zero_deux_cent":"XX.X s"},"consommation":{"mixte":"X.X L/100km","urbaine":"X.X","autoroute":"X.X","co2":"XXX g/km"},"chassis":{"longueur":"XXXX mm","largeur":"XXXX mm","hauteur":"XXXX mm","empattement":"XXXX mm","masse":"XXXX kg","coffre":"XXX L"},"suspensions":{"avant":"type","arriere":"type","freins_avant":"Disques XXX mm","freins_arriere":"Disques XXX mm"},"pneus":{"avant":"XXX/XX RXX","arriere":"XXX/XX RXX"},"carburant":{"type":"SP98/SP95/Diesel/E85/Électricité","indice_octane":"98 (recommandé) / 95 (minimum)","reservoir":"XX L","autonomie_estimee":"XXX km","remarque":"ex: SP98 recommandé pour performances optimales"},"tuning":{"remarque_generale":"ex: Moteur bien supporté par le tuning, limites mécaniques à XX ch","stage1":{"description":"Reprogrammation ECU seule, sans modification mécanique","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXX-XXX €","fiabilite":"Excellente / Bonne / Correcte"},"stage2":{"description":"Stage 1 + admission + échappement sport","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXX-XXX €","fiabilite":"Bonne / Correcte / À surveiller"},"stage3":{"description":"Stage 2 + turbo upgrade / internes renforcés","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXXX-XXXX €","fiabilite":"Correcte / Nécessite suivi"}},"anecdote":"Phrase intéressante et précise sur ce modèle."}`;
+{"nom":"Marque Modele","annee":"XXXX","type":"Berline/SUV/etc","pays":"Pays","energie":"Essence/Diesel/Hybride/Electrique","prix":"XX 000 €","moteur":{"type":"ex: 6 cyl. biturbo","cylindree":"XXXX cc","puissance_ch":"XXX","puissance_kw":"XXX","couple_nm":"XXX","regime_puissance":"XXXX tr/min","regime_couple":"XXXX-XXXX tr/min","alimentation":"Injection directe"},"transmission":{"boite":"Manuelle/Auto X rap.","entrainement":"Propulsion/Traction/Intégrale","differentiel":"type"},"performances":{"zero_cent":"X.X s","vitesse_max":"XXX km/h","zero_deux_cent":"XX.X s"},"consommation":{"mixte":"X.X L/100km","urbaine":"X.X","autoroute":"X.X","co2":"XXX g/km"},"chassis":{"longueur":"XXXX mm","largeur":"XXXX mm","hauteur":"XXXX mm","empattement":"XXXX mm","masse":"XXXX kg","coffre":"XXX L"},"suspensions":{"avant":"type","arriere":"type","freins_avant":"Disques XXX mm","freins_arriere":"Disques XXX mm"},"pneus":{"avant":"XXX/XX RXX","arriere":"XXX/XX RXX"},"carburant":{"type":"SP98/SP95/Diesel/E85/Électricité","indice_octane":"98 (recommandé) / 95 (minimum)","reservoir":"XX L","autonomie_estimee":"XXX km","remarque":"ex: SP98 recommandé pour performances optimales"},"tuning":{"remarque_generale":"ex: Moteur bien supporté par le tuning, limites mécaniques à XX ch","stage1":{"description":"Reprogrammation ECU seule, sans modification mécanique","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXX-XXX €","fiabilite":"Excellente / Bonne / Correcte"},"stage2":{"description":"Stage 1 + admission + échappement sport","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXX-XXX €","fiabilite":"Bonne / Correcte / À surveiller"},"stage3":{"description":"Stage 2 + turbo upgrade / internes renforcés","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXXX-XXXX €","fiabilite":"Correcte / Nécessite suivi"}},"entretien":{"huile_viscosite":"ex: 5W30","huile_norme":"ex: VW 504.00 / 507.00","frequence_vidange":"ex: 15 000 km / 12 mois","distribution":"ex: Chaîne (sans entretien) ou Courroie (120 000 km / 6 ans)","bougies":"ex: 60 000 km","freins":"ex: Liquide tous les 2 ans","points_vigilance":["Point faible 1","Point faible 2"]},"anecdote":"Phrase intéressante et précise sur ce modèle."}`;
 
 function badge(e){
   if(!e)return'';const l=e.toLowerCase();
@@ -1131,7 +1131,7 @@ function fiabiliteIcon(f){
 function renderCard(c){
   const m=c.moteur||{},p=c.performances||{},co=c.consommation||{};
   const dim=c.chassis||{},tr=c.transmission||{},su=c.suspensions||{},pn=c.pneus||{};
-  const fuel=c.carburant||{}, tun=c.tuning||{};
+  const fuel=c.carburant||{}, tun=c.tuning||{}, ent=c.entretien||{};
   const cardId = 'card-'+Math.random().toString(36).slice(2,7);
   window.carCache[cardId] = c;
 
@@ -1238,10 +1238,15 @@ function renderCard(c){
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V8l9-6 9 6v14"/><path d="M10 22V12h4v10"/></svg>
       Carburant
     </button>
+    <button class="fiche-tab" data-tab="entretien" onclick="ficheTab('${cardId}','entretien')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      Entretien
+    </button>
   </div>
   <div class="fiche-panel active" data-panel="specs">${panelSpecs}</div>
   <div class="fiche-panel" data-panel="stage">${panelStage}</div>
   <div class="fiche-panel" data-panel="carburant">${panelFuel}</div>
+  <div class="fiche-panel" data-panel="entretien">${panelEntretien}</div>
   <button id="btn-cert-${cardId}" onclick="openCertificat('${cardId}')" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin: 1.5rem 2rem; padding: 1rem; background: rgba(91, 191, 133, 0.1); border: 1px solid var(--green); color: var(--green); border-radius: 10px; width: calc(100% - 4rem); cursor: pointer; text-decoration: none; font-weight: 600; font-family: inherit; transition: all 0.2s; font-size: 14px;">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
     Télécharger la fiche client (PDF)
@@ -2003,6 +2008,37 @@ function openCertificat(cardId) {
           </table>
         </div>
 
+      </div>
+
+      <!-- Bloc Expertise & Maintenance -->
+      <div style="margin-top: 30px; border-top: 2px solid #1a1a1a; padding-top: 20px;">
+        <div style="font-size: 20px; font-weight: bold; color: #1a1a1a; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;">
+           🛠️ Expertise Maintenance & Vigilance
+        </div>
+        <div style="display: flex; gap: 30px; margin-bottom: 25px;">
+          <div style="flex: 1; background: #f9f9f9; padding: 15px; border-radius: 8px;">
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 10px; color: #444;">PRÉCONISATIONS HUILE</div>
+            <div style="font-size: 16px; font-weight: bold; color: #1a1a1a;">${v(c.entretien?.huile_viscosite)}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">Norme : ${v(c.entretien?.huile_norme)}</div>
+          </div>
+          <div style="flex: 1; background: #f9f9f9; padding: 15px; border-radius: 8px;">
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 10px; color: #444;">PÉRIODICITÉ VIDANGE</div>
+            <div style="font-size: 16px; font-weight: bold; color: #1a1a1a;">${v(c.entretien?.frequence_vidange)}</div>
+          </div>
+          <div style="flex: 1; background: #f9f9f9; padding: 15px; border-radius: 8px;">
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 10px; color: #444;">DISTRIBUTION</div>
+            <div style="font-size: 15px; font-weight: bold; color: #1a1a1a;">${v(c.entretien?.distribution)}</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(231, 76, 60, 0.03); border: 1px solid rgba(231, 76, 60, 0.2); padding: 20px; border-radius: 8px;">
+          <div style="font-weight: bold; color: #e74c3c; margin-bottom: 10px; font-size: 14px; display:flex; align-items:center; gap:8px;">
+            ⚠️ POINTS DE VIGILANCE TECHNIQUE
+          </div>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #444; line-height: 1.6;">
+            ${(c.entretien?.points_vigilance||[]).map(pt => `<li>${pt}</li>`).join('')}
+          </ul>
+        </div>
       </div>
 
       <!-- Sceau de validation -->
