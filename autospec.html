@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fiche Technique Auto</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --bg2: #161616;
+            --bg3: #1f1f1f;
+            --border: rgba(255, 255, 255, 0.08);
+            --border2: rgba(255, 255, 255, 0.14);
+            --text: #f0ece4;
+            --text2: #46351c;
+            --text3: #5a5652;
+            --accent: #e8d5a3;
+            --accent2: #c9a84c;
+            --red: #e05a4e;
+            --green: #6abf87;
+            --blue: #5b9bd5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* ── HEADER ── */
+        .site-header {
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            background: rgba(13, 13, 13, 0.92);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 22px;
+            color: var(--accent);
+            letter-spacing: -0.3px;
+        }
+
+        .logo span {
+            color: var(--text3);
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 300;
+            margin-left: 8px;
+        }
+
+        /* ── MAIN ── */
+        .main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 3rem 2rem 5rem;
+        }
+
+        .hero-text {
+            margin-bottom: 2.5rem;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        .hero-text h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(32px, 5vw, 52px);
+            line-height: 1.1;
+            color: var(--text);
+            letter-spacing: -1px;
+        }
+
+        .hero-text h1 em {
+            color: var(--accent2);
+            font-style: normal;
+        }
+
+        .hero-text p {
+            font-size: 15px;
+            color: var(--text2);
+            margin-top: 10px;
+            font-weight: 300;
+        }
+
+        /* ── SEARCH ── */
+        .search-zone {
+            animation: fadeUp 0.6s 0.1s ease both;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .search-wrap {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-wrap svg {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            color: var(--text3);
+            pointer-events: none;
+        }
+
+        #q {
+            width: 100%;
+            height: 52px;
+            padding: 0 16px 0 46px;
+            font-size: 15px;
+            font-family: 'DM Sans', sans-serif;
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            background: var(--bg2);
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        #q:focus {
+            border-color: var(--accent2);
+            box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+        }
+
+        #q::placeholder {
+            color: var(--text3);
+        }
+
+        .btn-go {
+            height: 52px;
+            padding: 0 24px;
+            background: var(--accent2);
+            color: #0d0d0d;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-go:hover {
+            background: var(--accent);
+        }
+
+        .btn-go:active {
+            transform: scale(0.97);
+        }
+
+        .chips {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            font-size: 12px;
+            padding: 5px 13px;
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            background: transparent;
+            color: var(--text2);
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .chip:hover {
+            border-color: var(--accent2);
+            color: var(--accent);
+            background: rgba(201, 168, 76, 0.06);
+        }
+
+        /* ── RESULT ── */
+        #out {
+            margin-top: 3rem;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            border: 1px dashed var(--border);
+            border-radius: 16px;
+            color: var(--text3);
+            font-size: 14px;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 1rem;
+            opacity: 0.4;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 4rem;
+            color: var(--text2);
+            font-size: 14px;
+        }
+
+        .spin {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border2);
+            border-top-color: var(--accent2);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── CARD ── */
+        .card {
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .card-head {
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .card-head::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent2), transparent);
+        }
+
+        .car-name {
+            font-family: 'DM Serif Display', serif;
+            font-size: 28px;
+            color: var(--text);
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .car-sub {
+            font-size: 13px;
+            color: var(--text2);
+            margin-top: 6px;
+            font-weight: 300;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+        }
+
+        .badge-e {
+            background: rgba(106, 191, 135, 0.15);
+            color: var(--green);
+            border: 1px solid rgba(106, 191, 135, 0.3);
+        }
+
+        .badge-h {
+            background: rgba(91, 155, 213, 0.15);
+            color: var(--blue);
+            border: 1px solid rgba(91, 155, 213, 0.3);
+        }
+
+        .badge-g {
+            background: rgba(201, 168, 76, 0.1);
+            color: var(--accent2);
+            border: 1px solid rgba(201, 168, 76, 0.2);
+        }
+
+        /* ── HERO GRID ── */
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero-item {
+            padding: 1.25rem 1.5rem;
+            border-right: 1px solid var(--border);
+        }
+
+        .hero-item:last-child {
+            border-right: none;
+        }
+
+        .h-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text3);
+            margin-bottom: 6px;
+        }
+
+        .h-val {
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .h-unit {
+            font-size: 11px;
+            color: var(--text2);
+            margin-top: 4px;
+        }
+
+        /* ── SECTIONS ── */
+        .section {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .sec-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text3);
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px 20px;
+        }
+
+        .kv-row {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .kv-k {
+            font-size: 11px;
+            color: var(--text3);
+        }
+
+        .kv-v {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .anecdote {
+            padding: 1.25rem 2rem;
+            background: rgba(201, 168, 76, 0.04);
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text2);
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        .footer-note {
+            padding: 0.75rem 2rem;
+            font-size: 11px;
+            color: var(--text3);
+            text-align: center;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── ERROR ── */
+        .err {
+            padding: 2rem;
+            color: var(--red);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .main {
+                padding: 2rem 1rem 4rem;
+            }
+
+            .hero-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .search-row {
+                flex-direction: column;
+            }
+
+            .btn-go {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="site-header">
+        <div class="logo">AutoSpec <span>— Fiche technique automobile</span></div>
+    </header>
+
+    <main class="main">
+        <div class="hero-text">
+            <h1>Toutes les specs,<br /><em>une seule recherche.</em></h1>
+            <p>Entrez une marque, un modèle et une année pour obtenir la fiche technique complète.</p>
+        </div>
+
+        <div class="search-zone">
+            <div class="search-row">
+                <div class="search-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input id="q" type="text" placeholder="ex: BMW M3 2023, Ferrari 488 2020, Peugeot 308 2022…"
+                        autocomplete="off" />
+                </div>
+                <button class="btn-go" id="go">Rechercher</button>
+            </div>
+            <div class="chips">
+                <span class="chip" onclick="qs('BMW M3 Competition 2023')">BMW M3 2023</span>
+                <span class="chip" onclick="qs('Ferrari 488 GTB 2019')">Ferrari 488</span>
+                <span class="chip" onclick="qs('Porsche 911 GT3 2024')">Porsche 911 GT3</span>
+                <span class="chip" onclick="qs('Tesla Model 3 Performance 2024')">Tesla Model 3</span>
+                <span class="chip" onclick="qs('Renault Clio 5 2023')">Renault Clio</span>
+                <span class="chip" onclick="qs('Peugeot 308 GTi 2016')">Peugeot 308 GTi</span>
+                <span class="chip" onclick="qs('Audi RS6 Avant 2023')">Audi RS6</span>
+                <span class="chip" onclick="qs('Toyota GR86 2022')">Toyota GR86</span>
+                <span class="chip" onclick="qs('Lamborghini Huracan EVO 2021')">Lamborghini Huracán</span>
+                <span class="chip" onclick="qs('Honda Civic Type R 2023')">Honda Civic Type R</span>
+            </div>
+        </div>
+
+        <div id="out">
+            <div class="empty">
+                <div class="empty-icon">🏎</div>
+                Entrez un modèle pour afficher sa fiche technique complète.
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const ANTHROPIC_API_KEY = ''; // 👈 Collez votre clé API Anthropic ici (Supprimée pour le push GitHub)
+
+        function qs(t) { document.getElementById('q').value = t; run(); }
+        document.getElementById('go').onclick = run;
+        document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+
+        async function run() {
+            const q = document.getElementById('q').value.trim();
+            if (!q) return;
+            document.getElementById('out').innerHTML = '<div class="loading"><div class="spin"></div>Analyse en cours…</div>';
+
+            try {
+                const prompt = `Tu es une base de données automobile exhaustive. L'utilisateur cherche: "${q}".
+Réponds UNIQUEMENT avec un objet JSON brut, sans markdown, sans backticks, sans commentaire.
+Structure exacte (remplace toutes les valeurs, N/A si inconnu):
+{"nom":"Marque Modele version","annee":"XXXX","type":"Berline/SUV/Coupé/Roadster/etc","pays":"Pays d'origine","energie":"Essence/Diesel/Hybride/Electrique","prix":"ex: 97 000 €","moteur":{"type":"ex: 6 cyl. en ligne biturbo","cylindree":"ex: 2993 cc","puissance_ch":"XXX","puissance_kw":"XXX","couple_nm":"XXX","regime_puissance":"ex: 6250 tr/min","regime_couple":"ex: 2750-5500 tr/min","alimentation":"ex: Injection directe"},"transmission":{"boite":"ex: Automatique 8 rapports","entrainement":"Propulsion/Traction/Intégrale","differentiel":"ex: Autobloquant actif"},"performances":{"zero_cent":"X.X s","vitesse_max":"XXX km/h","zero_deux_cent":"XX.X s"},"consommation":{"mixte":"X.X L/100km","urbaine":"X.X L/100km","autoroute":"X.X L/100km","co2":"XXX g/km"},"chassis":{"longueur":"XXXX mm","largeur":"XXXX mm","hauteur":"XXXX mm","empattement":"XXXX mm","masse":"XXXX kg","coffre":"XXX L"},"suspensions":{"avant":"ex: Double triangulation","arriere":"ex: Multibras","freins_avant":"ex: Disques ventilés 380 mm","freins_arriere":"ex: Disques ventilés 370 mm"},"pneus":{"avant":"ex: 275/40 ZR18","arriere":"ex: 285/35 ZR19"},"anecdote":"Une anecdote courte et intéressante sur ce modèle."}`;
+
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': ANTHROPIC_API_KEY,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-haiku-4-5-20251001',
+                        max_tokens: 1200,
+                        messages: [{ role: 'user', content: prompt }]
+                    })
+                });
+
+                if (!res.ok) throw new Error('api_error');
+                const data = await res.json();
+                const raw = data.content.map(i => i.text || '').join('');
+                const clean = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
+                const car = JSON.parse(clean);
+                render(car);
+            } catch (e) {
+                document.getElementById('out').innerHTML = `<div class="card"><div class="err">❌ Erreur : vérifiez votre clé API ou reformulez votre recherche.</div></div>`;
+            }
+        }
+
+        function badge(e) {
+            if (!e) return '';
+            const l = e.toLowerCase();
+            if (l.includes('electr')) return `<span class="badge badge-e">⚡ ${e}</span>`;
+            if (l.includes('hybride')) return `<span class="badge badge-h">🔋 ${e}</span>`;
+            return `<span class="badge badge-g">${e}</span>`;
+        }
+
+        function v(x) { return x || '—'; }
+
+        function render(c) {
+            const m = c.moteur || {}, p = c.performances || {}, co = c.consommation || {};
+            const dim = c.chassis || {}, tr = c.transmission || {}, su = c.suspensions || {}, pn = c.pneus || {};
+
+            document.getElementById('out').innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div class="car-name">${v(c.nom)} ${badge(c.energie)}</div>
+        <div class="car-sub">${v(c.annee)} · ${v(c.type)} · ${v(c.pays)} · ${v(c.prix)}</div>
+      </div>
+
+      <div class="hero-grid">
+        <div class="hero-item"><div class="h-label">Puissance</div><div class="h-val">${v(m.puissance_ch)}</div><div class="h-unit">ch · ${v(m.puissance_kw)} kW</div></div>
+        <div class="hero-item"><div class="h-label">Couple</div><div class="h-val">${v(m.couple_nm)}</div><div class="h-unit">Newton·mètre</div></div>
+        <div class="hero-item"><div class="h-label">0 – 100 km/h</div><div class="h-val">${v(p.zero_cent)}</div><div class="h-unit">secondes</div></div>
+        <div class="hero-item"><div class="h-label">Vitesse max</div><div class="h-val">${v(p.vitesse_max)}</div><div class="h-unit">km/h</div></div>
+        <div class="hero-item"><div class="h-label">Conso. mixte</div><div class="h-val">${v(co.mixte)}</div><div class="h-unit">CO₂ ${v(co.co2)}</div></div>
+        <div class="hero-item"><div class="h-label">Masse</div><div class="h-val">${v(dim.masse)}</div><div class="h-unit">kilogrammes</div></div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Motorisation</div>
+        <div class="kv">
+          <div class="kv-row"><span class="kv-k">Type moteur</span><span class="kv-v">${v(m.type)}</span></div>
+          <div class="kv-row"><span class="kv-k">Cylindrée</span><span class="kv-v">${v(m.cylindree)}</span></div>
+          <div class="kv-row"><span class="kv-k">Régime puissance max</span><span class="kv-v">${v(m.regime_puissance)}</span></div>
+          <div class="kv-row"><span class="kv-k">Régime couple max</span><span class="kv-v">${v(m.regime_couple)}</span></div>
+          <div class="kv-row"><span class="kv-k">Alimentation</span><span class="kv-v">${v(m.alimentation)}</span></div>
+          <div class="kv-row"><span class="kv-k">0 – 200 km/h</span><span class="kv-v">${v(p.zero_deux_cent)}</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Transmission & train roulant</div>
+        <div class="kv">
+          <div class="kv-row"><span class="kv-k">Boîte de vitesses</span><span class="kv-v">${v(tr.boite)}</span></div>
+          <div class="kv-row"><span class="kv-k">Roues motrices</span><span class="kv-v">${v(tr.entrainement)}</span></div>
+          <div class="kv-row"><span class="kv-k">Différentiel</span><span class="kv-v">${v(tr.differentiel)}</span></div>
+          <div class="kv-row"><span class="kv-k">Suspension avant</span><span class="kv-v">${v(su.avant)}</span></div>
+          <div class="kv-row"><span class="kv-k">Suspension arrière</span><span class="kv-v">${v(su.arriere)}</span></div>
+          <div class="kv-row"><span class="kv-k">Freins avant / arrière</span><span class="kv-v">${v(su.freins_avant)} · ${v(su.freins_arriere)}</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Dimensions & pneumatiques</div>
+        <div class="kv">
+          <div class="kv-row"><span class="kv-k">Longueur</span><span class="kv-v">${v(dim.longueur)}</span></div>
+          <div class="kv-row"><span class="kv-k">Largeur</span><span class="kv-v">${v(dim.largeur)}</span></div>
+          <div class="kv-row"><span class="kv-k">Hauteur</span><span class="kv-v">${v(dim.hauteur)}</span></div>
+          <div class="kv-row"><span class="kv-k">Empattement</span><span class="kv-v">${v(dim.empattement)}</span></div>
+          <div class="kv-row"><span class="kv-k">Volume coffre</span><span class="kv-v">${v(dim.coffre)}</span></div>
+          <div class="kv-row"><span class="kv-k">Pneus AV / AR</span><span class="kv-v">${v(pn.avant)} · ${v(pn.arriere)}</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Consommation & émissions</div>
+        <div class="kv">
+          <div class="kv-row"><span class="kv-k">Mixte</span><span class="kv-v">${v(co.mixte)}</span></div>
+          <div class="kv-row"><span class="kv-k">Urbaine</span><span class="kv-v">${v(co.urbaine)}</span></div>
+          <div class="kv-row"><span class="kv-k">Autoroute</span><span class="kv-v">${v(co.autoroute)}</span></div>
+          <div class="kv-row"><span class="kv-k">Émissions CO₂</span><span class="kv-v">${v(co.co2)}</span></div>
+        </div>
+      </div>
+
+      ${c.anecdote ? `<div class="anecdote">💡 ${c.anecdote}</div>` : ''}
+      <a href="https://www.google.com/search?q=fiche+technique+${encodeURIComponent((c.nom || '') + ' ' + (c.annee || ''))}" target="_blank" rel="noopener noreferrer" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin: 1.5rem 2rem; padding: 1rem; background: rgba(106, 191, 135, 0.1); border: 1px solid var(--green); color: var(--green); border-radius: 10px; text-decoration: none; font-weight: 500; transition: all 0.2s; font-size: 14px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        Vérifier la fiche technique (Sources certifiées à 100%)
+      </a>
+      <div class="footer-note">Données générées par IA — à titre indicatif. Consultez le constructeur pour les spécifications officielles.</div>
+    </div>`;
+        }
+    </script>
+</body>
+
+</html>
