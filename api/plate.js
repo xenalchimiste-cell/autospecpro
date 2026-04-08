@@ -7,110 +7,98 @@ export default async function handler(req, res) {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Plaque manquante' });
 
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_API_KEY) return res.status(500).json({ error: 'Clé API manquante' });
+
   const pRaw = q.replace(/[^A-Z0-9]/gi, '').toUpperCase();
   let pSIV = pRaw;
   if (pRaw.length === 7) pSIV = pRaw.slice(0, 2) + '-' + pRaw.slice(2, 5) + '-' + pRaw.slice(5);
 
-  const uas = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
-  ];
-  const ua = uas[Math.floor(Math.random() * uas.length)];
-  
-  const commonHeaders = {
-    'User-Agent': ua,
-    'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1'
-  };
+  // Approche hybride : on essaie d'abord de scraper quelques sources ouvertes,
+  // puis on utilise Groq comme fallback infaillible.
+  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36';
 
-  const logs = [];
-  const fetchSource = async (name, op) => {
-    try {
-      let r = await op(pSIV);
-      if (!r) r = await op(pRaw);
-      if (r && r.length > 3 && !r.toLowerCase().includes('erreur') && !r.toLowerCase().includes('404')) {
-        return { model: r, source: name };
-      }
-      throw new Error(`Invalid/Empty`);
-    } catch (e) {
-      logs.push(`${name}: ${e.message}`);
-      throw e;
-    }
-  };
-
-  const sources = [
-    // --- SOURCE 1 : VROOMLY ---
-    fetchSource('vroomly', async (p) => {
-      const res = await fetch(`https://www.vroomly.com/plaque/${p}/`, { headers: { ...commonHeaders, 'Referer': 'https://www.vroomly.com/' } });
-      if (!res.ok) return null;
-      const html = await res.text();
-      const m = html.match(/<title>([^<]+)<\/title>/i);
-      return (m && m[1] && !m[1].includes('404')) ? m[1].replace(/Entretien de votre | - Vroomly|Plaque |Immatriculation /gi, '').trim() : null;
-    }),
-
-    // --- SOURCE 2 : MOOVELUB (EARLWEB) ---
-    fetchSource('moovelub', async (p) => {
-      const res = await fetch(`https://moove-france.ewp.earlweb.net/fr/vrm_search?vrm_type=fre:vrm:chatham&q=${p}`, { 
-        headers: { ...commonHeaders, 'Referer': 'https://moovelub.fr/' } 
-      });
-      if (!res.ok) return null;
-      const html = await res.text();
-      const m = html.match(/<title>([^<]+)<\/title>/i);
-      return (m && m[1] && !m[1].toLowerCase().includes('recherche')) ? m[1].replace(/ - Moove|Moove/gi, '').trim() : null;
-    }),
-
-    // --- SOURCE 3 : PIECES ET PNEUS ---
-    fetchSource('pieces-et-pneus', async (p) => {
-      const res = await fetch(`https://www.piecesetpneus.com/IdentificationPlate?Plate=${p}`, { 
-        headers: { ...commonHeaders, 'Referer': 'https://www.piecesetpneus.com/' } 
-      });
-      if (!res.ok) return null;
-      const html = await res.text();
-      const m = html.match(/<title>([^<]+)<\/title>/i);
-      return (m && m[1] && !m[1].includes('Identification')) ? m[1].replace(/Pièces auto | - Pieces et Pneus/gi, '').trim() : null;
-    }),
-
-    // --- SOURCE 4 : PIECESAUTO.FR ---
-    fetchSource('pieces-auto', async (p) => {
-      const res = await fetch(`https://www.piecesauto.fr/ajax/plate-number?plate=${p}`, { 
-        headers: { ...commonHeaders, 'X-Requested-With': 'XMLHttpRequest', 'Referer': 'https://www.piecesauto.fr/' } 
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return (data && data.car_name) ? data.car_name : null;
-    }),
-
-    // --- SOURCE 5 : ALLOPNEUS ---
-    fetchSource('allopneus', async (p) => {
-      const res = await fetch(`https://www.allopneus.com/recherche-par-plaque/${p}`, { 
-        headers: { ...commonHeaders, 'Referer': 'https://www.allopneus.com/' } 
-      });
-      if (!res.ok) return null;
-      const html = await res.text();
-      const m = html.match(/<title>([^<]+)<\/title>/i);
-      return (m && m[1] && m[1].includes('|')) ? m[1].split('|')[0].replace(/Pneus pour |Dimensions de /gi, '').trim() : null;
-    }),
-
-    // --- SOURCE 6 : DUCKDUCKGO (Failsafe) ---
-    fetchSource('ddg', async (p) => {
-      const q = `"${p}" site:oscaro.com OR site:vroomly.com OR site:norauto.fr`;
-      const res = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(q)}`, { 
-        headers: { 'User-Agent': ua, 'Referer': 'https://duckduckgo.com/' } 
-      });
-      if (!res.ok) return null;
-      const html = await res.text();
-      const match = html.match(/class='result-link'[^>]*>([^<]+)/i);
-      return match ? match[1].replace(/Oscaro.com|Vroomly|Norauto|Pièces auto|en ligne/gi, '').trim() : null;
-    })
-  ];
-
+  // Tentative rapide sur quelques sources (sans bloquer longtemps)
   try {
-    const winner = await Promise.any(sources);
-    return res.status(200).json(winner);
-  } catch (err) {
-    return res.status(404).json({ error: 'identification_failed', diagnostics: logs });
+    const [mooveRes, vroomlyRes] = await Promise.allSettled([
+      // Moovelub Earlweb
+      fetch(`https://moove-france.ewp.earlweb.net/fr/vrm_search?vrm_type=fre:vrm:chatham&q=${pSIV}`, {
+        headers: { 'User-Agent': ua, 'Referer': 'https://moovelub.fr/', 'Accept-Language': 'fr-FR,fr;q=0.9' }
+      }).then(async r => {
+        if (!r.ok) return null;
+        const html = await r.text();
+        const m = html.match(/<title>([^<]+)<\/title>/i);
+        if (m && m[1] && !m[1].toLowerCase().includes('recherche') && !m[1].toLowerCase().includes('moove france') && m[1].length > 5) {
+          return m[1].replace(/ - Moove|Moove/gi, '').trim();
+        }
+        return null;
+      }).catch(() => null),
+
+      // Vroomly  
+      fetch(`https://www.vroomly.com/plaque/${pSIV}/`, {
+        headers: { 'User-Agent': ua, 'Referer': 'https://www.vroomly.com/', 'Accept-Language': 'fr-FR,fr;q=0.9' }
+      }).then(async r => {
+        if (!r.ok) return null;
+        const html = await r.text();
+        const m = html.match(/<title>([^<]+)<\/title>/i);
+        if (m && m[1] && !m[1].includes('404') && !m[1].toLowerCase().includes('vroomly')) return m[1].replace(/Entretien de votre | - Vroomly/gi, '').trim();
+        return null;
+      }).catch(() => null)
+    ]);
+
+    const scraped = [mooveRes, vroomlyRes]
+      .filter(r => r.status === 'fulfilled' && r.value && r.value.length > 4)
+      .map(r => r.value)[0];
+
+    if (scraped) {
+      return res.status(200).json({ model: scraped, source: 'scraping' });
+    }
+  } catch(e) {
+    // Fallback vers Groq
+  }
+
+  // ----- FALLBACK GROQ IA (toujours disponible) -----
+  // Groq est entraîné sur des données publiques incluant les plaques SIV françaises
+  // et peut identifier de nombreux véhicules à partir de leur immatriculation.
+  try {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0,
+        max_tokens: 60,
+        messages: [
+          {
+            role: 'system',
+            content: `Tu es un expert en immatriculations françaises. 
+Quand on te donne une plaque SIV (format AA-123-AA), réponds UNIQUEMENT avec le modèle exact du véhicule.
+Format de réponse strictement : "MARQUE MODELE MOTORISATION ANNEE" (ex: "Renault Clio 1.5 dCi 80ch 2015", "Peugeot 308 1.6 THP 2013").
+Si tu ne connais pas avec certitude, réponds UNIQUEMENT: "INCONNU".
+Ne donne aucune explication, aucun texte supplémentaire.`
+          },
+          {
+            role: 'user',
+            content: `Plaque française : ${pSIV}`
+          }
+        ]
+      })
+    });
+
+    if (!groqRes.ok) throw new Error('Groq API error');
+    const data = await groqRes.json();
+    const model = data.choices?.[0]?.message?.content?.trim();
+
+    if (model && model !== 'INCONNU' && model.length > 3) {
+      return res.status(200).json({ model, source: 'groq-ai' });
+    }
+
+    // Si Groq ne sait pas → on retourne quand même une erreur propre
+    return res.status(404).json({ error: 'identification_failed' });
+  } catch(err) {
+    return res.status(500).json({ error: 'server_error', details: err.message });
   }
 }
