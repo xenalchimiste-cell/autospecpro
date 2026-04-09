@@ -502,6 +502,68 @@
     </div>
   </div>
 
+  <!-- ══════════ MODALE PAIEMENT ══════════ -->
+  <div id="payment-modal" class="auth-overlay" onclick="closePaymentModal()" style="display:none;">
+    <div class="payment-panel" onclick="event.stopPropagation()">
+      <div class="auth-blob auth-blob-1" style="background:var(--accent);"></div>
+      <div class="auth-blob auth-blob-2" style="background:var(--bg3);"></div>
+      <button class="auth-close" onclick="closePaymentModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="payment-layout">
+        <!-- Colonne résumé -->
+        <div class="payment-sidebar">
+          <div style="font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Récapitulatif</div>
+          <div class="payment-plan-name" id="pay-plan-name">Autospec <em>Passionné</em></div>
+          <div class="payment-plan-price"><span id="pay-plan-price">9€</span><small> /mois</small></div>
+          <div class="payment-features" id="pay-features">
+            <!-- Injecté dynamiquement par JS -->
+          </div>
+          <div style="margin-top:auto; font-size:11px; color:var(--text2); display:flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> 
+            Paiement 100% sécurisé
+          </div>
+        </div>
+
+        <!-- Colonne formulaire -->
+        <div class="payment-content">
+          <h3 style="font-size:18px;font-weight:500;margin-bottom:20px;color:var(--text);">Informations de paiement</h3>
+          <form id="payment-form" onsubmit="processPayment(event)">
+            <div class="pay-field-group">
+              <label class="pay-label">Nom sur la carte</label>
+              <input type="text" class="pay-input" placeholder="ex: Jean Dupont" required autocomplete="cc-name"/>
+            </div>
+            <div class="pay-field-group">
+              <label class="pay-label">Numéro de carte</label>
+              <div style="position:relative;">
+                <input type="text" class="pay-input" placeholder="0000 0000 0000 0000" maxlength="19" required autocomplete="cc-number" oninput="this.value = this.value.replace(/[^0-9\s]/g, '').replace(/(\d{4})(?=\d)/g, '$1 ')"/>
+                <svg width="24" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              </div>
+            </div>
+            <div class="pay-row">
+              <div class="pay-field-group">
+                <label class="pay-label">Date d'exp.</label>
+                <input type="text" class="pay-input" placeholder="MM/AA" maxlength="5" required autocomplete="cc-exp" oninput="this.value = this.value.replace(/[^0-9/]/g, '').replace(/^(\d{2})(\d)/g, '$1/$2')"/>
+              </div>
+              <div class="pay-field-group">
+                <label class="pay-label">CVC</label>
+                <input type="text" class="pay-input" placeholder="123" maxlength="4" required autocomplete="cc-csc" oninput="this.value = this.value.replace(/[^0-9]/g, '')"/>
+              </div>
+            </div>
+            <button type="submit" class="pay-submit-btn" id="pay-btn-submit">
+              S'abonner pour <span id="pay-btn-price">9€</span>
+            </button>
+            <div class="pay-footer-trusted">
+              <div class="mock-stripe-logo">Powered by <strong>Stripe</strong></div>
+              <span>Annulable à tout moment.</span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="src/app.js"></script>
 </body>
 </html>

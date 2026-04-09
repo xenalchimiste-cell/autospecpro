@@ -280,21 +280,85 @@ function checkAccess(requiredTier) {
   return levels[currentTier] >= levels[requiredTier];
 }
 
+let pendingPaymentTier = null;
+
 function selectTier(tier) {
-  currentTier = tier;
-  localStorage.setItem('autospec_tier', tier);
-  updateUIForTier();
-  showPage('plans'); // Refresh the page view
+  if (tier === 'free') {
+    currentTier = tier;
+    localStorage.setItem('autospec_tier', tier);
+    updateUIForTier();
+    showPage('plans'); // Refresh the page view
+  } else {
+    openPaymentModal(tier);
+  }
+}
+
+function openPaymentModal(tier) {
+  pendingPaymentTier = tier;
+  const modal = document.getElementById('payment-modal');
+  const planName = document.getElementById('pay-plan-name');
+  const planPrice = document.getElementById('pay-plan-price');
+  const btnPrice = document.getElementById('pay-btn-price');
+  const featuresList = document.getElementById('pay-features');
+
+  if (tier === 'passionne') {
+    planName.innerHTML = 'Autospec <em style="color:var(--accent);">Passionné</em>';
+    planPrice.innerHTML = '9€';
+    btnPrice.innerHTML = '9€';
+    featuresList.innerHTML = `
+      <div class="payment-feature-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Recherche par Plaque (Illimité)</div>
+      <div class="payment-feature-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Radar Comparatif 360°</div>
+      <div class="payment-feature-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Simulateur de Performances</div>
+    `;
+  } else if (tier === 'pro') {
+    planName.innerHTML = 'Autospec <em style="color:var(--purple);">Pro</em>';
+    planPrice.innerHTML = '29€';
+    btnPrice.innerHTML = '29€';
+    featuresList.innerHTML = `
+      <div class="payment-feature-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Accès Intégral (Tous modules)</div>
+      <div class="payment-feature-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Fiche Entretien & Préconisations</div>
+      <div class="payment-feature-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Export Dossier Expert (VIN + KM)</div>
+    `;
+  }
+
+  // Reset button state
+  const btn = document.getElementById('pay-btn-submit');
+  btn.classList.remove('loading', 'success');
+  btn.innerHTML = `S'abonner pour <span>${btnPrice.innerHTML}</span>`;
+
+  modal.style.display = 'flex';
+}
+
+function closePaymentModal() {
+  document.getElementById('payment-modal').style.display = 'none';
+  pendingPaymentTier = null;
+}
+
+function processPayment(e) {
+  e.preventDefault();
+  const btn = document.getElementById('pay-btn-submit');
   
-  // Petite notification de succès
-  const btn = document.querySelector(`#tier-${tier} .p-btn`);
-  const originalText = btn.innerText;
-  btn.innerText = "Plan activé !";
-  btn.style.background = "var(--green)";
+  // Loading state
+  btn.classList.add('loading');
+  btn.innerHTML = `<svg class="spinner-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> <span>Traitement en cours...</span>`;
+
+  // Fake network delay (2.5s)
   setTimeout(() => {
-    btn.innerText = originalText;
-    btn.style.background = "";
-  }, 2000);
+    btn.classList.remove('loading');
+    btn.classList.add('success');
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Paiement Réussi`;
+
+    setTimeout(() => {
+      if (pendingPaymentTier) {
+        currentTier = pendingPaymentTier;
+        localStorage.setItem('autospec_tier', currentTier);
+        updateUIForTier();
+        showPage('plans'); // Refresh tier visually
+      }
+      closePaymentModal();
+    }, 1500);
+
+  }, 2500);
 }
 
 function updateUIForTier() {
