@@ -111,11 +111,11 @@ function closeDrawer(){
 // ── API ──
 function getCache(key) {
   try {
-    const cached = localStorage.getItem('autospec_v2_' + key);
+    const cached = localStorage.getItem('autospec_v3_' + key);
     if (!cached) return null;
     const { data, expiry } = JSON.parse(cached);
     if (Date.now() > expiry) {
-      localStorage.removeItem('autospec_v2_' + key);
+      localStorage.removeItem('autospec_v3_' + key);
       return null;
     }
     return data;
@@ -125,7 +125,7 @@ function getCache(key) {
 function setCache(key, data) {
   try {
     const expiry = Date.now() + (1000 * 60 * 60 * 24 * 7); // 7 jours
-    localStorage.setItem('autospec_v2_' + key, JSON.stringify({ data, expiry }));
+    localStorage.setItem('autospec_v3_' + key, JSON.stringify({ data, expiry }));
   } catch (e) {}
 }
 
@@ -134,7 +134,7 @@ async function callGroq(userPrompt, systemPrompt=''){
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
-  const sys = systemPrompt || 'Expert technique automobile. Rigueur absolue sur les chiffres (ch, Nm, cylindrée). Ne jamais arrondir, utiliser les specs constructeur exactes. Réponse UNIQUEMENT JSON brut.';
+  const sys = systemPrompt || 'Expert technique automobile. Rigueur absolue sur les chiffres (ch, Nm, cylindrée). Ne jamais arrondir (ex: 136ch n\'est pas 140ch). Utilise exclusivement les specs constructeur exactes. Réponse UNIQUEMENT JSON brut.';
 
   let res;
   try {
