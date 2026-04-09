@@ -4,7 +4,7 @@ let client = null;
 
 export async function getClient() {
   if (!client) {
-    client = createClient();
+    client = createClient({ connectionString: process.env.POSTGRES_URL });
     await client.connect();
   }
   return client;
