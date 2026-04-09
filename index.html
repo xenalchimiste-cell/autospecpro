@@ -37,27 +37,31 @@
   </div>
 
   <nav>
-    <div class="nav-logo">AutoSpec <small>Pro</small></div>
+    <div class="nav-logo">AutoSpec <small>Pro</small> <span id="current-tier-badge" class="badge" style="margin-left:8px; font-size:9px; vertical-align:middle;">GRATUIT</span></div>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="showPage('fiche',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Fiche
       </button>
-      <button class="nav-tab" onclick="showPage('compare',this)">
+      <button class="nav-tab" data-at="passionne" onclick="showPage('compare',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
         Comparer
       </button>
-      <button class="nav-tab" onclick="showPage('sim',this)">
+      <button class="nav-tab" data-at="passionne" onclick="showPage('sim',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Simulateur
       </button>
-      <button class="nav-tab" onclick="showPage('entretien',this)">
+      <button class="nav-tab" data-at="pro" onclick="showPage('entretien',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
         Entretien
       </button>
       <button class="nav-tab" onclick="showPage('conv',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 0-2 2h-3"/></svg>
         Convertir
+      </button>
+      <button class="nav-tab" onclick="showPage('plans',this)" style="color:var(--accent);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Plans
       </button>
     </div>
     <button class="hamburger" id="hamburger" onclick="toggleDrawer()" aria-label="Menu">
@@ -94,6 +98,10 @@
       <button class="drawer-tab" id="dtab-conv" onclick="showPage('conv',this,true)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 0-2 2h-3"/></svg>
         Convertisseur
+      </button>
+      <button class="drawer-tab" id="dtab-plans" onclick="showPage('plans',this,true)" style="color:var(--accent);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Nos Offres
       </button>
     </nav>
   </div>
@@ -352,6 +360,60 @@
       <button class="conv-tab" onclick="setConvTab('pression',this)">🔴 Pression</button>
     </div>
     <div id="conv-area"></div>
+  </div>
+
+
+  <!-- ══════════ PAGE PLANS ══════════ -->
+  <div id="page-plans" class="page fade">
+    <h1 class="page-title">Choisissez votre <em>expérience</em></h1>
+    <p class="page-sub">Débloquez la puissance maximale d'AutoSpec Pro avec nos offres adaptées.</p>
+
+    <div class="pricing-grid">
+      <!-- GRATUIT -->
+      <div class="pricing-card" id="tier-free">
+        <div class="p-tier">Gratuit</div>
+        <div class="p-price">0€<small>/site</small></div>
+        <div class="p-desc">Pour une consultation rapide et occasionnelle.</div>
+        <ul class="p-features">
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Fiche technique manuelle</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Convertisseur d'unités</li>
+          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recherche par Plaque (SIV)</li>
+          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Radar Comparatif</li>
+          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Export PDF Professionnel</li>
+        </ul>
+        <button class="p-btn" onclick="selectTier('free')">Rester en Gratuit</button>
+      </div>
+
+      <!-- PASSIONNÉ -->
+      <div class="pricing-card tier-premium" id="tier-passionne">
+        <div class="p-tier">Passionné</div>
+        <div class="p-price">9€<small>/mois</small></div>
+        <div class="p-desc">L'outil idéal pour les amateurs de performance.</div>
+        <ul class="p-features">
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Recherche par Plaque (Illimité)</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Radar Comparatif 360°</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Simulateur de Performances</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Export PDF Basic</li>
+          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Fiche Entretien Garage</li>
+        </ul>
+        <button class="p-btn" onclick="selectTier('passionne')">Choisir Passionné</button>
+      </div>
+
+      <!-- PROFESSIONNEL -->
+      <div class="pricing-card tier-pro" id="tier-pro">
+        <div class="p-tier">Professionnel</div>
+        <div class="p-price">29€<small>/mois</small></div>
+        <div class="p-desc">Tout l'arsenal AutoSpec pour votre garage.</div>
+        <ul class="p-features">
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Accès Intégral (Tous modules)</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Fiche Entretien & Préconisations</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Export Dossier Expert (VIN + KM)</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Rapports SIV Techniques</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Support Prioritaire</li>
+        </ul>
+        <button class="p-btn" onclick="selectTier('pro')">Choisir Pro</button>
+      </div>
+    </div>
   </div>
 
   <script src="src/app.js"></script>

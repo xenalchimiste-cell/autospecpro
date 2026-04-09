@@ -1,4 +1,7 @@
 // ── GLOBALS ──
+const TIERS = { FREE: 'free', PASSIONNE: 'passionne', PRO: 'pro' };
+let currentTier = localStorage.getItem('autospec_tier') || TIERS.FREE;
+
 let carA = null, carB = null;
 window.carCache = window.carCache || {};
 const GROQ_URL = '/api/chat';
@@ -7,6 +10,10 @@ const MODEL = 'llama-3.1-8b-instant';
 // ── SEARCH LOGIC ──
 let searchMode = 'car';
 function setSearchMode(m) {
+  if (m === 'plate' && !checkAccess('passionne')) {
+    showPage('plans');
+    return;
+  }
   searchMode = m;
   const input = document.getElementById('q1');
   const container = document.getElementById('search-container');
@@ -18,7 +25,6 @@ function setSearchMode(m) {
   if (m === 'plate') {
     input.placeholder = "AA-123-AA";
     container.classList.add('plate-mode');
-    // Changement d'icône pour une plaque
     icon.innerHTML = '<rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 12h.01"/><path d="M17 12h.01"/>';
   } else {
     input.placeholder = "ex: BMW M3 2023, Peugeot 308 2022…";
@@ -48,6 +54,17 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function showPage(id, btn, fromDrawer=false){
+  // Check access if needed
+  if (id !== 'plans') {
+    const targetTab = btn || document.querySelector(`.nav-tab[onclick*="'${id}'"]`);
+    if (targetTab) {
+      const required = targetTab.getAttribute('data-at');
+      if (required && !checkAccess(required)) {
+        id = 'plans'; // Redirect to plans if locked
+      }
+    }
+  }
+
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
 
@@ -107,6 +124,83 @@ function closeDrawer(){
   document.body.style.overflow = '';
   setTimeout(()=>{ overlay.style.display='none'; }, 300);
 }
+
+// ── TIERS LOGIC ──
+function checkAccess(requiredTier) {
+  const levels = { 'free': 0, 'passionne': 1, 'pro': 2 };
+  return levels[currentTier] >= levels[requiredTier];
+}
+
+function selectTier(tier) {
+  currentTier = tier;
+  localStorage.setItem('autospec_tier', tier);
+  updateUIForTier();
+  showPage('plans'); // Refresh the page view
+  
+  // Petite notification de succès
+  const btn = document.querySelector(`#tier-${tier} .p-btn`);
+  const originalText = btn.innerText;
+  btn.innerText = "Plan activé !";
+  btn.style.background = "var(--green)";
+  setTimeout(() => {
+    btn.innerText = originalText;
+    btn.style.background = "";
+  }, 2000);
+}
+
+function updateUIForTier() {
+  const badgeColors = { 'free': 'var(--text3)', 'passionne': 'var(--accent)', 'pro': 'var(--purple)' };
+  const badgeLabels = { 'free': 'GRATUIT', 'passionne': 'PASSIONNÉ', 'pro': 'PRO' };
+  
+  const badge = document.getElementById('current-tier-badge');
+  if (badge) {
+    badge.innerText = badgeLabels[currentTier];
+    badge.style.border = `1px solid ${badgeColors[currentTier]}`;
+    badge.style.color = badgeColors[currentTier];
+  }
+
+  // Cards state
+  document.querySelectorAll('.pricing-card').forEach(c => {
+    c.classList.remove('active');
+    const cbtn = c.querySelector('.p-btn');
+    if (c.id === 'tier-' + currentTier) {
+       c.classList.add('active');
+       if(cbtn) cbtn.innerText = "Votre Plan Actuel";
+    } else {
+       if(cbtn) {
+         const tierVal = c.id.replace('tier-', '');
+         cbtn.innerText = tierVal === 'free' ? 'Rester en Gratuit' : 'Choisir ' + tierVal.charAt(0).toUpperCase() + tierVal.slice(1);
+       }
+    }
+  });
+
+  // Nav tab locks
+  document.querySelectorAll('.nav-tab, .drawer-tab').forEach(t => {
+    const req = t.getAttribute('data-at');
+    if (req && !checkAccess(req)) {
+      t.classList.add('locked');
+    } else {
+      t.classList.remove('locked');
+    }
+  });
+
+  // Lock specific UI elements
+  // 1. Module plaque
+  const plateBtn = document.getElementById('mode-plate');
+  if (plateBtn) {
+    if (!checkAccess('passionne')) {
+      plateBtn.classList.add('locked-feature');
+      plateBtn.style.opacity = '0.5';
+    } else {
+      plateBtn.classList.remove('locked-feature');
+      plateBtn.style.opacity = '1';
+    }
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  updateUIForTier();
+});
 
 // ── API ──
 function getCache(key) {
@@ -1086,6 +1180,10 @@ function closePerso() {
 }
 
 function openCertificat(cardId) {
+  if (!checkAccess('passionne')) {
+    showPage('plans');
+    return;
+  }
   currentCertCardId = cardId;
   const c = window.carCache[cardId];
   if(!c) return;
