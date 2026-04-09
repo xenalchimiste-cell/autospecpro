@@ -1,9 +1,25 @@
-import { sql } from '@vercel/postgres';
+import { createClient } from '@vercel/postgres';
+
+let client = null;
+
+export async function getClient() {
+  if (!client) {
+    client = createClient();
+    await client.connect();
+  }
+  return client;
+}
+
+export const sql = async (strings, ...values) => {
+  const c = await getClient();
+  return c.sql(strings, ...values);
+};
 
 export async function initDb() {
   // Cette fonction peut être appelée pour s'assurer que les tables existent
   try {
-    await sql`
+    const c = await getClient();
+    await c.sql`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -22,5 +38,4 @@ export async function initDb() {
   }
 }
 
-export { sql };
 export default sql;
