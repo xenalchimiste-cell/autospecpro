@@ -68,6 +68,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Server error during registration' });
+    res.status(500).json({ error: 'Server error during registration: ' + error.message });
   }
 }
