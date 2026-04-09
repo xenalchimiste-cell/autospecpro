@@ -896,6 +896,7 @@ function updateSim(){
 }
 
 function drawChart(ch, kg, eff){
+  const ratio = kg / ch;
   const canvas = document.getElementById('simChart');
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
