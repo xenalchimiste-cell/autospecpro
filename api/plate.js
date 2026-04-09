@@ -15,30 +15,30 @@ export default async function handler(req, res) {
 
   // Fonction pour extraire un nom lisible depuis un slug Earlweb
   // ex: "rio_hatchback_iii_ub_1_1_crdi_55kw_d3fa_FawEcBPVK" → "Rio Hatchback III 1.1 CRDi 55kW"
+  function extractTechData(slug) {
+    const data = {};
+    const kwMatch = slug.match(/_(\d+)kw(_|$)/i);
+    if (kwMatch) data.kw = kwMatch[1];
+    const engineMatch = slug.match(/_([a-z][0-9][a-z]{1,2})(_[A-Za-z0-9]{6,}|$)/i);
+    if (engineMatch) data.engine_code = engineMatch[1].toUpperCase();
+    return data;
+  }
+
   function slugToModel(slug) {
     return slug
-      // Supprimer suffixe d'ID aléatoire en fin (ex: _FawEcBPVK)
       .replace(/_[A-Za-z0-9]{6,}$/, '')
-      // Supprimer les codes moteur (2-4 lettres + chiffres, ex: _d3fa, _b58, _d4fd)
-      .replace(/_[a-z][0-9][a-z]{1,3}(_|$)/gi, ' ')
-      // Convertir underscore en espace
       .replace(/_/g, ' ')
-      // "1 1" ou "1 5" → "1.1" / "1.5" (moteurs)
       .replace(/\b([1-9])\s+([0-9])\b(?=\s*(diesel|essence|crdi|tdi|tfsi|tsi|fsi|gdi|jtd|dci|hdi|cdti|tce|vti|thp|e|d|i|t)|\s*$|\s+crdi|\s+dci|\s+tdi|\s+hdi|\s+cdi)/gi, '$1.$2')
       .replace(/\b([1-9])\s+([0-9])\b/g, '$1.$2')
-      // Supprimer fragments "sb sr" (variantes châssis)
       .replace(/\b(sb|sr|ql|qle|ub|pa|pa5|b9|zb|gd|nd|lb)\b/gi, '')
-      // Majuscules sur les sigles romains
       .replace(/\b(i{1,3}|iv|v|vi|vii|viii)\b/gi, m => m.toUpperCase())
-      // CRDi, TDI, etc. → uppercase
       .replace(/\b(crdi|tdi|tfsi|tsi|fsi|gdi|jtd|dci|hdi|cdti|tce|vti|thp|crd)\b/gi, m => m.toUpperCase())
       .replace(/\b(\d+)kw\b/gi, '$1kW')
-      // Capitaliser chaque mot
       .replace(/\b\w/g, c => c.toUpperCase())
-      // Nettoyer espaces multiples
       .replace(/\s+/g, ' ')
       .trim();
   }
+
 
   const diag = {};
 
@@ -76,8 +76,9 @@ export default async function handler(req, res) {
           if (slugMatch && slugMatch[1]) {
             const slug = slugMatch[1];
             diag.slug = slug;
+            const tech = extractTechData(slug);
             const model = slugToModel(slug);
-            return res.status(200).json({ model, source: 'moovelub-redirect' });
+            return res.status(200).json({ model, tech, source: 'moovelub-redirect' });
           }
         }
       }
@@ -95,8 +96,9 @@ export default async function handler(req, res) {
         if (equipMatch && equipMatch[1]) {
           const slugMatch2 = equipMatch[1].match(/\/equipment\/([^?#/]+)/);
           if (slugMatch2 && slugMatch2[1]) {
+            const tech = extractTechData(slugMatch2[1]);
             const model = slugToModel(slugMatch2[1]);
-            return res.status(200).json({ model, source: 'moovelub-html' });
+            return res.status(200).json({ model, tech, source: 'moovelub-html' });
           }
         }
         diag[`moove_${plate}_html_preview`] = html.slice(0, 300);

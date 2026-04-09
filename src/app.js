@@ -134,7 +134,7 @@ async function callGroq(userPrompt, systemPrompt=''){
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
-  const sys = systemPrompt || 'Expert technique automobile. Rigueur absolue sur les chiffres (ch, Nm, cylindrée). Ne jamais arrondir (ex: 136ch n\'est pas 140ch). Utilise exclusivement les specs constructeur exactes. Réponse UNIQUEMENT JSON brut.';
+  const sys = systemPrompt || "Expert technique automobile. RIGUEUR ABSOLUE sur les données STOCK (constructeur) : n'invente rien, utilise 'N/A' si inconnu. En revanche, pour la section 'tuning' (Stages 1, 2, 3), fournis des ESTIMATIONS REPRÉSENTATIVES des gains habituels pour ce moteur précis (puissance, couple, prix). Réponse UNIQUEMENT JSON brut.";
 
   let res;
   try {
@@ -381,11 +381,13 @@ function resetFilters(){
   updateFilterChips();
 }
 
-function getFilteredPromptFor(q, carb, stage){
-  let ctx = `Voiture: "${q}".`;
+function getFilteredPromptFor(q, carb, stage, tech = {}){
+  let ctx = `Véhicule: "${q}".`;
+  if(tech.kw) ctx += ` Puissance exacte: ${tech.kw} kW.`;
+  if(tech.engine_code) ctx += ` Code moteur constructeur: ${tech.engine_code}.`;
   if(carb) ctx += ` Carburant: ${carb}.`;
   if(stage) ctx += ` Préparation: ${stage}.`;
-  return `${ctx} Remplis ce JSON complet: ${JSON_STRUCTURE}`;
+  return `${ctx} Remplis ce JSON technique complet. 1) Pour les données d'origine (STOCK), sois ultra-rigoureux et utilise 'N/A' si incertain. 2) Pour la section 'tuning' (Stages), fournis des estimations réalistes basées sur les gains classiques pour ce moteur : ${JSON_STRUCTURE}`;
 }
 
 function getFilteredPrompt(q){
@@ -430,6 +432,7 @@ async function searchFiche() {
 
   try {
     let finalModel = q;
+    let techData = {};
 
     // SI MODE PLAQUE : On identifie d'abord le modèle
     if (searchMode === 'plate') {
@@ -469,6 +472,7 @@ async function searchFiche() {
         }
         
         finalModel = plateData.model;
+        techData = plateData.tech || {};
         setStatus(`✅ Véhicule identifié : ${finalModel}`);
         await new Promise(r => setTimeout(r, 600)); // Pause pour lecture
         setStatus("Génération de la fiche technique haute fidélité...");
@@ -483,7 +487,7 @@ async function searchFiche() {
       setTimeout(() => setStatus(statusMessages.car[1]), 900);
     }
 
-    const raw = await callGroq(getFilteredPromptFor(finalModel, carb, stage));
+    const raw = await callGroq(getFilteredPromptFor(finalModel, carb, stage, techData));
     const car = JSON.parse(raw);
     
     const html = renderCard(car);

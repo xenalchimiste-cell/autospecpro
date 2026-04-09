@@ -505,9 +505,30 @@
             document.getElementById('out').innerHTML = '<div class="loading"><div class="spin"></div>Analyse en cours…</div>';
 
             try {
-                const prompt = `Tu es une base de données automobile exhaustive. L'utilisateur cherche: "${q}".
-Réponds UNIQUEMENT avec un objet JSON brut, sans markdown, sans backticks, sans commentaire.
-Structure exacte (remplace toutes les valeurs, N/A si inconnu):
+                let finalModel = q;
+                let techCtx = "";
+
+                // Détection plaque (format SIV ou ancien)
+                const isPlate = /^[A-Z]{2}-?\d{3}-?[A-Z]{2}$/i.test(q) || /^\d{1,4}\s?[A-Z]{2,3}\s?\d{2}$/i.test(q);
+                
+                if (isPlate) {
+                    try {
+                        const plateRes = await fetch(`/api/plate?q=${encodeURIComponent(q)}`);
+                        const plateData = await plateRes.json();
+                        if (plateRes.ok && plateData.model) {
+                            finalModel = plateData.model;
+                            if (plateData.tech) {
+                                if (plateData.tech.kw) techCtx += ` Puissance: ${plateData.tech.kw}kW.`;
+                                if (plateData.tech.engine_code) techCtx += ` Code moteur: ${plateData.tech.engine_code}.`;
+                            }
+                        }
+                    } catch (e) { console.warn("Erreur identification plaque:", e); }
+                }
+
+                const prompt = `Tu es une base de données automobile exhaustive et précise. ${techCtx}
+L'utilisateur cherche: "${finalModel}".
+Réponds UNIQUEMENT avec un objet JSON brut, sans markdown, sans backticks.
+STRUCTURE STRICTE (N/A si inconnu, sois ultra-précis sur les chiffres, pas d'arrondis):
 {"nom":"Marque Modele version","annee":"XXXX","type":"Berline/SUV/Coupé/Roadster/etc","pays":"Pays d'origine","energie":"Essence/Diesel/Hybride/Electrique","prix":"ex: 97 000 €","moteur":{"type":"ex: 6 cyl. en ligne biturbo","cylindree":"ex: 2993 cc","puissance_ch":"XXX","puissance_kw":"XXX","couple_nm":"XXX","regime_puissance":"ex: 6250 tr/min","regime_couple":"ex: 2750-5500 tr/min","alimentation":"ex: Injection directe"},"transmission":{"boite":"ex: Automatique 8 rapports","entrainement":"Propulsion/Traction/Intégrale","differentiel":"ex: Autobloquant actif"},"performances":{"zero_cent":"X.X s","vitesse_max":"XXX km/h","zero_deux_cent":"XX.X s"},"consommation":{"mixte":"X.X L/100km","urbaine":"X.X L/100km","autoroute":"X.X L/100km","co2":"XXX g/km"},"chassis":{"longueur":"XXXX mm","largeur":"XXXX mm","hauteur":"XXXX mm","empattement":"XXXX mm","masse":"XXXX kg","coffre":"XXX L"},"suspensions":{"avant":"ex: Double triangulation","arriere":"ex: Multibras","freins_avant":"ex: Disques ventilés 380 mm","freins_arriere":"ex: Disques ventilés 370 mm"},"pneus":{"avant":"ex: 275/40 ZR18","arriere":"ex: 285/35 ZR19"},"anecdote":"Une anecdote courte et intéressante sur ce modèle."}`;
 
                 const res = await fetch('/api/chat', {
@@ -517,7 +538,7 @@ Structure exacte (remplace toutes les valeurs, N/A si inconnu):
                         model: 'llama-3.3-70b-versatile',
                         max_tokens: 1500,
                         messages: [
-                            { role: 'system', content: 'Réponds UNIQUEMENT en JSON brut, sans markdown, sans backticks.' },
+                            { role: 'system', content: 'Expert technique automobile de précision. INTERDICTION de supposer des chiffres incertains. Utilise N/A si inconnu. Réponds UNIQUEMENT en JSON brut.' },
                             { role: 'user', content: prompt }
                         ]
                     })
