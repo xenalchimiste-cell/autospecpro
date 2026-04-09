@@ -666,6 +666,7 @@ select.s-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg x
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.02) 100%);
   pointer-events: none;
+  z-index: 1;
 }
 .pricing-card.active {
   border-color: var(--accent);
@@ -678,6 +679,8 @@ select.s-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg x
   color: var(--accent); letter-spacing: 0.15em;
   background: rgba(212,168,67,0.1);
   padding: 4px 10px; border-radius: 20px;
+  z-index: 5;
+  width: auto; height: auto;
 }
 .p-tier { font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.75rem; }
 .p-price { font-family: 'DM Serif Display', serif; font-size: 48px; color: var(--text); margin-bottom: 0.5rem; letter-spacing: -1px; }
@@ -719,11 +722,12 @@ select.s-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg x
 .tier-premium .p-tier { color: var(--accent); }
 .tier-pro .p-tier { color: var(--purple); }
 .tier-pro .p-price { background: linear-gradient(to right, #fff, var(--purple)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.tier-pro::before {
+.tier-pro::after {
   content: ''; position: absolute; top: -100px; right: -100px;
-  width: 200px; height: 200px;
-  background: radial-gradient(circle, rgba(155, 127, 232, 0.1) 0%, transparent 70%);
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(155, 127, 232, 0.15) 0%, transparent 70%);
   pointer-events: none;
+  z-index: 0;
 }
 
 /* ── ÉTATS VERROUILLÉS ── */
