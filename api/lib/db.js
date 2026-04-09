@@ -1,4 +1,16 @@
-import { sql } from '@vercel/postgres';
+import pg from 'pg';
+const { Pool } = pg;
+
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+export const sql = async (strings, ...values) => {
+  const queryText = strings.reduce((acc, curr, i) => acc + curr + (i < values.length ? '$' + (i + 1) : ''), '');
+  const { rows } = await pool.query(queryText, values);
+  return { rows };
+};
 
 export async function initDb() {
   // Cette fonction peut être appelée pour s'assurer que les tables existent
@@ -22,5 +34,4 @@ export async function initDb() {
   }
 }
 
-export { sql };
 export default sql;
