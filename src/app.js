@@ -1,11 +1,29 @@
 // ── GLOBALS ──
 const TIERS = { FREE: 'free', PASSIONNE: 'passionne', PRO: 'pro' };
 let currentTier = localStorage.getItem('autospec_tier') || TIERS.FREE;
+let currentUser = null;
+let authToken = localStorage.getItem('autospec_token');
 
 let carA = null, carB = null;
 window.carCache = window.carCache || {};
 const GROQ_URL = '/api/chat';
 const MODEL = 'llama-3.1-8b-instant';
+
+// ── AUTH LOGIC ──
+function getDiscountMultiplier() {
+  let m = 1.0;
+  if (!currentUser) return m;
+  if (currentUser.user_type === 'enterprise') m -= 0.30;
+  if (currentUser.referred_by_id) m -= 0.15;
+  return Math.max(0.1, m); // Minimum 10% du prix au cas où
+}
+
+function formatPrice(basePrice) {
+  const m = getDiscountMultiplier();
+  if (m === 1.0) return `${basePrice}€`;
+  const discounted = Math.round(basePrice * m);
+  return `<span style="text-decoration:line-through; font-size:0.6em; opacity:0.6; margin-right:4px;">${basePrice}€</span>${discounted}€`;
+}
 
 // ── SEARCH LOGIC ──
 let searchMode = 'car';
@@ -32,6 +50,116 @@ function setSearchMode(m) {
     icon.innerHTML = '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
   }
 }
+
+// ── AUTH UI FUNCTIONS ──
+function openAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
+function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
+function setAuthMode(m) {
+  const isLogin = m === 'login';
+  document.getElementById('login-form').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('register-form').style.display = isLogin ? 'none' : 'block';
+  document.getElementById('toggle-login').classList.toggle('active', isLogin);
+  document.getElementById('toggle-register').classList.toggle('active', !isLogin);
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (res.ok) {
+      completeAuth(result.token, result.user);
+    } else {
+      alert(result.error);
+    }
+  } catch (err) { alert('Erreur lors de l\'inscription'); }
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (res.ok) {
+      completeAuth(result.token, result.user);
+    } else {
+      alert(result.error);
+    }
+  } catch (err) { alert('Erreur lors de la connexion'); }
+}
+
+function completeAuth(token, user) {
+  authToken = token;
+  currentUser = user;
+  localStorage.setItem('autospec_token', token);
+  updateNav();
+  updateUIForTier();
+  closeAuthModal();
+}
+
+function handleLogout() {
+  authToken = null;
+  currentUser = null;
+  localStorage.removeItem('autospec_token');
+  updateNav();
+  updateUIForTier();
+}
+
+function updateNav() {
+  const area = document.getElementById('user-nav-area');
+  if (currentUser) {
+    const initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
+    area.innerHTML = `
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+        <div class="user-profile-nav" onclick="handleLogout()">
+          <div class="user-initials">${initials}</div>
+          <span style="font-size:12px; font-weight:600;">${currentUser.first_name}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+        <div style="font-size:9px; color:var(--text3); cursor:default;">Parrain : <span style="color:var(--accent); font-weight:700;">${currentUser.referral_code}</span></div>
+      </div>
+    `;
+  } else {
+    area.innerHTML = `<button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>`;
+  }
+}
+
+async function handleGoogleLogin() {
+  alert("Veuillez configurer GOOGLE_CLIENT_ID pour activer cette fonction.");
+  // En production, vous utiliseriez gapi.auth2 ou le nouveau Google Identity Services
+  // pour obtenir un idToken et l'envoyer à /api/auth/google
+}
+
+// Session check on load
+window.addEventListener('DOMContentLoaded', async () => {
+  if (authToken) {
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      if (res.ok) {
+        const result = await res.json();
+        currentUser = result.user;
+        updateNav();
+        updateUIForTier();
+      } else {
+        handleLogout();
+      }
+    } catch (e) { handleLogout(); }
+  }
+});
 
 // Auto-format plaque
 window.addEventListener('DOMContentLoaded', () => {
@@ -160,15 +288,25 @@ function updateUIForTier() {
   }
 
   // Cards state
+  const basePrices = { 'free': 0, 'passionne': 9, 'pro': 29 };
   document.querySelectorAll('.pricing-card').forEach(c => {
     c.classList.remove('active');
+    const tierVal = c.id.replace('tier-', '');
     const cbtn = c.querySelector('.p-btn');
+    const cprice = c.querySelector('.p-price');
+    
+    // Update dynamic price
+    if (cprice && basePrices[tierVal] !== undefined) {
+      const small = cprice.querySelector('small');
+      const suffix = small ? small.outerHTML : '';
+      cprice.innerHTML = formatPrice(basePrices[tierVal]) + suffix;
+    }
+
     if (c.id === 'tier-' + currentTier) {
        c.classList.add('active');
        if(cbtn) cbtn.innerText = "Votre Plan Actuel";
     } else {
        if(cbtn) {
-         const tierVal = c.id.replace('tier-', '');
          cbtn.innerText = tierVal === 'free' ? 'Rester en Gratuit' : 'Choisir ' + tierVal.charAt(0).toUpperCase() + tierVal.slice(1);
        }
     }

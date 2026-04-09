@@ -1,6 +1,12 @@
 {
-    "name": "autospec-pro",
-    "version": "1.0.0",
-    "private": true,
-    "type": "module"
+  "name": "autospec-pro",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "@vercel/postgres": "^0.8.0",
+    "google-auth-library": "^9.7.0"
   }
+}

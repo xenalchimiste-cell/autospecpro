@@ -773,3 +773,19 @@ select.s-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg x
   .pricing-grid { grid-template-columns: 1fr; gap: 1.5rem; }
   .pricing-card { padding: 2rem 1.75rem; }
 }
+
+/* ── AUTHENTICATION ── */
+.auth-card { max-width: 420px; width: 95%; padding: 2.5rem; }
+#auth-toggle { display: flex; gap: 4px; background: var(--bg3); padding: 4px; border-radius: 12px; margin-bottom: 2rem; }
+#auth-toggle button { flex: 1; height: 36px; border-radius: 8px; border: none; background: transparent; color: var(--text3); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+#auth-toggle button.active { background: var(--bg1); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 1.5rem 0; color: var(--text3); font-size: 11px; font-weight: 600; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border2); }
+
+.google-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff !important; color: #000 !important; border: none !important; }
+.google-btn:hover { background: #f1f1f1 !important; }
+
+.user-profile-nav { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px 12px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--border2); transition: all 0.2s; }
+.user-profile-nav:hover { border-color: var(--accent); }
+.user-initials { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #000; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }

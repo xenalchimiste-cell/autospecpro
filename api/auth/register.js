@@ -1,0 +1,60 @@
+import { sql } from '../lib/db.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { email, password, firstName, lastName, userType, referralCodeUsed } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  try {
+    // 1. Check if user exists
+    const { rows: existingUsers } = await sql`SELECT id FROM users WHERE email = ${email}`;
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // 2. Hash password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    // 3. Handle referral code if provided
+    let referredById = null;
+    if (referralCodeUsed) {
+      const { rows: referrers } = await sql`SELECT id FROM users WHERE referral_code = ${referralCodeUsed}`;
+      if (referrers.length > 0) {
+        referredById = referrers[0].id;
+      }
+    }
+
+    // 4. Generate own referral code
+    const myReferralCode = Math.random().toString(36).substring(2, 9).toUpperCase();
+
+    // 5. Create user
+    const { rows: newUser } = await sql`
+      INSERT INTO users (email, password_hash, first_name, last_name, user_type, referral_code, referred_by_id)
+      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${userType || 'individual'}, ${myReferralCode}, ${referredById})
+      RETURNING id, email, first_name, last_name, user_type, referral_code, referred_by_id
+    `;
+
+    const user = newUser[0];
+
+    // 6. Generate JWT
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.status(201).json({
+      message: 'User created successfully',
+      token,
+      user
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Server error during registration' });
+  }
+}

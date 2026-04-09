@@ -64,6 +64,9 @@
         Plans
       </button>
     </div>
+    <div id="user-nav-area" style="margin-left:auto; display:flex; align-items:center; gap:10px; padding-right:15px;">
+      <button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>
+    </div>
     <button class="hamburger" id="hamburger" onclick="toggleDrawer()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -413,6 +416,72 @@
         </ul>
         <button class="p-btn" onclick="selectTier('pro')">Choisir Pro</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODALE AUTH ══════════ -->
+  <div id="auth-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card auth-card">
+      <button class="modal-close" onclick="closeAuthModal()">×</button>
+      
+      <div id="auth-toggle">
+        <button id="toggle-login" class="active" onclick="setAuthMode('login')">Connexion</button>
+        <button id="toggle-register" onclick="setAuthMode('register')">Inscription</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="input-group">
+          <label>Email</label>
+          <input type="email" name="email" placeholder="votre@email.com" required>
+        </div>
+        <div class="input-group">
+          <label>Mot de passe</label>
+          <input type="password" name="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-full">Se connecter</button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" onsubmit="handleRegister(event)" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="input-group">
+            <label>Prénom</label>
+            <input type="text" name="firstName" placeholder="Jean" required>
+          </div>
+          <div class="input-group">
+            <label>Nom</label>
+            <input type="text" name="lastName" placeholder="Dupont" required>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Email</label>
+          <input type="email" name="email" placeholder="votre@email.com" required>
+        </div>
+        <div class="input-group">
+          <label>Mot de passe</label>
+          <input type="password" name="password" placeholder="••••••••" required>
+        </div>
+        <div class="input-group">
+          <label>Type de compte</label>
+          <select name="userType" class="s-input">
+            <option value="individual">Particulier</option>
+            <option value="enterprise">Entreprise (-30%)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Code Parrain (Optionnel)</label>
+          <input type="text" name="referralCode" placeholder="Ex: ABC1234">
+        </div>
+        <button type="submit" class="btn btn-primary w-full">Créer mon compte</button>
+      </form>
+
+      <div class="auth-divider"><span>OU</span></div>
+      
+      <button class="btn btn-outline w-full google-btn" onclick="handleGoogleLogin()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
+        Continuer avec Google
+      </button>
     </div>
   </div>
 
