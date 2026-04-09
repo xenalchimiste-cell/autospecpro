@@ -2,7 +2,7 @@
 let carA = null, carB = null;
 window.carCache = window.carCache || {};
 const GROQ_URL = '/api/chat';
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'llama-3.1-8b-instant';
 
 // ── SEARCH LOGIC ──
 let searchMode = 'car';
@@ -109,7 +109,33 @@ function closeDrawer(){
 }
 
 // ── API ──
+function getCache(key) {
+  try {
+    const cached = localStorage.getItem('autospec_v2_' + key);
+    if (!cached) return null;
+    const { data, expiry } = JSON.parse(cached);
+    if (Date.now() > expiry) {
+      localStorage.removeItem('autospec_v2_' + key);
+      return null;
+    }
+    return data;
+  } catch (e) { return null; }
+}
+
+function setCache(key, data) {
+  try {
+    const expiry = Date.now() + (1000 * 60 * 60 * 24 * 7); // 7 jours
+    localStorage.setItem('autospec_v2_' + key, JSON.stringify({ data, expiry }));
+  } catch (e) {}
+}
+
 async function callGroq(userPrompt, systemPrompt=''){
+  const cacheKey = btoa(userPrompt + systemPrompt).slice(0, 32);
+  const cached = getCache(cacheKey);
+  if (cached) return cached;
+
+  const sys = systemPrompt || 'Expert auto. Réponds UNIQUEMENT en JSON brut.';
+
   let res;
   try {
     res = await fetch(GROQ_URL, {
@@ -117,12 +143,13 @@ async function callGroq(userPrompt, systemPrompt=''){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1500,
+        max_tokens: 800,
         messages: [
-          { role: 'system', content: systemPrompt || 'Réponds UNIQUEMENT en JSON brut, sans markdown, sans backticks.' },
+          { role: 'system', content: sys },
           { role: 'user', content: userPrompt }
         ]
       })
+
     });
   } catch(networkErr) {
     throw new Error('Impossible de joindre le serveur — vérifiez votre connexion.');
@@ -148,16 +175,14 @@ async function callGroq(userPrompt, systemPrompt=''){
     throw new Error('Réponse inattendue de l\'API — aucun contenu retourné.');
   }
 
-  const raw = data.choices[0].message.content;
-  return raw.replace(/```[\w]*\n?/g,'').replace(/```/g,'').trim();
+  const raw = data.choices[0].message.content.replace(/```[\w]*\n?/g,'').replace(/```/g,'').trim();
+  setCache(cacheKey, raw);
+  return raw;
 }
 
-const CAR_PROMPT = (q)=>`Tu es l'Intelligence Artificielle "AutoSpec", la base de données automobile la plus exhaustive au monde.
-L'utilisateur cherche la voiture suivante : "${q}".
-RÈGLE ABSOLUE : Tu DOIS IMPÉRATIVEMENT renvoyer un objet JSON contenant EXACTEMENT toutes les clés ci-dessous, sans aucune exception. Ne supprime AUCUNE clé. Si tu ne connais pas la valeur exacte, fais une estimation experte ultra-réaliste ou écris "N/A", mais LA CLÉ DOIT EXISTER.
-Réponds UNIQUEMENT avec le JSON brut, sans markdown.
-Structure :
-{"nom":"Marque Modele","annee":"XXXX","type":"Berline/SUV/etc","pays":"Pays","energie":"Essence/Diesel/Hybride/Electrique","prix":"XX 000 €","moteur":{"type":"ex: 6 cyl. biturbo","cylindree":"XXXX cc","puissance_ch":"XXX","puissance_kw":"XXX","couple_nm":"XXX","regime_puissance":"XXXX tr/min","regime_couple":"XXXX-XXXX tr/min","alimentation":"Injection directe"},"transmission":{"boite":"Manuelle/Auto X rap.","entrainement":"Propulsion/Traction/Intégrale","differentiel":"type"},"performances":{"zero_cent":"X.X s","vitesse_max":"XXX km/h","zero_deux_cent":"XX.X s"},"consommation":{"mixte":"X.X L/100km","urbaine":"X.X","autoroute":"X.X","co2":"XXX g/km"},"chassis":{"longueur":"XXXX mm","largeur":"XXXX mm","hauteur":"XXXX mm","empattement":"XXXX mm","masse":"XXXX kg","coffre":"XXX L"},"suspensions":{"avant":"type","arriere":"type","freins_avant":"Disques XXX mm","freins_arriere":"Disques XXX mm"},"pneus":{"avant":"XXX/XX RXX","arriere":"XXX/XX RXX"},"carburant":{"type":"SP98/SP95/Diesel/E85/Électricité","indice_octane":"98 (recommandé) / 95 (minimum)","reservoir":"XX L","autonomie_estimee":"XXX km","remarque":"ex: SP98 recommandé pour performances optimales"},"tuning":{"remarque_generale":"ex: Moteur bien supporté par le tuning, limites mécaniques à XX ch","stage1":{"description":"Reprogrammation ECU seule, sans modification mécanique","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXX-XXX €","fiabilite":"Excellente / Bonne / Correcte"},"stage2":{"description":"Stage 1 + admission + échappement sport","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXX-XXX €","fiabilite":"Bonne / Correcte / À surveiller"},"stage3":{"description":"Stage 2 + turbo upgrade / internes renforcés","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXXX-XXXX €","fiabilite":"Correcte / Nécessite suivi"}},"entretien":{"huile_viscosite":"ex: 5W30","huile_norme":"ex: VW 504.00 / 507.00","frequence_vidange":"ex: 15 000 km / 12 mois","distribution":"ex: Chaîne (sans entretien) ou Courroie (120 000 km / 6 ans)","bougies":"ex: 60 000 km","freins":"ex: Liquide tous les 2 ans","points_vigilance":["Point faible 1","Point faible 2"]},"anecdote":"Phrase intéressante et précise sur ce modèle."}`;
+const JSON_STRUCTURE = `{"nom":"","annee":"","type":"","pays":"","energie":"","prix":"","moteur":{"type":"","cylindree":"","puissance_ch":"","puissance_kw":"","couple_nm":"","regime_puissance":"","regime_couple":"","alimentation":""},"transmission":{"boite":"","entrainement":"","differentiel":""},"performances":{"zero_cent":"","vitesse_max":"","zero_deux_cent":""},"consommation":{"mixte":"","urbaine":"","autoroute":"","co2":""},"chassis":{"longueur":"","largeur":"","hauteur":"","empattement":"","masse":"","coffre":""},"suspensions":{"avant":"","arriere":"","freins_avant":"","freins_arriere":""},"pneus":{"avant":"","arriere":""},"carburant":{"type":"","indice_octane":"","reservoir":"","autonomie_estimee":""},"tuning":{"remarque_generale":"","stage1":{"puissance_ch":"","couple_nm":"","gain_ch":"","gain_nm":"","prix_estime":"","fiabilite":""},"stage2":{"puissance_ch":"","couple_nm":"","gain_ch":"","gain_nm":"","prix_estime":"","fiabilite":""},"stage3":{"puissance_ch":"","couple_nm":"","gain_ch":"","gain_nm":"","prix_estime":"","fiabilite":""}},"entretien":{"huile_viscosite":"","huile_norme":"","frequence_vidange":"","distribution":"","points_vigilance":[]},"anecdote":""}`;
+
+const CAR_PROMPT = (q) => `Voiture: "${q}". Remplis ce JSON technique complet (sois bref, pas de phrases): ${JSON_STRUCTURE}`;
 
 function badge(e){
   if(!e)return'';const l=e.toLowerCase();
@@ -245,7 +270,6 @@ function renderCard(c){
         <span class="stage-label ${sc}">${s.label}</span>
         <span class="stage-gain ${sc}">${v(st.gain_ch)} ch / ${v(st.gain_nm)} N·m</span>
       </div>
-      <div class="stage-desc">${v(st.description)}</div>
       <div class="stage-card-body">
         <div class="stage-stat-row"><span class="stage-stat-k">Puissance</span><span class="stage-stat-v">${v(st.puissance_ch)} ch</span></div>
         <div class="stage-stat-row"><span class="stage-stat-k">Couple</span><span class="stage-stat-v">${v(st.couple_nm)} N·m</span></div>
@@ -285,8 +309,7 @@ function renderCard(c){
     <div class="fuel-item"><div class="fuel-icon">⚙️</div><div class="fuel-label">Distribution</div><div class="fuel-val" style="font-size:14px; line-height:1.2;">${v(ent.distribution)}</div></div>
   </div>
   <div class="section"><div class="sec-title">Préconisations Maintenance</div><div class="kv">
-    <div class="kv-row"><span class="kv-k">Bougies d'allumage</span><span class="kv-v">${v(ent.bougies)}</span></div>
-    <div class="kv-row"><span class="kv-k">Liquide de freins</span><span class="kv-v">${v(ent.freins)}</span></div>
+    <div class="kv-row"><span class="kv-k">Maintenance</span><span class="kv-v">Voir points de vigilance ci-dessous</span></div>
   </div></div>
   ${vigItems ? `
   <div class="section" style="background:rgba(231,76,60,0.05); border-radius:12px; padding:1.25rem;">
@@ -359,16 +382,10 @@ function resetFilters(){
 }
 
 function getFilteredPromptFor(q, carb, stage){
-  let contextLine = '';
-  if(carb) contextLine += ` Le carburant est ${carb}.`;
-  if(stage) contextLine += ` L'utilisateur veut les données pour un ${stage} (préparation moteur).`;
-  if(!stage) contextLine += ` Fournis les données stock d'origine.`;
-
-  return `Tu es une base de données automobile experte. L'utilisateur cherche: "${q}".${contextLine}
-${carb ? `La voiture utilise du ${carb} — adapte les données de consommation et carburant en conséquence.` : ''}
-${stage ? `Pour le tuning, mets en avant le ${stage} dans la section tuning et indique les specs après préparation ${stage} dans les performances si pertinent.` : ''}
-Réponds UNIQUEMENT avec un JSON brut, sans markdown ni backticks. Structure complète:
-{"nom":"Marque Modele","annee":"XXXX","type":"Berline/SUV/etc","pays":"Pays","energie":"${carb||'Essence/Diesel/Hybride/Electrique'}","prix":"XX 000 €","moteur":{"type":"ex: 6 cyl. biturbo","cylindree":"XXXX cc","puissance_ch":"XXX","puissance_kw":"XXX","couple_nm":"XXX","regime_puissance":"XXXX tr/min","regime_couple":"XXXX-XXXX tr/min","alimentation":"Injection directe"},"transmission":{"boite":"Manuelle/Auto X rap.","entrainement":"Propulsion/Traction/Intégrale","differentiel":"type"},"performances":{"zero_cent":"X.X s","vitesse_max":"XXX km/h","zero_deux_cent":"XX.X s"},"consommation":{"mixte":"X.X L/100km","urbaine":"X.X","autoroute":"X.X","co2":"XXX g/km"},"chassis":{"longueur":"XXXX mm","largeur":"XXXX mm","hauteur":"XXXX mm","empattement":"XXXX mm","masse":"XXXX kg","coffre":"XXX L"},"suspensions":{"avant":"type","arriere":"type","freins_avant":"Disques XXX mm","freins_arriere":"Disques XXX mm"},"pneus":{"avant":"XXX/XX RXX","arriere":"XXX/XX RXX"},"carburant":{"type":"SP98/SP95/Diesel/E85/Électricité","indice_octane":"98 (recommandé) / 95 (minimum)","reservoir":"XX L","autonomie_estimee":"XXX km","remarque":"ex: SP98 recommandé pour performances optimales"},"tuning":{"remarque_generale":"ex: Moteur bien supporté par le tuning, limites mécaniques à XX ch","stage1":{"description":"Reprogrammation ECU seule","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXX-XXX €","fiabilite":"Excellente / Bonne / Correcte"},"stage2":{"description":"Stage 1 + admission + échappement sport","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXX-XXX €","fiabilite":"Bonne / Correcte"},"stage3":{"description":"Stage 2 + turbo upgrade / internes renforcés","puissance_ch":"XXX","couple_nm":"XXX","gain_ch":"+XX","gain_nm":"+XX","prix_estime":"XXXX-XXXX €","fiabilite":"Correcte / Nécessite suivi"}},"anecdote":"Phrase intéressante et précise sur ce modèle."}`;
+  let ctx = `Voiture: "${q}".`;
+  if(carb) ctx += ` Carburant: ${carb}.`;
+  if(stage) ctx += ` Préparation: ${stage}.`;
+  return `${ctx} Remplis ce JSON complet: ${JSON_STRUCTURE}`;
 }
 
 function getFilteredPrompt(q){
