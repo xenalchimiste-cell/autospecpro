@@ -22,4 +22,5 @@ export async function initDb() {
   }
 }
 
+export { sql };
 export default sql;

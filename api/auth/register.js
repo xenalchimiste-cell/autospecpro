@@ -5,9 +5,10 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
 export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { email, password, firstName, lastName, userType, referralCodeUsed } = req.body;
+  const { email, password, firstName, lastName, userType, referralCode } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -26,8 +27,20 @@ export default async function handler(req, res) {
 
     // 3. Handle referral code if provided
     let referredById = null;
-    if (referralCodeUsed) {
-      const { rows: referrers } = await sql`SELECT id FROM users WHERE referral_code = ${referralCodeUsed}`;
+    let finalUserType = userType || 'individual';
+    
+    const PRO_LIFETIME_KEYS = [
+      'PRO-LIFETIME-A1X9',
+      'PRO-LIFETIME-B2Y8',
+      'PRO-LIFETIME-C3Z7',
+      'PRO-LIFETIME-D4W6',
+      'PRO-LIFETIME-E5V5'
+    ];
+
+    if (referralCode && PRO_LIFETIME_KEYS.includes(referralCode)) {
+      finalUserType = 'pro';
+    } else if (referralCode) {
+      const { rows: referrers } = await sql`SELECT id FROM users WHERE referral_code = ${referralCode}`;
       if (referrers.length > 0) {
         referredById = referrers[0].id;
       }
@@ -39,7 +52,7 @@ export default async function handler(req, res) {
     // 5. Create user
     const { rows: newUser } = await sql`
       INSERT INTO users (email, password_hash, first_name, last_name, user_type, referral_code, referred_by_id)
-      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${userType || 'individual'}, ${myReferralCode}, ${referredById})
+      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${finalUserType}, ${myReferralCode}, ${referredById})
       RETURNING id, email, first_name, last_name, user_type, referral_code, referred_by_id
     `;
 

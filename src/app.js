@@ -1,4 +1,7 @@
 // ── GLOBALS ──
+const isLocal = window.location.protocol === 'file:';
+const API_BASE = isLocal ? 'https://autospecpro.vercel.app' : '';
+
 const TIERS = { FREE: 'free', PASSIONNE: 'passionne', PRO: 'pro' };
 let currentTier = localStorage.getItem('autospec_tier') || TIERS.FREE;
 let currentUser = null;
@@ -6,7 +9,7 @@ let authToken = localStorage.getItem('autospec_token');
 
 let carA = null, carB = null;
 window.carCache = window.carCache || {};
-const GROQ_URL = '/api/chat';
+const GROQ_URL = API_BASE + '/api/chat';
 const MODEL = 'llama-3.1-8b-instant';
 
 // ── AUTH LOGIC ──
@@ -67,7 +70,7 @@ async function handleRegister(e) {
   const formData = new FormData(e.target);
   const data = Object.fromEntries(formData.entries());
   try {
-    const res = await fetch('/api/auth/register', {
+    const res = await fetch(API_BASE + '/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -76,9 +79,12 @@ async function handleRegister(e) {
     if (res.ok) {
       completeAuth(result.token, result.user);
     } else {
-      alert(result.error);
+      alert(result.error || 'Erreur serveur');
     }
-  } catch (err) { alert('Erreur lors de l\'inscription'); }
+  } catch (err) {
+    console.error('Fetch error:', err);
+    alert('Erreur technique (network/JSON): ' + err.message);
+  }
 }
 
 async function handleLogin(e) {
@@ -86,7 +92,7 @@ async function handleLogin(e) {
   const formData = new FormData(e.target);
   const data = Object.fromEntries(formData.entries());
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(API_BASE + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -95,14 +101,23 @@ async function handleLogin(e) {
     if (res.ok) {
       completeAuth(result.token, result.user);
     } else {
-      alert(result.error);
+      alert(result.error || 'Erreur serveur');
     }
-  } catch (err) { alert('Erreur lors de la connexion'); }
+  } catch (err) {
+    console.error('Fetch error:', err);
+    alert('Erreur technique (network/JSON): ' + err.message);
+  }
 }
 
 function completeAuth(token, user) {
   authToken = token;
   currentUser = user;
+  
+  if (user && user.user_type === 'pro') {
+    currentTier = 'pro';
+    localStorage.setItem('autospec_tier', 'pro');
+  }
+
   localStorage.setItem('autospec_token', token);
   updateNav();
   updateUIForTier();
@@ -146,12 +161,18 @@ async function handleGoogleLogin() {
 window.addEventListener('DOMContentLoaded', async () => {
   if (authToken) {
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(API_BASE + '/api/auth/me', {
         headers: { 'Authorization': 'Bearer ' + authToken }
       });
       if (res.ok) {
         const result = await res.json();
         currentUser = result.user;
+        
+        if (currentUser && currentUser.user_type === 'pro') {
+          currentTier = 'pro';
+          localStorage.setItem('autospec_tier', 'pro');
+        }
+
         updateNav();
         updateUIForTier();
       } else {
@@ -679,9 +700,7 @@ async function searchFiche() {
       try {
         // En local (file://), les fonctions Vercel ne sont pas disponibles.
         // On détecte l'environnement et on utilise l'URL absolue si disponible.
-        const isLocal = window.location.protocol === 'file:';
-        const apiBase = isLocal ? 'https://autospecpro.vercel.app' : '';
-        const plateRes = await fetch(`${apiBase}/api/plate?q=${encodeURIComponent(q)}`);
+        const plateRes = await fetch(`${API_BASE}/api/plate?q=${encodeURIComponent(q)}`);
         const plateData = await plateRes.json();
         
         clearInterval(msgInterval);
