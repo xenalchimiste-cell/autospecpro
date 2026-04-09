@@ -874,9 +874,14 @@ function updateSim(){
 
   const kw=Math.round(ch*0.7355);
   const pw=(kg/ch).toFixed(1);
-  const t100 = (Math.sqrt(kg/(ch*eff*1.2))*5.5).toFixed(1);
-  const t200 = (parseFloat(t100)*3.8).toFixed(1);
-  const vmax = Math.min(Math.round(Math.sqrt(ch/kg*1000)*18), 400);
+  const ratio = kg/ch;
+  
+  // Formule empirique améliorée : Traction + (Poids/Puissance)
+  const t100 = (ratio * 0.70 + 1.55 / Math.sqrt(eff)).toFixed(1);
+  // Le 0-200 dépend plus du rapport poids/puissance que de la traction
+  const t200 = (parseFloat(t100) * (2.0 + ratio * 0.45)).toFixed(1);
+  // Vmax limitée par l'aérodynamisme (P puissance 1/3)
+  const vmax = Math.min(Math.round((40 * Math.pow(ch, 0.33) - (kg/250)) * eff), 500);
 
   animateValue('sim-0100-num', parseFloat(t100), 1, ' s');
   animateValue('sim-kw-num', kw, 0, ' kW');
@@ -910,7 +915,7 @@ function drawChart(ch, kg, eff){
   for(let s=0;s<=250;s+=5) speeds.push(s);
   const pts = speeds.map(s=>({
     s,
-    t: s===0 ? 0 : (Math.sqrt(kg/(ch*eff*1.2))*5.5)*(s/100)**0.8
+    t: s===0 ? 0 : (ratio * 0.70 + 1.55 / Math.sqrt(eff)) * Math.pow(s/100, 1.2 + ratio * 0.05)
   }));
   const maxT = Math.max(...pts.map(p=>p.t));
   const niceMaxT = Math.ceil(maxT / 5) * 5 || 5;
