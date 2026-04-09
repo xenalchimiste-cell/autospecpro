@@ -32,7 +32,7 @@ export default async function handler(req, res) {
           messages: body.messages,
           response_format: { type: "json_object" },
           temperature: 0.1,
-          top_p: 0.2,
+          top_p: 0.1,
         }),
       });
   

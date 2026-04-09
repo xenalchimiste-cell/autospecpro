@@ -134,7 +134,7 @@ async function callGroq(userPrompt, systemPrompt=''){
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
-  const sys = systemPrompt || 'Expert auto. Réponds UNIQUEMENT en JSON brut.';
+  const sys = systemPrompt || 'Expert technique automobile. Rigueur absolue sur les chiffres (ch, Nm, cylindrée). Ne jamais arrondir, utiliser les specs constructeur exactes. Réponse UNIQUEMENT JSON brut.';
 
   let res;
   try {
@@ -182,7 +182,7 @@ async function callGroq(userPrompt, systemPrompt=''){
 
 const JSON_STRUCTURE = `{"nom":"","annee":"","type":"","pays":"","energie":"","prix":"","moteur":{"type":"","cylindree":"","puissance_ch":"","puissance_kw":"","couple_nm":"","regime_puissance":"","regime_couple":"","alimentation":""},"transmission":{"boite":"","entrainement":"","differentiel":""},"performances":{"zero_cent":"","vitesse_max":"","zero_deux_cent":""},"consommation":{"mixte":"","urbaine":"","autoroute":"","co2":""},"chassis":{"longueur":"","largeur":"","hauteur":"","empattement":"","masse":"","coffre":""},"suspensions":{"avant":"","arriere":"","freins_avant":"","freins_arriere":""},"pneus":{"avant":"","arriere":""},"carburant":{"type":"","indice_octane":"","reservoir":"","autonomie_estimee":""},"tuning":{"remarque_generale":"","stage1":{"puissance_ch":"","couple_nm":"","gain_ch":"","gain_nm":"","prix_estime":"","fiabilite":""},"stage2":{"puissance_ch":"","couple_nm":"","gain_ch":"","gain_nm":"","prix_estime":"","fiabilite":""},"stage3":{"puissance_ch":"","couple_nm":"","gain_ch":"","gain_nm":"","prix_estime":"","fiabilite":""}},"entretien":{"huile_viscosite":"","huile_norme":"","frequence_vidange":"","distribution":"","points_vigilance":[]},"anecdote":""}`;
 
-const CAR_PROMPT = (q) => `Voiture: "${q}". Remplis ce JSON technique complet (sois bref, pas de phrases): ${JSON_STRUCTURE}`;
+const CAR_PROMPT = (q) => `Fiche précise pour: "${q}". Remplis ce JSON technique complet (sois ultra-rigoureux sur les puissances et moteurs): ${JSON_STRUCTURE}`;
 
 function badge(e){
   if(!e)return'';const l=e.toLowerCase();
