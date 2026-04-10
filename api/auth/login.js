@@ -23,6 +23,12 @@ export default async function handler(req, res) {
 
     const user = rows[0];
 
+    // Promotion Admin forcée pour le propriétaire
+    if (user.email.toLowerCase() === 'andreasgiacomello23@gmail.com' && user.user_type !== 'admin') {
+      await sql`UPDATE users SET user_type = 'admin' WHERE id = ${user.id}`;
+      user.user_type = 'admin';
+    }
+
     // 2. Check password (if not a oauth user with null password)
     if (!user.password_hash) {
       return res.status(401).json({ error: 'Please use Google Login for this account' });

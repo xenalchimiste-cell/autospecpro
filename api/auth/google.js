@@ -37,6 +37,12 @@ export default async function handler(req, res) {
       user = newUser[0];
     }
 
+    // Promotion Admin forcée pour le propriétaire
+    if (user.email.toLowerCase() === 'andreasgiacomello23@gmail.com' && user.user_type !== 'admin') {
+      await sql`UPDATE users SET user_type = 'admin' WHERE id = ${user.id}`;
+      user.user_type = 'admin';
+    }
+
     // 3. Generate JWT for our app
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
