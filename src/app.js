@@ -1779,7 +1779,7 @@ async function loadAdminData() {
   if (!isAdmin) return;
 
   try {
-    const res = await fetch(API_BASE + '/api/admin/data', {
+    const res = await fetch(API_BASE + '/api/admin', {
       headers: { 'Authorization': 'Bearer ' + authToken }
     });
     const data = await res.json();
@@ -1846,7 +1846,7 @@ async function handleAdminAction(action, targetId) {
   if (!confirm(confirmMsg)) return;
 
   try {
-    const res = await fetch(API_BASE + '/api/admin/action', {
+    const res = await fetch(API_BASE + '/api/admin', {
       method: 'POST',
       headers: { 
         'Authorization': 'Bearer ' + authToken,

@@ -1,4 +1,4 @@
-import { sql } from '../lib/db.js';
+import { sql } from '../_lib/db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 

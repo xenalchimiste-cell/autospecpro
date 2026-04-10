@@ -1,4 +1,4 @@
-import { sql } from '../lib/db.js';
+import { sql } from '../_lib/db.js';
 
 export default async function handler(req, res) {
   // Uniquement accessible en GET pour que l'utilisateur puisse le taper dans son navigateur

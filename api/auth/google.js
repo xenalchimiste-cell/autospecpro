@@ -1,5 +1,5 @@
 import { OAuth2Client } from 'google-auth-library';
-import { sql } from '../lib/db.js';
+import { sql } from '../_lib/db.js';
 import jwt from 'jsonwebtoken';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
