@@ -501,8 +501,9 @@ window.openPaymentModal = function(tier) {
   // Reset button state
   const btn = document.getElementById('pay-btn-submit');
   btn.classList.remove('loading', 'success');
-  btn.innerHTML = `S'abonner pour <span>${btnPrice.innerHTML}</span>`;
-
+  const finalPrice = (tier === 'passionne') ? '9€' : '29€';
+  btn.innerHTML = `S'abonner pour <span id="pay-btn-price">${finalPrice}</span>`;
+  
   modal.style.display = 'flex';
 }
 
