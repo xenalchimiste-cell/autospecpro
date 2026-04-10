@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { sql } from './_lib/db.js';
+import { sql, initDb } from './_lib/db.js';
 import jwt from 'jsonwebtoken';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -32,6 +32,8 @@ export default async function handler(req, res) {
     const host = req.headers.host;
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const domain = `${protocol}://${host}`;
+
+    await initDb();
 
     // Récupérer l'utilisateur
     const { rows } = await sql`SELECT email, stripe_customer_id FROM users WHERE id = ${decoded.userId}`;
