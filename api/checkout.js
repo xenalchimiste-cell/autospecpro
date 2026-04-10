@@ -70,6 +70,6 @@ export default async function handler(req, res) {
     res.status(200).json({ url: session.url });
   } catch (error) {
     console.error('Erreur Stripe Checkout:', error);
-    res.status(500).json({ error: 'Impossible d\'initialiser le paiement Stripe' });
+    res.status(500).json({ error: 'Erreur Stripe: ' + error.message });
   }
 }
