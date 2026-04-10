@@ -1193,7 +1193,7 @@ function drawRadar(A, B){
       i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y);
     });
     ctx.closePath();
-    ctx.fillStyle = color.replace('1)', fillAlpha+')');
+    ctx.fillStyle = color.replace('1' + String.fromCharCode(41), fillAlpha + String.fromCharCode(41));
     ctx.fill();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
