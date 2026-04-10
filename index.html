@@ -64,6 +64,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         Plans
       </button>
+      <button id="nav-tab-admin" class="nav-tab" onclick="showPage('admin',this)" style="display:none; color: #ff4757; font-weight: 700;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Admin
+      </button>
     </div>
     <div id="user-nav-area" style="margin-left:auto; display:flex; align-items:center; gap:10px; padding-right:15px;">
       <button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>
@@ -107,7 +111,97 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         Nos Offres
       </button>
+      <button id="dtab-admin" class="drawer-tab" onclick="showPage('admin',this,true)" style="display:none; color:#ff4757;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Administration
+      </button>
     </nav>
+  </div>
+
+  <!-- ══════════ ADMIN DASHBOARD ══════════ -->
+  <div class="page" id="page-admin">
+    <div class="page-title">Panneau de Contrôle<br/><em>Administration</em></div>
+    <div class="page-sub">Gérez les utilisateurs, validez les comptes Pro et suivez l'activité plateforme.</div>
+
+    <div class="admin-stats-grid">
+      <div class="admin-stat-card">
+        <div class="admin-stat-val" id="admin-stat-users">-</div>
+        <div class="admin-stat-label">Utilisateurs</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-val" id="admin-stat-pros">-</div>
+        <div class="admin-stat-label">Entreprises</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-val" id="admin-stat-pending">-</div>
+        <div class="admin-stat-label">En attente</div>
+      </div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" onclick="switchAdminSubTab('users', this)">Utilisateurs</button>
+      <button class="admin-tab-btn" onclick="switchAdminSubTab('pros', this)">Vérifications Enterprise</button>
+      <button class="admin-tab-btn" onclick="switchAdminSubTab('stats', this)">Parrainages</button>
+    </div>
+
+    <!-- Sub-tab: Users -->
+    <div id="admin-sub-users" class="admin-sub-page active">
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-list">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sub-tab: Enterprises -->
+    <div id="admin-sub-pros" class="admin-sub-page">
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Société</th>
+              <th>SIRET</th>
+              <th>Justificatif</th>
+              <th>Statut</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-pros-list">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sub-tab: Stats/Referrals (Optional enrichment) -->
+    <div id="admin-sub-stats" class="admin-sub-page">
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Parrain</th>
+              <th>Code</th>
+              <th>Filleuls</th>
+            </tr>
+          </thead>
+          <tbody id="admin-referrals-list">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- ══════════ FICHE ══════════ -->

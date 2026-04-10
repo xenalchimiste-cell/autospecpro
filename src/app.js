@@ -264,6 +264,17 @@ function updateNav() {
         <div style="font-size:9px; color:var(--text3); cursor:default;">Parrain : <span style="color:var(--accent); font-weight:700;">${currentUser.referral_code}</span></div>
       </div>
     `;
+    
+    // Show/Hide Admin Tab
+    const adminNav = document.getElementById('nav-tab-admin');
+    const adminDrawer = document.getElementById('dtab-admin');
+    if (currentUser.user_type === 'admin') {
+      if (adminNav) adminNav.style.display = 'flex';
+      if (adminDrawer) adminDrawer.style.display = 'flex';
+    } else {
+      if (adminNav) adminNav.style.display = 'none';
+      if (adminDrawer) adminDrawer.style.display = 'none';
+    }
   } else {
     area.innerHTML = `<button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>`;
   }
@@ -384,6 +395,7 @@ function showPage(id, btn, fromDrawer=false){
   });
 
   if(fromDrawer) closeDrawer();
+  if (id === 'admin') loadAdminData();
 }
 
 function toggleDrawer(){
@@ -1737,4 +1749,102 @@ function finalizeProDossier() {
     btn.innerHTML = oldHtml;
     btn.style.pointerEvents = 'auto';
   }, 300);
+}
+
+// ── ADMIN DASHBOARD LOGIC ──
+function switchAdminSubTab(tabId, btn) {
+  document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.admin-sub-page').forEach(p => p.classList.remove('active'));
+  
+  if (btn) btn.classList.add('active');
+  const target = document.getElementById('admin-sub-' + tabId);
+  if (target) target.classList.add('active');
+}
+
+async function loadAdminData() {
+  if (!currentUser || currentUser.user_type !== 'admin') return;
+
+  try {
+    const res = await fetch(API_BASE + '/api/admin/data', {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Stats
+    document.getElementById('admin-stat-users').innerText = data.stats.totalUsers;
+    document.getElementById('admin-stat-pros').innerText = data.stats.totalPros;
+    document.getElementById('admin-stat-pending').innerText = data.stats.pendingPros;
+
+    // Users List
+    const usersList = document.getElementById('admin-users-list');
+    usersList.innerHTML = data.users.map(u => `
+      <tr>
+        <td>${u.id}</td>
+        <td><strong>${u.first_name} ${u.last_name}</strong></td>
+        <td>${u.email}</td>
+        <td><span class="admin-badge badge-${u.user_type}">${u.user_type}</span></td>
+        <td>${new Date(u.created_at).toLocaleDateString()}</td>
+        <td>
+          <button class="admin-action-btn btn-delete" onclick="handleAdminAction('delete', ${u.id})">Supprimer</button>
+        </td>
+      </tr>
+    `).join('');
+
+    // Pros Verification List
+    const prosList = document.getElementById('admin-pros-list');
+    const enterpriseUsers = data.users.filter(u => u.siret);
+    prosList.innerHTML = enterpriseUsers.map(u => `
+      <tr>
+        <td><strong>${u.company_name || 'Inconnu'}</strong></td>
+        <td><code>${u.siret}</code></td>
+        <td>
+          ${u.proof_url ? `<a href="${u.proof_url}" target="_blank" style="color:var(--accent); text-decoration:underline;">Voir K-bis</a>` : '<span style="color:gray">Aucun</span>'}
+        </td>
+        <td>
+          <span class="admin-badge ${u.is_verified ? 'badge-verified' : 'badge-pending'}">
+            ${u.is_verified ? 'Vérifié' : 'À Valider'}
+          </span>
+        </td>
+        <td>
+          ${!u.is_verified ? `<button class="admin-action-btn btn-verify" onclick="handleAdminAction('verify', ${u.id})">Valider</button>` : '—'}
+        </td>
+      </tr>
+    `).join('');
+
+    // Referrals List
+    const refList = document.getElementById('admin-referrals-list');
+    refList.innerHTML = data.referrals.map(r => `
+      <tr>
+        <td>${r.first_name} ${r.last_name}</td>
+        <td><code>${r.referral_code}</code></td>
+        <td><span class="admin-badge badge-verified">${r.count} filleuls</span></td>
+      </tr>
+    `).join('');
+
+  } catch (err) {
+    console.error('Failed to load admin data:', err);
+  }
+}
+
+async function handleAdminAction(action, targetId) {
+  const confirmMsg = action === 'delete' ? "Êtes-vous sûr de vouloir supprimer cet utilisateur ?" : "Voulez-vous valider ce compte entreprise ?";
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const res = await fetch(API_BASE + '/api/admin/action', {
+      method: 'POST',
+      headers: { 
+        'Authorization': 'Bearer ' + authToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action, targetUserId: targetId })
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error);
+    
+    loadAdminData(); // Refresh list
+  } catch (err) {
+    alert('Erreur action : ' + err.message);
+  }
 }
