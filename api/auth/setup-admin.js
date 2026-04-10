@@ -14,15 +14,23 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 1. Essayer une recherche insensible à la casse
     const result = await sql`
       UPDATE users 
       SET user_type = 'admin' 
-      WHERE email = ${email}
+      WHERE LOWER(email) = LOWER(${email})
       RETURNING id, email, user_type
     `;
 
     if (result.count === 0) {
-      return res.status(404).json({ error: 'Utilisateur non trouvé avec cet email.' });
+      // Diagnostic : lister les emails existants pour aider l'utilisateur
+      const { rows: allUsers } = await sql`SELECT email FROM users LIMIT 5`;
+      const emailList = allUsers.map(u => u.email).join(', ');
+      
+      return res.status(404).json({ 
+        error: 'Utilisateur non trouvé.', 
+        suggestion: `Vérifiez l'orthographe exacte. Emails en base : ${emailList || 'aucun utilisateur trouvé'}` 
+      });
     }
 
     return res.status(200).send(`
