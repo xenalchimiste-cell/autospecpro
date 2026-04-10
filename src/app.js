@@ -379,6 +379,17 @@ async function handleGoogleCredential(response) {
 // Session check on load
 window.addEventListener('DOMContentLoaded', async () => {
   initializeGoogleAuth();
+  
+  // Custom Callback Handler pour le retour Stripe
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('payment') === 'success') {
+    alert("🎉 Paiement réussi ! Votre compte a été mis à jour.");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (urlParams.get('payment') === 'cancelled') {
+    alert("Paiement annulé.");
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   if (authToken) {
     try {
       const res = await fetch(API_BASE + '/api/auth/me', {
