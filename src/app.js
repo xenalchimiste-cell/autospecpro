@@ -84,10 +84,9 @@ function initRememberedInfo() {
       lForm.querySelector('[name="email"]').value = e;
       lForm.querySelector('[name="password"]').value = p;
       lForm.querySelector('[name="rememberMe"]').checked = true;
-      // Register form (optional fill)
+      
+      // Register form: On garde la checkbox mais on laisse les champs vides
       const rForm = document.getElementById('register-form');
-      rForm.querySelector('[name="email"]').value = e;
-      rForm.querySelector('[name="password"]').value = p;
       rForm.querySelector('[name="rememberMe"]').checked = true;
     } catch(err) { console.error('RememberMe decode failed:', err); }
   }
