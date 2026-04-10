@@ -471,19 +471,35 @@
         </div>
         <div class="auth-type-group">
           <label class="auth-type-opt">
-            <input type="radio" name="userType" value="individual" checked>
+            <input type="radio" name="userType" value="individual" checked onchange="toggleEnterpriseFields(this)">
             <div class="auth-type-card">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <div><div class="auth-type-name">Particulier</div><div class="auth-type-desc">Prix standard</div></div>
             </div>
           </label>
           <label class="auth-type-opt">
-            <input type="radio" name="userType" value="enterprise">
+            <input type="radio" name="userType" value="enterprise" onchange="toggleEnterpriseFields(this)">
             <div class="auth-type-card">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
               <div><div class="auth-type-name">Entreprise</div><div class="auth-type-desc auth-accent">-30% sur tous les plans</div></div>
             </div>
           </label>
+        </div>
+
+        <!-- Section entreprise (conditionnelle) -->
+        <div id="enterprise-fields" style="display:none; animation: authPanelIn 0.3s ease;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px 14px;background:rgba(212,168,67,0.07);border:1px solid rgba(212,168,67,0.2);border-radius:12px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span style="font-size:12px;color:var(--text2);">Merci de renseigner vos informations professionnelles pour bénéficier du tarif entreprise.</span>
+          </div>
+          <div class="auth-field" style="margin-bottom:0;">
+            <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            <input type="text" name="companyName" placeholder="Nom de la société" autocomplete="organization">
+          </div>
+          <div class="auth-field" style="margin-top:12px;">
+            <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+            <input type="text" name="siret" placeholder="N° SIRET (14 chiffres)" maxlength="17" pattern="[0-9 ]{14,17}" title="Numéro SIRET à 14 chiffres" oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/(.{3})(.{3})(.{3})(.{5})/,'$1 $2 $3 $4').trim()" autocomplete="off">
+          </div>
         </div>
         <div class="auth-field auth-field-sm">
           <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>

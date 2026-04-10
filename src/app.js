@@ -65,6 +65,23 @@ function setAuthMode(m) {
   document.getElementById('toggle-register').classList.toggle('active', !isLogin);
 }
 
+function toggleEnterpriseFields(radio) {
+  const section = document.getElementById('enterprise-fields');
+  const companyName = section.querySelector('input[name="companyName"]');
+  const siret = section.querySelector('input[name="siret"]');
+  if (radio.value === 'enterprise') {
+    section.style.display = 'flex';
+    section.style.flexDirection = 'column';
+    section.style.gap = '0';
+    companyName.required = true;
+    siret.required = true;
+  } else {
+    section.style.display = 'none';
+    companyName.required = false;
+    siret.required = false;
+  }
+}
+
 async function handleRegister(e) {
   e.preventDefault();
   const formData = new FormData(e.target);

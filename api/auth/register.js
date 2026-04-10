@@ -8,10 +8,22 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { email, password, firstName, lastName, userType, referralCode } = req.body;
+  const { email, password, firstName, lastName, userType, referralCode, companyName, siret } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  if (userType === 'enterprise' && (!companyName || !siret)) {
+    return res.status(400).json({ error: 'Company name and SIRET are required for enterprise accounts' });
+  }
+
+  // Validate SIRET format (14 digits)
+  if (siret) {
+    const cleanSiret = siret.replace(/\s/g, '');
+    if (!/^\d{14}$/.test(cleanSiret)) {
+      return res.status(400).json({ error: 'Invalid SIRET number (must be 14 digits)' });
+    }
   }
 
   try {
@@ -50,10 +62,11 @@ export default async function handler(req, res) {
     const myReferralCode = Math.random().toString(36).substring(2, 9).toUpperCase();
 
     // 5. Create user
+    const cleanSiret = siret ? siret.replace(/\s/g, '') : null;
     const { rows: newUser } = await sql`
-      INSERT INTO users (email, password_hash, first_name, last_name, user_type, referral_code, referred_by_id)
-      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${finalUserType}, ${myReferralCode}, ${referredById})
-      RETURNING id, email, first_name, last_name, user_type, referral_code, referred_by_id
+      INSERT INTO users (email, password_hash, first_name, last_name, user_type, referral_code, referred_by_id, company_name, siret)
+      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${finalUserType}, ${myReferralCode}, ${referredById}, ${companyName || null}, ${cleanSiret})
+      RETURNING id, email, first_name, last_name, user_type, referral_code, referred_by_id, company_name, siret
     `;
 
     const user = newUser[0];
