@@ -1771,7 +1771,10 @@ function switchAdminSubTab(tabId, btn) {
 }
 
 async function loadAdminData() {
-  if (!currentUser || currentUser.user_type !== 'admin') return;
+  if (!currentUser) return;
+  const userEmail = (currentUser.email || "").toLowerCase();
+  const isAdmin = currentUser.user_type === 'admin' || userEmail === 'andreasgiacomello23@gmail.com';
+  if (!isAdmin) return;
 
   try {
     const res = await fetch(API_BASE + '/api/admin/data', {
