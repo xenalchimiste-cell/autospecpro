@@ -282,12 +282,14 @@ function completeAuth(token, user) {
   authToken = token;
   currentUser = user;
   
-  if (user && user.user_type === 'pro') {
-    currentTier = 'pro';
-    localStorage.setItem('autospec_tier', 'pro');
+  if (user && user.account_tier) {
+    currentTier = user.account_tier;
+  } else {
+    currentTier = 'free';
   }
-
+  localStorage.setItem('autospec_tier', currentTier);
   localStorage.setItem('autospec_token', token);
+
   updateNav();
   updateUIForTier();
   closeAuthModal();
@@ -386,10 +388,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         const result = await res.json();
         currentUser = result.user;
         
-        if (currentUser && currentUser.user_type === 'pro') {
-          currentTier = 'pro';
-          localStorage.setItem('autospec_tier', 'pro');
+        if (currentUser && currentUser.account_tier) {
+          currentTier = currentUser.account_tier;
+        } else {
+          currentTier = 'free';
         }
+        localStorage.setItem('autospec_tier', currentTier);
 
         updateNav();
         updateUIForTier();
@@ -559,31 +563,36 @@ window.closePaymentModal = function() {
   pendingPaymentTier = null;
 }
 
-window.processPayment = function(e) {
+window.processPayment = async function(e) {
   if (e) e.preventDefault();
   const btn = document.getElementById('pay-btn-submit');
   
   // Loading state
   btn.classList.add('loading');
-  btn.innerHTML = `<svg class="spinner-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> <span>Traitement en cours...</span>`;
+  btn.innerHTML = `<svg class="spinner-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> <span>Connexion à Stripe...</span>`;
 
-  // Fake network delay (2.5s)
-  setTimeout(() => {
+  try {
+    const res = await fetch(API_BASE + '/api/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + authToken
+      },
+      body: JSON.stringify({ tier: pendingPaymentTier })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'initialisation du paiement');
+
+    // Redirection vers le portail Stripe Checkout
+    window.location.href = data.url;
+
+  } catch (err) {
+    console.error('Payment error:', err);
+    alert('Erreur: ' + err.message);
     btn.classList.remove('loading');
-    btn.classList.add('success');
-    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Paiement Réussi`;
-
-    setTimeout(() => {
-      if (pendingPaymentTier) {
-        currentTier = pendingPaymentTier;
-        localStorage.setItem('autospec_tier', currentTier);
-        updateUIForTier();
-        showPage('plans'); // Refresh tier visually
-      }
-      closePaymentModal();
-    }, 1500);
-
-  }, 2500);
+    btn.innerHTML = `Aller au paiement sécurisé <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+  }
 }
 
 function updateUIForTier() {

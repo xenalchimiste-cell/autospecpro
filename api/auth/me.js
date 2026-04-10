@@ -15,14 +15,17 @@ export default async function handler(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const { rows } = await sql`SELECT id, email, first_name, last_name, user_type, referral_code, referred_by_id FROM users WHERE id = ${decoded.userId}`;
+    const { rows } = await sql`SELECT * FROM users WHERE id = ${decoded.userId}`;
     
     if (rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    const user = rows[0];
+    delete user.password_hash;
+
     res.status(200).json({
-      user: rows[0]
+      user: user
     });
   } catch (error) {
     console.error('Session error:', error);

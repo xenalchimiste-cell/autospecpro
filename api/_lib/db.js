@@ -47,6 +47,8 @@ export async function initDb() {
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS siret VARCHAR(14)`);
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS proof_url TEXT`);
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS account_tier VARCHAR(20) DEFAULT 'free'`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255)`);
       
       console.log('Database connected and initialized with pg driver');
     } finally {
