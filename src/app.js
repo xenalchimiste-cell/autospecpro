@@ -55,8 +55,43 @@ function setSearchMode(m) {
 }
 
 // ── AUTH UI FUNCTIONS ──
-function openAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
+function openAuthModal() { 
+  initRememberedInfo();
+  document.getElementById('auth-modal').style.display = 'flex'; 
+}
 function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
+
+function saveRememberedInfo(email, password, checked) {
+  if (checked) {
+    localStorage.setItem('as_rem_e', btoa(email));
+    localStorage.setItem('as_rem_p', btoa(password));
+  } else {
+    localStorage.removeItem('as_rem_e');
+    localStorage.removeItem('as_rem_p');
+  }
+}
+
+function initRememberedInfo() {
+  const remE = localStorage.getItem('as_rem_e');
+  const remP = localStorage.getItem('as_rem_p');
+  if (remE && remP) {
+    try {
+      const e = atob(remE);
+      const p = atob(remP);
+      // Login form
+      const lForm = document.getElementById('login-form');
+      lForm.querySelector('[name="email"]').value = e;
+      lForm.querySelector('[name="password"]').value = p;
+      lForm.querySelector('[name="rememberMe"]').checked = true;
+      // Register form (optional fill)
+      const rForm = document.getElementById('register-form');
+      rForm.querySelector('[name="email"]').value = e;
+      rForm.querySelector('[name="password"]').value = p;
+      rForm.querySelector('[name="rememberMe"]').checked = true;
+    } catch(err) { console.error('RememberMe decode failed:', err); }
+  }
+}
+
 function setAuthMode(m) {
   const isLogin = m === 'login';
   document.getElementById('login-form').style.display = isLogin ? 'flex' : 'none';
@@ -155,6 +190,9 @@ window.handleRegister = async function(e) {
   const data = Object.fromEntries(formData.entries());
   const btn = form.querySelector('.auth-submit-btn');
 
+  // Remember Me logic
+  saveRememberedInfo(data.email, data.password, data.rememberMe === 'on' || data.rememberMe === true);
+
   if (data.userType === 'enterprise' && !siretVerified) {
     alert("Veuillez renseigner un numéro SIRET valide et attendre sa vérification.");
     return;
@@ -218,6 +256,10 @@ window.handleLogin = async function(e) {
   const form = document.getElementById('login-form');
   const formData = new FormData(form);
   const data = Object.fromEntries(formData.entries());
+
+  // Remember Me logic
+  saveRememberedInfo(data.email, data.password, data.rememberMe === 'on' || data.rememberMe === true);
+
   try {
     const res = await fetch(API_BASE + '/api/auth/login', {
       method: 'POST',

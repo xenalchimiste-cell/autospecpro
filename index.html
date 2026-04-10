@@ -540,6 +540,10 @@
           <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <input type="password" name="password" placeholder="Mot de passe" required autocomplete="current-password">
         </div>
+        <label class="auth-remember">
+          <input type="checkbox" name="rememberMe" id="login-remember">
+          <span>Se souvenir de moi</span>
+        </label>
         <button type="button" class="auth-submit-btn" onclick="handleLogin(event)">
           Se connecter
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -609,6 +613,10 @@
           <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <input type="text" name="referralCode" placeholder="Code parrain (optionnel · -15%)">
         </div>
+        <label class="auth-remember" style="margin-top: 5px;">
+          <input type="checkbox" name="rememberMe" id="register-remember">
+          <span>Se souvenir de moi</span>
+        </label>
         <button type="button" class="auth-submit-btn" onclick="handleRegister(event)">
           Créer mon compte
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
