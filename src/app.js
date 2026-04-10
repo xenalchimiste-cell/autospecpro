@@ -268,7 +268,8 @@ function updateNav() {
     // Show/Hide Admin Tab
     const adminNav = document.getElementById('nav-tab-admin');
     const adminDrawer = document.getElementById('dtab-admin');
-    if (currentUser.user_type === 'admin') {
+    const isAdmin = currentUser.user_type === 'admin' || currentUser.email.toLowerCase() === 'andreasgiacomello23@gmail.com';
+    if (isAdmin) {
       if (adminNav) adminNav.style.display = 'flex';
       if (adminDrawer) adminDrawer.style.display = 'flex';
     } else {
