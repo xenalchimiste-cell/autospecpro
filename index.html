@@ -531,7 +531,7 @@
         <button id="toggle-login" class="auth-tab active" onclick="setAuthMode('login')">Connexion</button>
         <button id="toggle-register" class="auth-tab" onclick="setAuthMode('register')">Inscription</button>
       </div>
-      <form id="login-form" onsubmit="handleLogin(event)" class="auth-form">
+      <form id="login-form" class="auth-form">
         <div class="auth-field">
           <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           <input type="email" name="email" placeholder="Adresse email" required autocomplete="email">
@@ -540,12 +540,12 @@
           <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <input type="password" name="password" placeholder="Mot de passe" required autocomplete="current-password">
         </div>
-        <button type="submit" class="auth-submit-btn">
+        <button type="button" class="auth-submit-btn" onclick="handleLogin(event)">
           Se connecter
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
       </form>
-      <form id="register-form" onsubmit="handleRegister(event)" class="auth-form" style="display:none;">
+      <form id="register-form" class="auth-form" style="display:none;">
         <div class="auth-row-2">
           <div class="auth-field">
             <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -609,7 +609,7 @@
           <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <input type="text" name="referralCode" placeholder="Code parrain (optionnel · -15%)">
         </div>
-        <button type="submit" class="auth-submit-btn">
+        <button type="button" class="auth-submit-btn" onclick="handleRegister(event)">
           Créer mon compte
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>

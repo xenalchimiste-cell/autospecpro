@@ -146,11 +146,15 @@ function toggleEnterpriseFields(radio) {
   }
 }
 
-async function handleRegister(e) {
+window.handleRegister = async function(e) {
   e.preventDefault();
-  const formData = new FormData(e.target);
+  alert("Diagnostic : Clic détecté sur le bouton S'inscrire");
+  
+  // Utiliser le parent du bouton s'il n'y a pas d'event.target (cas onclick direct)
+  const form = document.getElementById('register-form');
+  const formData = new FormData(form);
   const data = Object.fromEntries(formData.entries());
-  const btn = e.target.querySelector('.auth-submit-btn');
+  const btn = form.querySelector('.auth-submit-btn');
 
   if (data.userType === 'enterprise' && !siretVerified) {
     alert("Veuillez renseigner un numéro SIRET valide et attendre sa vérification.");
@@ -210,9 +214,10 @@ async function handleRegister(e) {
   }
 }
 
-async function handleLogin(e) {
+window.handleLogin = async function(e) {
   e.preventDefault();
-  const formData = new FormData(e.target);
+  const form = document.getElementById('login-form');
+  const formData = new FormData(form);
   const data = Object.fromEntries(formData.entries());
   try {
     const res = await fetch(API_BASE + '/api/auth/login', {
