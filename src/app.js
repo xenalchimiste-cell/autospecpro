@@ -459,18 +459,18 @@ function checkAccess(requiredTier) {
 
 let pendingPaymentTier = null;
 
-function selectTier(tier) {
+window.selectTier = function(tier) {
   if (tier === 'free') {
     currentTier = tier;
     localStorage.setItem('autospec_tier', tier);
     updateUIForTier();
-    showPage('plans'); // Refresh the page view
+    showPage('plans');
   } else {
-    openPaymentModal(tier);
+    window.openPaymentModal(tier);
   }
 }
 
-function openPaymentModal(tier) {
+window.openPaymentModal = function(tier) {
   pendingPaymentTier = tier;
   const modal = document.getElementById('payment-modal');
   const planName = document.getElementById('pay-plan-name');
@@ -506,13 +506,13 @@ function openPaymentModal(tier) {
   modal.style.display = 'flex';
 }
 
-function closePaymentModal() {
+window.closePaymentModal = function() {
   document.getElementById('payment-modal').style.display = 'none';
   pendingPaymentTier = null;
 }
 
-function processPayment(e) {
-  e.preventDefault();
+window.processPayment = function(e) {
+  if (e) e.preventDefault();
   const btn = document.getElementById('pay-btn-submit');
   
   // Loading state
