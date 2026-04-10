@@ -1,4 +1,4 @@
-import { sql } from '../_lib/db.js';
+import { sql, initDb } from '../_lib/db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -7,6 +7,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  try {
+    await initDb(); // S'assurer que les colonnes sont à jour
+  } catch (dbErr) {
+    console.error('Initial DB check failed:', dbErr);
+  }
 
   const { email, password, firstName, lastName, userType, referralCode, companyName, siret, proofUrl } = req.body;
 

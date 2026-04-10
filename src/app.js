@@ -148,9 +148,8 @@ function toggleEnterpriseFields(radio) {
 
 window.handleRegister = async function(e) {
   e.preventDefault();
-  alert("Diagnostic : Clic détecté sur le bouton S'inscrire");
+  console.log("Inscription lancée...");
   
-  // Utiliser le parent du bouton s'il n'y a pas d'event.target (cas onclick direct)
   const form = document.getElementById('register-form');
   const formData = new FormData(form);
   const data = Object.fromEntries(formData.entries());
