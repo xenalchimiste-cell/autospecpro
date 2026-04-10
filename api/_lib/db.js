@@ -1,7 +1,16 @@
-import { createPool, sql } from '@vercel/postgres';
+import { createPool } from '@vercel/postgres';
 
-// On exporte notre wrapper sql pour maintenir la compatibilité avec le reste du code
-export { sql };
+// On crée un pool de connexion plus flexible
+const pool = createPool({
+  connectionString: process.env.POSTGRES_URL
+});
+
+export const sql = async (strings, ...values) => {
+  // Cette méthode est plus robuste face aux différents types de chaînes de connexion Vercel
+  const queryText = strings.reduce((acc, curr, i) => acc + curr + (i < values.length ? '$' + (i + 1) : ''), '');
+  const { rows } = await pool.query(queryText, values);
+  return { rows };
+};
 
 export async function initDb() {
   try {
@@ -23,7 +32,6 @@ export async function initDb() {
       );
     `;
 
-    // Add new columns if they don't exist yet
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS company_name VARCHAR(255)`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS siret VARCHAR(14)`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS proof_url TEXT`;
