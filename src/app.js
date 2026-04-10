@@ -252,23 +252,29 @@ function handleLogout() {
 
 function updateNav() {
   const area = document.getElementById('user-nav-area');
+  const adminNav = document.getElementById('nav-tab-admin');
+  const adminDrawer = document.getElementById('dtab-admin');
+
   if (currentUser) {
-    const initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
+    const fn = currentUser.first_name || 'U';
+    const ln = currentUser.last_name || '';
+    const initials = (fn[0] + (ln[0] || '')).toUpperCase();
+    
     area.innerHTML = `
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
         <div class="user-profile-nav" onclick="handleLogout()">
           <div class="user-initials">${initials}</div>
-          <span style="font-size:12px; font-weight:600;">${currentUser.first_name}</span>
+          <span style="font-size:12px; font-weight:600;">${fn}</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </div>
-        <div style="font-size:9px; color:var(--text3); cursor:default;">Parrain : <span style="color:var(--accent); font-weight:700;">${currentUser.referral_code}</span></div>
+        <div style="font-size:9px; color:var(--text3); cursor:default;">Parrain : <span style="color:var(--accent); font-weight:700;">${currentUser.referral_code || '---'}</span></div>
       </div>
     `;
     
     // Show/Hide Admin Tab
-    const adminNav = document.getElementById('nav-tab-admin');
-    const adminDrawer = document.getElementById('dtab-admin');
-    const isAdmin = currentUser.user_type === 'admin' || currentUser.email.toLowerCase() === 'andreasgiacomello23@gmail.com';
+    const userEmail = (currentUser.email || "").toLowerCase();
+    const isAdmin = currentUser.user_type === 'admin' || userEmail === 'andreasgiacomello23@gmail.com';
+    
     if (isAdmin) {
       if (adminNav) adminNav.style.display = 'flex';
       if (adminDrawer) adminDrawer.style.display = 'flex';
@@ -278,6 +284,8 @@ function updateNav() {
     }
   } else {
     area.innerHTML = `<button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>`;
+    if (adminNav) adminNav.style.display = 'none';
+    if (adminDrawer) adminDrawer.style.display = 'none';
   }
 }
 
