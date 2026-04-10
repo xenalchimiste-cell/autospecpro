@@ -59,8 +59,8 @@ function openAuthModal() { document.getElementById('auth-modal').style.display =
 function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
 function setAuthMode(m) {
   const isLogin = m === 'login';
-  document.getElementById('login-form').style.display = isLogin ? 'block' : 'none';
-  document.getElementById('register-form').style.display = isLogin ? 'none' : 'block';
+  document.getElementById('login-form').style.display = isLogin ? 'flex' : 'none';
+  document.getElementById('register-form').style.display = isLogin ? 'none' : 'flex';
   document.getElementById('toggle-login').classList.toggle('active', isLogin);
   document.getElementById('toggle-register').classList.toggle('active', !isLogin);
 }
