@@ -314,7 +314,8 @@ async function handleGoogleCredential(response) {
     if (res.ok) {
       completeAuth(result.token, result.user);
     } else {
-      alert(result.error || 'Erreur lors de la connexion Google');
+      const msg = result.details ? `${result.error} : ${result.details}` : (result.error || 'Erreur lors de la connexion Google');
+      alert(msg);
     }
   } catch (err) {
     console.error('Google Auth Error:', err);

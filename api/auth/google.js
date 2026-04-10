@@ -54,6 +54,10 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Google verify error:', error);
-    res.status(401).json({ error: 'Invalid Google token' });
+    res.status(401).json({ 
+      error: 'Invalid Google token', 
+      details: error.message,
+      check_id: GOOGLE_CLIENT_ID.slice(0, 10) + '...'
+    });
   }
 }
