@@ -272,7 +272,7 @@ function updateNav() {
 function initializeGoogleAuth() {
   if (typeof google === 'undefined') return;
   google.accounts.id.initialize({
-    client_id: "715454659775-802hnb8lkslsu03id4f4v1p7r8v44d0t.apps.googleusercontent.com", // ID public démo ou placeholder
+    client_id: "548892582580-mh5isg91gtg86hjn7rb11vd5e8dton4f.apps.googleusercontent.com",
     callback: handleGoogleCredential
   });
   google.accounts.id.renderButton(
