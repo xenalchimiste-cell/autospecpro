@@ -267,16 +267,40 @@ function updateNav() {
   } else {
     area.innerHTML = `<button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>`;
   }
+function initializeGoogleAuth() {
+  if (typeof google === 'undefined') return;
+  google.accounts.id.initialize({
+    client_id: "715454659775-802hnb8lkslsu03id4f4v1p7r8v44d0t.apps.googleusercontent.com", // ID public démo ou placeholder
+    callback: handleGoogleCredential
+  });
+  google.accounts.id.renderButton(
+    document.getElementById("google-signin-btn"),
+    { theme: "outline", size: "large", width: "380", text: "continue_with", shape: "pill" }
+  );
 }
 
-async function handleGoogleLogin() {
-  alert("Veuillez configurer GOOGLE_CLIENT_ID pour activer cette fonction.");
-  // En production, vous utiliseriez gapi.auth2 ou le nouveau Google Identity Services
-  // pour obtenir un idToken et l'envoyer à /api/auth/google
+async function handleGoogleCredential(response) {
+  try {
+    const res = await fetch(API_BASE + '/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: response.credential })
+    });
+    const result = await res.json();
+    if (res.ok) {
+      completeAuth(result.token, result.user);
+    } else {
+      alert(result.error || 'Erreur lors de la connexion Google');
+    }
+  } catch (err) {
+    console.error('Google Auth Error:', err);
+    alert('Erreur technique : ' + err.message);
+  }
 }
 
 // Session check on load
 window.addEventListener('DOMContentLoaded', async () => {
+  initializeGoogleAuth();
   if (authToken) {
     try {
       const res = await fetch(API_BASE + '/api/auth/me', {
