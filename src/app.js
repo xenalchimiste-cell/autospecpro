@@ -871,7 +871,7 @@ function getFilteredPromptFor(q, carb, stage, tech = {}){
   if(tech.engine_code) ctx += ` Code moteur constructeur: ${tech.engine_code}.`;
   if(carb) ctx += ` Carburant: ${carb}.`;
   if(stage) ctx += ` Préparation: ${stage}.`;
-  return `${ctx} Remplis ce JSON technique complet. 1) Pour les données d'origine (STOCK), sois ultra-rigoureux et utilise 'N/A' si incertain. 2) Pour la section 'tuning' (Stages), fournis des estimations réalistes basées sur les gains classiques pour ce moteur : ${JSON_STRUCTURE}`;
+  return `${ctx} Remplis ce JSON technique complet. (1) Pour les données d'origine (STOCK), sois ultra-rigoureux et utilise 'N/A' si incertain. (2) Pour la section 'tuning' (Stages), fournis des estimations réalistes basées sur les gains classiques pour ce moteur : ${JSON_STRUCTURE}`;
 }
 
 function getFilteredPrompt(q){
