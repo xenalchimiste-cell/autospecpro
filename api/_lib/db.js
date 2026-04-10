@@ -10,8 +10,13 @@ const pool = new Pool({
 });
 
 export const sql = async (strings, ...values) => {
-  // Adaptation du format template literal au format pg ($1, $2...)
-  const queryText = strings.reduce((acc, curr, i) => acc + curr + (i < values.length ? '$' + (i + 1) : ''), '');
+  let queryText = '';
+  for (let i = 0; i < strings.length; i++) {
+    queryText += strings[i];
+    if (i < values.length) {
+      queryText += '$' + (i + 1);
+    }
+  }
   const { rows } = await pool.query(queryText, values);
   return { rows };
 };

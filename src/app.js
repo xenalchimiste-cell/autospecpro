@@ -193,7 +193,8 @@ async function handleRegister(e) {
     if (res.ok) {
       completeAuth(result.token, result.user);
     } else {
-      alert(result.error || 'Erreur serveur');
+      const msg = result.error + (result.details ? ' : ' + result.details : '');
+      alert(msg || 'Erreur serveur');
       btn.innerHTML = oldHtml;
       btn.style.pointerEvents = 'auto';
     }
