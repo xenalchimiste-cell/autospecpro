@@ -57,6 +57,7 @@ function setSearchMode(m) {
 // ── AUTH UI FUNCTIONS ──
 function openAuthModal() { 
   initRememberedInfo();
+  setAuthMode('login'); // Forcer le mode connexion par défaut
   document.getElementById('auth-modal').style.display = 'flex'; 
 }
 function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
@@ -513,6 +514,11 @@ window.selectTier = function(tier) {
 }
 
 window.openPaymentModal = function(tier) {
+  if (!currentUser) {
+    alert("Veuillez vous connecter pour souscrire à une offre.");
+    openAuthModal();
+    return;
+  }
   pendingPaymentTier = tier;
   const modal = document.getElementById('payment-modal');
   const planName = document.getElementById('pay-plan-name');
