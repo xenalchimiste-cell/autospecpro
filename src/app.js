@@ -671,8 +671,17 @@ function setCache(key, data) {
   } catch (e) {}
 }
 
+function hashCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash.toString(36);
+}
+
 async function callGroq(userPrompt, systemPrompt=''){
-  const cacheKey = btoa(userPrompt + systemPrompt).slice(0, 32);
+  const cacheKey = hashCode(userPrompt + systemPrompt);
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
