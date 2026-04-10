@@ -498,7 +498,16 @@
           </div>
           <div class="auth-field" style="margin-top:14px;">
             <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
-            <input type="text" name="siret" placeholder="N° SIRET (14 chiffres)" maxlength="17" pattern="[0-9 ]{14,17}" title="Numéro SIRET à 14 chiffres" oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/(.{3})(.{3})(.{3})(.{5})/,'$1 $2 $3 $4').trim()" autocomplete="off">
+            <input type="text" id="siret-input" name="siret" placeholder="N° SIRET (14 chiffres)" maxlength="19" required autocomplete="off" oninput="handleSiretInput(this)">
+          </div>
+          <div id="siret-status" style="display:none; margin-top:8px; padding:9px 12px; border-radius:10px; font-size:12px; display:flex; align-items:center; gap:8px;"></div>
+          
+          <div style="margin-top:14px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:var(--text2); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Justificatif (K-bis, id prof...)</label>
+            <div class="auth-field" style="height:auto; min-height:52px; padding:10px 14px;">
+              <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:static; margin-right:12px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <input type="file" name="proofFile" id="proof-file-input" style="padding:0; height:auto; font-size:12px;" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
           </div>
         </div>
         <div class="auth-field auth-field-sm">

@@ -8,21 +8,38 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { email, password, firstName, lastName, userType, referralCode, companyName, siret } = req.body;
+  const { email, password, firstName, lastName, userType, referralCode, companyName, siret, proofUrl } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
-  if (userType === 'enterprise' && (!companyName || !siret)) {
-    return res.status(400).json({ error: 'Company name and SIRET are required for enterprise accounts' });
-  }
-
-  // Validate SIRET format (14 digits)
-  if (siret) {
+  // Validate SIRET format and status if enterprise
+  let officialCompanyName = companyName;
+  if (userType === 'enterprise') {
+    if (!siret) return res.status(400).json({ error: 'SIRET is required for enterprise accounts' });
     const cleanSiret = siret.replace(/\s/g, '');
     if (!/^\d{14}$/.test(cleanSiret)) {
       return res.status(400).json({ error: 'Invalid SIRET number (must be 14 digits)' });
+    }
+
+    try {
+      const verifyRes = await fetch(`https://recherche-entreprises.api.gouv.fr/search?q=${cleanSiret}&mtf_fields=siret,nom_complet,siege,etat_administratif`);
+      const verifyData = await verifyRes.json();
+      const match = (verifyData.results || []).find(r => r.siege && r.siege.siret === cleanSiret);
+      
+      if (!match || (match.etat_administratif && match.etat_administratif !== 'A')) {
+        return res.status(400).json({ error: 'Invalid or inactive SIRET number' });
+      }
+      // Use the official company name from the registry
+      officialCompanyName = match.nom_complet;
+    } catch (err) {
+      console.error('SIRET secondary check failed:', err);
+      // Fallback to provided name if API is down, but ideally we'd want this to work
+    }
+
+    if (!proofUrl) {
+      return res.status(400).json({ error: 'Proof of identity document is required for enterprise accounts' });
     }
   }
 
@@ -64,9 +81,9 @@ export default async function handler(req, res) {
     // 5. Create user
     const cleanSiret = siret ? siret.replace(/\s/g, '') : null;
     const { rows: newUser } = await sql`
-      INSERT INTO users (email, password_hash, first_name, last_name, user_type, referral_code, referred_by_id, company_name, siret)
-      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${finalUserType}, ${myReferralCode}, ${referredById}, ${companyName || null}, ${cleanSiret})
-      RETURNING id, email, first_name, last_name, user_type, referral_code, referred_by_id, company_name, siret
+      INSERT INTO users (email, password_hash, first_name, last_name, user_type, referral_code, referred_by_id, company_name, siret, proof_url)
+      VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${finalUserType}, ${myReferralCode}, ${referredById}, ${officialCompanyName || null}, ${cleanSiret}, ${proofUrl || null})
+      RETURNING id, email, first_name, last_name, user_type, referral_code, referred_by_id, company_name, siret, proof_url
     `;
 
     const user = newUser[0];

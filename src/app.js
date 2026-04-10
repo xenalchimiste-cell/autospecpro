@@ -65,6 +65,66 @@ function setAuthMode(m) {
   document.getElementById('toggle-register').classList.toggle('active', !isLogin);
 }
 
+let siretVerified = false;
+let siretDebounce = null;
+
+function handleSiretInput(input) {
+  // Format: XXX XXX XXX XXXXX
+  let digits = input.value.replace(/[^0-9]/g, '');
+  if (digits.length > 14) digits = digits.slice(0, 14);
+  input.value = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{1,5})?/, (_, a, b, c, d) =>
+    [a, b, c, d].filter(Boolean).join(' ')
+  );
+
+  const status = document.getElementById('siret-status');
+  siretVerified = false;
+
+  if (digits.length < 14) {
+    status.style.display = 'none';
+    return;
+  }
+
+  // Show loading
+  status.style.display = 'flex';
+  status.style.background = 'rgba(255,255,255,0.04)';
+  status.style.border = '1px solid rgba(255,255,255,0.1)';
+  status.style.color = 'var(--text2)';
+  status.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin_pay 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Vérification SIRET en cours...`;
+
+  clearTimeout(siretDebounce);
+  siretDebounce = setTimeout(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/verify-siret?siret=${digits}`);
+      const data = await res.json();
+
+      if (res.ok && data.valid) {
+        siretVerified = true;
+        status.style.background = 'rgba(91,191,133,0.08)';
+        status.style.border = '1px solid rgba(91,191,133,0.3)';
+        status.style.color = 'var(--green)';
+        status.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> <span>Entreprise trouvée : <strong>${data.company}</strong></span>`;
+        // Auto-fill company name if the field is empty
+        const companyField = document.querySelector('input[name="companyName"]');
+        if (companyField && !companyField.value.trim()) {
+          companyField.value = data.company;
+        }
+      } else {
+        siretVerified = false;
+        status.style.background = 'rgba(224,90,78,0.08)';
+        status.style.border = '1px solid rgba(224,90,78,0.3)';
+        status.style.color = 'var(--red)';
+        status.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> ${data.error || 'SIRET introuvable dans le registre officiel'}`;
+      }
+    } catch (err) {
+      siretVerified = false;
+      status.style.background = 'rgba(224,90,78,0.08)';
+      status.style.border = '1px solid rgba(224,90,78,0.3)';
+      status.style.color = 'var(--red)';
+      status.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Erreur lors de la vérification`;
+    }
+  }, 600);
+}
+
 function toggleEnterpriseFields(radio) {
   const section = document.getElementById('enterprise-fields');
   const companyName = section.querySelector('input[name="companyName"]');
@@ -86,21 +146,62 @@ async function handleRegister(e) {
   e.preventDefault();
   const formData = new FormData(e.target);
   const data = Object.fromEntries(formData.entries());
+  const btn = e.target.querySelector('.auth-submit-btn');
+
+  if (data.userType === 'enterprise' && !siretVerified) {
+    alert("Veuillez renseigner un numéro SIRET valide et attendre sa vérification.");
+    return;
+  }
+
+  const oldHtml = btn.innerHTML;
+  btn.innerHTML = `<svg class="spinner-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin_pay 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Traitement...`;
+  btn.style.pointerEvents = 'none';
+
   try {
+    let proofUrl = null;
+    
+    // Handle File Upload for Enterprise
+    if (data.userType === 'enterprise') {
+      const fileInput = document.getElementById('proof-file-input');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Veuillez uploader un justificatif (K-bis, carte pro...) pour votre entreprise.");
+        btn.innerHTML = oldHtml;
+        btn.style.pointerEvents = 'auto';
+        return;
+      }
+
+      btn.innerHTML = `<span>Upload du justificatif...</span>`;
+      const uploadRes = await fetch(`${API_BASE}/api/upload-proof?filename=${encodeURIComponent(file.name)}`, {
+        method: 'POST',
+        body: file,
+      });
+
+      if (!uploadRes.ok) throw new Error("Échec de l'upload du justificatif.");
+      const blob = await uploadRes.json();
+      proofUrl = blob.url;
+    }
+
+    btn.innerHTML = `<span>Création du compte...</span>`;
     const res = await fetch(API_BASE + '/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, proofUrl })
     });
+
     const result = await res.json();
     if (res.ok) {
       completeAuth(result.token, result.user);
     } else {
       alert(result.error || 'Erreur serveur');
+      btn.innerHTML = oldHtml;
+      btn.style.pointerEvents = 'auto';
     }
   } catch (err) {
-    console.error('Fetch error:', err);
-    alert('Erreur technique (network/JSON): ' + err.message);
+    console.error('Registration error:', err);
+    alert('Erreur technique : ' + err.message);
+    btn.innerHTML = oldHtml;
+    btn.style.pointerEvents = 'auto';
   }
 }
 
