@@ -267,6 +267,8 @@ function updateNav() {
   } else {
     area.innerHTML = `<button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>`;
   }
+}
+
 function initializeGoogleAuth() {
   if (typeof google === 'undefined') return;
   google.accounts.id.initialize({
