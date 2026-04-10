@@ -2,7 +2,8 @@ import { OAuth2Client } from 'google-auth-library';
 import { sql } from '../_lib/db.js';
 import jwt from 'jsonwebtoken';
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "548892582580-mh5isg91gtg86hjn7rb11vd5e8dton4f.apps.googleusercontent.com";
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
 export default async function handler(req, res) {
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
   try {
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
     const { email, given_name, family_name, picture } = payload;
