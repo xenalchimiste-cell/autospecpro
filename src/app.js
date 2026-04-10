@@ -272,12 +272,14 @@ function updateNav() {
     `;
     
     // Show/Hide Admin Tab
-    const userEmail = (currentUser.email || "").toLowerCase();
+    const userEmail = (currentUser.email || "").toLowerCase().trim();
     const isAdmin = currentUser.user_type === 'admin' || userEmail === 'andreasgiacomello23@gmail.com';
     
     if (isAdmin) {
       if (adminNav) adminNav.style.display = 'flex';
       if (adminDrawer) adminDrawer.style.display = 'flex';
+      // Sécurité : au cas où l'élément est manquant ou ne s'affiche pas
+      console.log("Admin access detected for:", userEmail);
     } else {
       if (adminNav) adminNav.style.display = 'none';
       if (adminDrawer) adminDrawer.style.display = 'none';
