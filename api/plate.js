@@ -43,6 +43,103 @@ export default async function handler(req, res) {
   const diag = {};
   const providerStatuses = [];
 
+  function buildFromSivData(d) {
+    if (!d || typeof d !== 'object') return null;
+    const marque =
+      d.AWN_marque ||
+      d.AWN_marque_constructeur ||
+      d.AWN_libelle_marque ||
+      d.marque ||
+      '';
+    const modele =
+      d.AWN_modele_etude ||
+      d.AWN_modele ||
+      d.AWN_modele_principale ||
+      d.modele ||
+      '';
+    const version =
+      d.AWN_version ||
+      d.AWN_denomination_commerciale ||
+      d.AWN_libelle_version ||
+      '';
+    const annee =
+      d.AWN_annee ||
+      d.AWN_annee_mise_en_circulation ||
+      d.AWN_annee_debut_modele ||
+      d.registrationYear ||
+      '';
+    const label = [marque, modele, version, annee].filter(Boolean).join(' ').trim();
+    if (!label) return null;
+    const tech = {};
+    const kw =
+      d.AWN_puissance_reelle_kw ||
+      d.AWN_puissance_kw ||
+      d.AWN_puiss_kw ||
+      d.kw;
+    if (kw != null && String(kw).trim() && String(kw) !== '0') tech.kw = String(kw).replace(/\s/g, '');
+    const engine =
+      d.AWN_code_moteur ||
+      d.AWN_type_moteur ||
+      d.engine_code;
+    if (engine && String(engine).trim() && !/^inconnu$/i.test(String(engine))) {
+      tech.engine_code = String(engine).trim();
+    }
+    return { model: label, tech };
+  }
+
+  async function tryRapidApiSiv(plateParam) {
+    const key = process.env.RAPIDAPI_KEY;
+    if (!key) return null;
+    const host =
+      process.env.RAPIDAPI_PLATE_HOST ||
+      'api-siv-systeme-d-immatriculation-des-vehicules.p.rapidapi.com';
+    const path = process.env.RAPIDAPI_PLATE_PATH || '/';
+    const base = `https://${host.replace(/^https?:\/\//, '')}${path.startsWith('/') ? path : '/' + path}`;
+    const url = `${base}?${new URLSearchParams({ plaque: plateParam }).toString()}`;
+    try {
+      const r = await fetch(url, {
+        headers: {
+          'X-RapidAPI-Key': key,
+          'X-RapidAPI-Host': host.replace(/^https?:\/\//, ''),
+          Accept: 'application/json',
+        },
+      });
+      diag.rapidapi_status = r.status;
+      const text = await r.text();
+      if (!text || !text.trim()) {
+        diag.rapidapi_error = 'empty_body';
+        return null;
+      }
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (_) {
+        diag.rapidapi_error = text.slice(0, 200);
+        return null;
+      }
+      if (json.message === 'You are not subscribed to this API.') {
+        diag.rapidapi_error = json.message;
+        return null;
+      }
+      if (json.error === true) {
+        diag.rapidapi_error = json.message || 'api_error_true';
+        return null;
+      }
+      const data = json.data;
+      if (!data || typeof data !== 'object') {
+        diag.rapidapi_error = 'no_data_object';
+        return null;
+      }
+      const built = buildFromSivData(data);
+      if (built) return { ...built, source: 'rapidapi-siv' };
+      diag.rapidapi_error = 'no_model_fields_in_response';
+      return null;
+    } catch (e) {
+      diag.rapidapi_exception = e.message;
+      return null;
+    }
+  }
+
   // ----- STRATÉGIE : MOOVELUB via redirection HTTP -----
   // La page vrm_search redirige vers /fr/equipment/<slug-du-vehicule>
   // Le slug contient directement la marque, le modèle et la motorisation
@@ -110,6 +207,20 @@ export default async function handler(req, res) {
     }
   }
 
+  // ----- FALLBACK : RapidAPI « API SIV » (clé gratuite / freemium) -----
+  // Abonne-toi sur https://rapidapi.com/autowaysnet/api/api-siv-systeme-d-immatriculation-des-vehicules
+  // Puis ajoute RAPIDAPI_KEY dans Vercel (optionnel : RAPIDAPI_PLATE_HOST, RAPIDAPI_PLATE_PATH).
+  for (const plateTry of [pSIV, pRaw]) {
+    const rapid = await tryRapidApiSiv(plateTry);
+    if (rapid) {
+      return res.status(200).json({
+        model: rapid.model,
+        tech: rapid.tech || {},
+        source: rapid.source,
+      });
+    }
+  }
+
   // ----- FALLBACK OPTIONNEL : APIFY (si token configuré) -----
   // Configurez APIFY_API_TOKEN dans Vercel pour activer ce fallback.
   const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
@@ -154,8 +265,10 @@ export default async function handler(req, res) {
   if (shouldReturnServiceUnavailable) {
     return res.status(503).json({
       error: 'plate_provider_unavailable',
-      message: 'Le service d\'identification plaque est temporairement indisponible.',
-      diagnostics: diag
+      message:
+        'Le fournisseur Moove ne répond plus correctement depuis les serveurs. ' +
+        'Ajoute la variable RAPIDAPI_KEY (API SIV sur RapidAPI, offre BASIC souvent gratuite) ou configure APIFY_API_TOKEN.',
+      diagnostics: diag,
     });
   }
 

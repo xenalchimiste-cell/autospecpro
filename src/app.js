@@ -305,6 +305,7 @@ function handleLogout() {
 
 function updateNav() {
   const area = document.getElementById('user-nav-area');
+  const drawerAuthArea = document.getElementById('drawer-auth-area');
   const adminNav = document.getElementById('nav-tab-admin');
   const adminDrawer = document.getElementById('dtab-admin');
 
@@ -323,6 +324,9 @@ function updateNav() {
         <div style="font-size:9px; color:var(--text3); cursor:default;">Parrain : <span style="color:var(--accent); font-weight:700;">${currentUser.referral_code || '---'}</span></div>
       </div>
     `;
+    if (drawerAuthArea) {
+      drawerAuthArea.innerHTML = `<button class="btn btn-outline drawer-auth-btn" onclick="handleLogout(); closeDrawer();">Déconnexion</button>`;
+    }
     
     // Show/Hide Admin Tab
     const userEmail = (currentUser.email || "").toLowerCase().trim();
@@ -339,6 +343,9 @@ function updateNav() {
     }
   } else {
     area.innerHTML = `<button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>`;
+    if (drawerAuthArea) {
+      drawerAuthArea.innerHTML = `<button class="btn btn-outline drawer-auth-btn" onclick="openAuthModal(); closeDrawer();">Connexion</button>`;
+    }
     if (adminNav) adminNav.style.display = 'none';
     if (adminDrawer) adminDrawer.style.display = 'none';
   }
@@ -1040,8 +1047,8 @@ async function searchFiche() {
               <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
                 <div style="font-size:40px; margin-bottom:1rem;">📡</div>
                 <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Service plaque temporairement indisponible</div>
-                <div style="color:var(--text3); font-size:13px; margin-bottom:1.5rem;">Le fournisseur d'identification immatriculation ne répond pas correctement pour le moment.</div>
-                <p style="font-size:12px; color:var(--text2); margin-bottom:1.5rem;">Tu peux lancer la recherche en mode manuel (marque + modèle + année).</p>
+                <div style="color:var(--text3); font-size:13px; margin-bottom:1.5rem;">La source Moove ne renvoie plus de données exploitables depuis l’hébergement. Tu peux ajouter <strong>RAPIDAPI_KEY</strong> (API SIV sur RapidAPI) dans Vercel pour réactiver l’identification automatique.</div>
+                <p style="font-size:12px; color:var(--text2); margin-bottom:1.5rem;">Sinon, passe en recherche manuelle (marque + modèle + année).</p>
                 <button class="btn btn-primary" onclick="setSearchMode('car'); document.getElementById('q1').value=''; document.getElementById('q1').focus();" style="width:auto; padding: 0.5rem 1.5rem;">Passer en recherche manuelle</button>
               </div>
             `;
