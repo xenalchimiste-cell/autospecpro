@@ -41,6 +41,7 @@ export default async function handler(req, res) {
 
 
   const diag = {};
+  const providerStatuses = [];
 
   // ----- STRATÉGIE : MOOVELUB via redirection HTTP -----
   // La page vrm_search redirige vers /fr/equipment/<slug-du-vehicule>
@@ -64,6 +65,7 @@ export default async function handler(req, res) {
       );
 
       diag[`moove_${plate}_status`] = response.status;
+      providerStatuses.push({ plate, status: response.status });
       
       // On cherche la redirection : status 301, 302, 303, ou 307
       if (response.status >= 300 && response.status < 400) {
@@ -106,6 +108,55 @@ export default async function handler(req, res) {
     } catch (e) {
       diag[`moove_${plate}_exception`] = e.message;
     }
+  }
+
+  // ----- FALLBACK OPTIONNEL : APIFY (si token configuré) -----
+  // Configurez APIFY_API_TOKEN dans Vercel pour activer ce fallback.
+  const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
+  if (APIFY_API_TOKEN) {
+    try {
+      const apifyRes = await fetch(
+        `https://api.apify.com/v2/acts/freecamp008~french-license-plate-lookup/run-sync-get-dataset-items?token=${encodeURIComponent(APIFY_API_TOKEN)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ plate: pRaw }),
+        }
+      );
+
+      diag.apify_status = apifyRes.status;
+      if (apifyRes.ok) {
+        const apifyData = await apifyRes.json();
+        const item = Array.isArray(apifyData) ? apifyData[0] : apifyData;
+        const vehicle = item?.vehicle || item?.data?.vehicle || null;
+        const brand = vehicle?.brand || vehicle?.make || '';
+        const model = vehicle?.model || '';
+        const year = vehicle?.year || vehicle?.registrationYear || '';
+        const fallbackModel = [brand, model, year].filter(Boolean).join(' ').trim();
+
+        if (fallbackModel) {
+          return res.status(200).json({ model: fallbackModel, tech: {}, source: 'apify-fallback' });
+        }
+      } else {
+        const txt = await apifyRes.text();
+        diag.apify_error = txt.slice(0, 200);
+      }
+    } catch (e) {
+      diag.apify_exception = e.message;
+    }
+  }
+
+  const allMooveRequestsReturned200 = providerStatuses.length > 0 && providerStatuses.every(s => s.status === 200);
+  const shouldReturnServiceUnavailable = allMooveRequestsReturned200;
+  if (shouldReturnServiceUnavailable) {
+    return res.status(503).json({
+      error: 'plate_provider_unavailable',
+      message: 'Le service d\'identification plaque est temporairement indisponible.',
+      diagnostics: diag
+    });
   }
 
   // Aucune source n'a trouvé → retour détaillé

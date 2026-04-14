@@ -780,7 +780,7 @@ function ficheTab(cardId, tab){
 function stageColor(n){ return n===1?'s1':n===2?'s2':'s3'; }
 function fiabiliteIcon(f){
   if(!f) return '⚪';
-  const l = f.toLowerCase();
+  const l = String(f).toLowerCase();
   if(l.includes('excell')) return '🟢';
   if(l.includes('bonne')) return '🟢';
   if(l.includes('correct')) return '🟡';
@@ -1035,6 +1035,19 @@ async function searchFiche() {
         clearInterval(msgInterval);
         
         if (!plateRes.ok) {
+          if (plateData.error === 'plate_provider_unavailable') {
+            out.innerHTML = `
+              <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
+                <div style="font-size:40px; margin-bottom:1rem;">📡</div>
+                <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Service plaque temporairement indisponible</div>
+                <div style="color:var(--text3); font-size:13px; margin-bottom:1.5rem;">Le fournisseur d'identification immatriculation ne répond pas correctement pour le moment.</div>
+                <p style="font-size:12px; color:var(--text2); margin-bottom:1.5rem;">Tu peux lancer la recherche en mode manuel (marque + modèle + année).</p>
+                <button class="btn btn-primary" onclick="setSearchMode('car'); document.getElementById('q1').value=''; document.getElementById('q1').focus();" style="width:auto; padding: 0.5rem 1.5rem;">Passer en recherche manuelle</button>
+              </div>
+            `;
+            return;
+          }
+
           if (plateData.error === 'identification_failed') {
             if (plateData.diagnostics) console.warn("[AutoSpec Diagnostics]", plateData.diagnostics);
             out.innerHTML = `

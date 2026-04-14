@@ -408,6 +408,22 @@ select.s-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg x
   .hamburger{display:flex;}
   nav{padding:0 1rem;height:56px;}
   .nav-logo{margin-right:0;font-size:18px;}
+  .nav-logo small{display:none;}
+  #user-nav-area{
+    margin-left:auto !important;
+    padding-right:8px !important;
+    gap:6px !important;
+    flex-shrink:0;
+  }
+  #user-nav-area .btn{
+    height:32px !important;
+    font-size:11px !important;
+    padding:0 10px !important;
+  }
+  .hamburger{
+    margin-left:8px;
+    padding:6px;
+  }
 
   /* ── PAGES ── */
   .page{padding:1.25rem .875rem 5rem;}
