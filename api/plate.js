@@ -49,26 +49,50 @@ export default async function handler(req, res) {
       d.AWN_marque ||
       d.AWN_marque_constructeur ||
       d.AWN_libelle_marque ||
+      d.CarMake ||
+      d.MakeDescription ||
+      d.make ||
       d.marque ||
       '';
     const modele =
       d.AWN_modele_etude ||
       d.AWN_modele ||
       d.AWN_modele_principale ||
+      d.CarModel ||
       d.modele ||
+      d.model ||
       '';
     const version =
       d.AWN_version ||
       d.AWN_denomination_commerciale ||
       d.AWN_libelle_version ||
+      d.Version ||
       '';
     const annee =
       d.AWN_annee ||
       d.AWN_annee_mise_en_circulation ||
       d.AWN_annee_debut_modele ||
+      d.RegistrationYear ||
       d.registrationYear ||
+      d.year ||
       '';
-    const label = [marque, modele, version, annee].filter(Boolean).join(' ').trim();
+    let label = [marque, modele, version, annee].filter(Boolean).join(' ').trim();
+    if (!label && d.Description) {
+      label = String(d.Description).replace(/\s+/g, ' ').trim();
+    }
+    if (!label && d.AWN_libelle_long) {
+      label = String(d.AWN_libelle_long).replace(/\s+/g, ' ').trim();
+    }
+    if (!label) {
+      const desc = Object.entries(d).find(
+        ([k, v]) =>
+          /description|libelle|denomination|vehicule/i.test(k) &&
+          v &&
+          String(v).length > 3 &&
+          !/^N\/A|^INCONNU$/i.test(String(v))
+      );
+      if (desc) label = String(desc[1]).trim();
+    }
     if (!label) return null;
     const tech = {};
     const kw =
@@ -88,24 +112,38 @@ export default async function handler(req, res) {
   }
 
   async function tryRapidApiSiv(plateParam) {
-    const key = process.env.RAPIDAPI_KEY;
+    const key = (process.env.RAPIDAPI_KEY || '').trim();
     if (!key) return null;
     const host =
       process.env.RAPIDAPI_PLATE_HOST ||
       'api-siv-systeme-d-immatriculation-des-vehicules.p.rapidapi.com';
+    const hostClean = host.replace(/^https?:\/\//, '');
     const path = process.env.RAPIDAPI_PLATE_PATH || '/';
-    const base = `https://${host.replace(/^https?:\/\//, '')}${path.startsWith('/') ? path : '/' + path}`;
-    const url = `${base}?${new URLSearchParams({ plaque: plateParam }).toString()}`;
+    const base = `https://${hostClean}${path.startsWith('/') ? path : '/' + path}`;
+    const queryVariants = [
+      { plaque: plateParam },
+      { immatriculation: plateParam },
+      { plate: plateParam },
+ ];
+    let r;
+    let text;
     try {
-      const r = await fetch(url, {
-        headers: {
-          'X-RapidAPI-Key': key,
-          'X-RapidAPI-Host': host.replace(/^https?:\/\//, ''),
-          Accept: 'application/json',
-        },
-      });
-      diag.rapidapi_status = r.status;
-      const text = await r.text();
+      for (const params of queryVariants) {
+        const url = `${base}?${new URLSearchParams(params).toString()}`;
+        r = await fetch(url, {
+          headers: {
+            'X-RapidAPI-Key': key,
+            'X-RapidAPI-Host': hostClean,
+            Accept: 'application/json',
+          },
+        });
+        text = await r.text();
+        if (text && text.trim() && !/not subscribed|invalid api key/i.test(text)) {
+          diag[`rapidapi_${plateParam}_http`] = r.status;
+          diag[`rapidapi_${plateParam}_query`] = Object.keys(params)[0];
+          break;
+        }
+      }
       if (!text || !text.trim()) {
         diag.rapidapi_error = 'empty_body';
         return null;
@@ -117,26 +155,59 @@ export default async function handler(req, res) {
         diag.rapidapi_error = text.slice(0, 200);
         return null;
       }
-      if (json.message === 'You are not subscribed to this API.') {
-        diag.rapidapi_error = json.message;
+      const msg = String(json.message || '');
+      if (
+        /not subscribed|invalid api|forbidden/i.test(msg) ||
+        json.message === 'You are not subscribed to this API.'
+      ) {
+        diag.rapidapi_error = json.message || msg;
         return null;
       }
       if (json.error === true) {
-        diag.rapidapi_error = json.message || 'api_error_true';
+        diag.rapidapi_error = json.message || json.msg || 'api_error_true';
         return null;
       }
-      const data = json.data;
+      let data = json.data;
+      if (!data || typeof data !== 'object') {
+        data = json.result;
+      }
+      if (!data || typeof data !== 'object') {
+        if (json.error === false && typeof json === 'object') {
+          const skip = new Set(['error', 'message', 'code', 'success']);
+          const rest = Object.fromEntries(
+            Object.entries(json).filter(([k]) => !skip.has(k))
+          );
+          if (Object.keys(rest).length > 0) data = rest;
+        }
+      }
       if (!data || typeof data !== 'object') {
         diag.rapidapi_error = 'no_data_object';
+        diag.rapidapi_keys = Object.keys(json).slice(0, 25);
         return null;
       }
       const built = buildFromSivData(data);
       if (built) return { ...built, source: 'rapidapi-siv' };
       diag.rapidapi_error = 'no_model_fields_in_response';
+      diag.rapidapi_sample_keys = Object.keys(data).slice(0, 40);
       return null;
     } catch (e) {
       diag.rapidapi_exception = e.message;
       return null;
+    }
+  }
+
+  // ----- PRIORITÉ : RapidAPI si clé présente (Moove est souvent vide depuis Vercel) -----
+  const rapidKey = (process.env.RAPIDAPI_KEY || '').trim();
+  if (rapidKey) {
+    for (const plateTry of [pSIV, pRaw]) {
+      const rapid = await tryRapidApiSiv(plateTry);
+      if (rapid) {
+        return res.status(200).json({
+          model: rapid.model,
+          tech: rapid.tech || {},
+          source: rapid.source,
+        });
+      }
     }
   }
 
@@ -207,20 +278,6 @@ export default async function handler(req, res) {
     }
   }
 
-  // ----- FALLBACK : RapidAPI « API SIV » (clé gratuite / freemium) -----
-  // Abonne-toi sur https://rapidapi.com/autowaysnet/api/api-siv-systeme-d-immatriculation-des-vehicules
-  // Puis ajoute RAPIDAPI_KEY dans Vercel (optionnel : RAPIDAPI_PLATE_HOST, RAPIDAPI_PLATE_PATH).
-  for (const plateTry of [pSIV, pRaw]) {
-    const rapid = await tryRapidApiSiv(plateTry);
-    if (rapid) {
-      return res.status(200).json({
-        model: rapid.model,
-        tech: rapid.tech || {},
-        source: rapid.source,
-      });
-    }
-  }
-
   // ----- FALLBACK OPTIONNEL : APIFY (si token configuré) -----
   // Configurez APIFY_API_TOKEN dans Vercel pour activer ce fallback.
   const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
@@ -261,7 +318,10 @@ export default async function handler(req, res) {
   }
 
   const allMooveRequestsReturned200 = providerStatuses.length > 0 && providerStatuses.every(s => s.status === 200);
-  const shouldReturnServiceUnavailable = allMooveRequestsReturned200;
+  const hasConfiguredFallback =
+    !!(process.env.RAPIDAPI_KEY || '').trim() || !!(process.env.APIFY_API_TOKEN || '').trim();
+  const shouldReturnServiceUnavailable =
+    allMooveRequestsReturned200 && !hasConfiguredFallback;
   if (shouldReturnServiceUnavailable) {
     return res.status(503).json({
       error: 'plate_provider_unavailable',
