@@ -509,7 +509,14 @@ function closeDrawer(){
 }
 
 // ── TIERS LOGIC ──
+function isCurrentUserAdmin() {
+  if (!currentUser) return false;
+  const userEmail = (currentUser.email || '').toLowerCase().trim();
+  return currentUser.user_type === 'admin' || userEmail === 'andreasgiacomello23@gmail.com';
+}
+
 function checkAccess(requiredTier) {
+  if (isCurrentUserAdmin()) return true;
   const levels = { 'free': 0, 'passionne': 1, 'pro': 2 };
   return levels[currentTier] >= levels[requiredTier];
 }
