@@ -16,118 +16,61 @@ export default async function handler(req, res) {
   function slugToModel(slug) {
     if (!slug) return '';
     try {
-      // Nettoyage URL
       let s = slug.split('?')[0].split('#')[0];
       if (s.endsWith('/')) s = s.slice(0, -1);
       const base = s.split('/').pop();
-      if (!base) return '';
-      
-      return base
-        .replace(/_[A-Za-z0-9]{6,}$/, '') // Suppression du hash final
-        .replace(/_/g, ' ')
-        .replace(/\b([1-9])\s+([0-9])\b/g, '$1.$2') // Correction 1 2 -> 1.2
-        .replace(/\b(sb|sr|ql|qle|ub|pa|pa5|b9|zb|gd|nd|lb|fw|f5|f3|f1|g20|g30|f40)\b/gi, '')
-        .replace(/\b(i{1,3}|iv|v|vi|vii|viii)\b/gi, m => m.toUpperCase())
-        .replace(/\b(crdi|tdi|tfsi|tsi|fsi|gdi|jtd|dci|hdi|cdti|tce|vti|thp|crd|ivive|phev|mhev|ev)\b/gi, m => m.toUpperCase())
-        .replace(/\b(\d+)kw\b/gi, '$1kW')
-        .replace(/\b\w/g, c => c.toUpperCase())
-        .replace(/\s+/g, ' ')
-        .trim();
+      return base.replace(/_[A-Za-z0-9]{6,}$/, '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
     } catch (e) { return ''; }
   }
 
   const diag = { sources: {} };
 
-  // 1. STRATÉGIE MULTI-EARLWEB (Moove, Motul, Wolf)
-  const earlwebConfigs = [
-    { domain: 'moove-france.ewp.earlweb.net', ref: 'https://moovelub.fr/' },
-    { domain: 'motul-france.ewp.earlweb.net', ref: 'https://www.motul.com/' },
-    { domain: 'wolfoil-france.ewp.earlweb.net', ref: 'https://www.wolfoil.com/' }
+  // 1. STRATÉGIE MULTI-EARLWEB (Extrêmement complet)
+  const earlwebMirrors = [
+    'moove-france.ewp.earlweb.net',
+    'motul-france.ewp.earlweb.net',
+    'wolfoil-france.ewp.earlweb.net',
+    'auto-repair-lubes.ewp.earlweb.net',
+    'castrol-france.ewp.earlweb.net',
+    'oil-selector.lubricants.totalenergies.com'
   ];
 
   const platesToTry = [pSIV, pRaw];
 
-  for (const config of earlwebConfigs) {
+  for (const domain of earlwebMirrors) {
     for (const plate of platesToTry) {
       try {
-        const url = `https://${config.domain}/fr/vrm_search?vrm_type=fre:vrm:chatham&q=${plate}`;
-        const response = await fetch(url, {
+        const response = await fetch(`https://${domain}/fr/vrm_search?vrm_type=fre:vrm:chatham&q=${plate}`, {
           redirect: 'manual',
-          headers: {
-            'User-Agent': ua,
-            'Referer': config.ref,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-          }
+          headers: { 'User-Agent': ua, 'Referer': `https://${domain}/` }
         });
 
-        diag.sources[config.domain] = response.status;
+        diag.sources[domain] = response.status;
         
         if (response.status >= 300 && response.status < 400) {
-          const loc = response.headers.get('location') || response.headers.get('Location');
-          if (loc && loc.includes('/equipment/')) {
+          const loc = response.headers.get('location');
+          if (loc && (loc.includes('/equipment/') || loc.includes('/find/'))) {
             const model = slugToModel(loc);
-            if (model && model.length > 3) {
-              return res.status(200).json({ model, source: config.domain });
-            }
+            if (model && model.length > 3) return res.status(200).json({ model, source: domain });
           }
         }
-
-        if (response.status === 200) {
-          const html = await response.text();
-          // Fallback og:title
-          const og = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i);
-          if (og && og[1] && !og[1].toLowerCase().includes('oil') && !og[1].toLowerCase().includes('lub')) {
-             const m = og[1].split(' - ')[0].trim();
-             if (m.length > 4) return res.status(200).json({ model: m, source: config.domain + '-og' });
-          }
-          // Fallback equipment link in HTML
-          const equip = html.match(/href="([^"]*\/equipment\/[^"?#]+)/);
-          if (equip && equip[1]) {
-            const m = slugToModel(equip[1]);
-            if (m.length > 4) return res.status(200).json({ model: m, source: config.domain + '-html' });
-          }
-        }
-      } catch (e) {
-        diag.sources[config.domain + '_err'] = e.message;
-      }
+      } catch (e) { diag.sources[domain + '_err'] = e.message; }
     }
   }
 
   // 2. BACKUP OSCARO
   try {
-    const oscaro = await fetch(`https://www.oscaro.com/recherche-vehicule?q=${pRaw}`, {
-      redirect: 'manual',
-      headers: { 'User-Agent': ua }
-    });
-    diag.sources.oscaro = oscaro.status;
+    const oscaro = await fetch(`https://www.oscaro.com/recherche-vehicule?q=${pRaw}`, { redirect: 'manual', headers: { 'User-Agent': ua } });
     if (oscaro.status >= 300 && oscaro.status < 400) {
       const loc = oscaro.headers.get('location');
       if (loc && loc.includes('/vehicule/')) {
         const model = loc.split('/vehicule/')[1].split('-').filter(p => !/^\d{4,}$/.test(p)).join(' ').replace(/\b\w/g, c => c.toUpperCase());
-        if (model.length > 4) return res.status(200).json({ model, source: 'oscaro' });
+        return res.status(200).json({ model, source: 'oscaro' });
       }
     }
   } catch (e) { diag.sources.oscaro_err = e.message; }
 
-  // 3. SOURCE DE SECOURS : RAPIDAPI (Si configuré)
-  const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-  if (RAPIDAPI_KEY) {
-    try {
-      const rapidRes = await fetch(`https://french-license-plate.p.rapidapi.com/siv/plate/${pRaw}`, {
-        headers: {
-          'X-RapidAPI-Key': RAPIDAPI_KEY,
-          'X-RapidAPI-Host': 'french-license-plate.p.rapidapi.com'
-        }
-      });
-      if (rapidRes.ok) {
-        const data = await rapidRes.json();
-        const model = [data.marque, data.modele, data.annee].filter(Boolean).join(' ');
-        if (model) return res.status(200).json({ model, source: 'rapidapi' });
-      }
-    } catch (e) { diag.rapid_err = e.message; }
-  }
-
-  // 4. ULTIME RECOURS : IA Extraction
+  // 3. ULTIME RECOURS : IA Extraction (Plus aggressive)
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
   if (GROQ_API_KEY) {
     try {
@@ -137,7 +80,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           temperature: 0,
-          messages: [{ role: 'system', content: 'Identifie ce véhicule par sa plaque FR. Réponds UNIQUEMENT "Marque Modèle Année". Sinon réponds "ERR".' }, { role: 'user', content: pRaw }]
+          messages: [{ role: 'system', content: 'Identifie la voiture FR par sa plaque (Ex: Kia Rio 2012). Réponds UNIQUEMENT "Marque Modèle Année". Si inconnu, "ERR".' }, { role: 'user', content: pRaw }]
         })
       });
       const data = await groqRes.json();
@@ -147,4 +90,6 @@ export default async function handler(req, res) {
   }
 
   return res.status(404).json({ error: 'identification_failed', diagnostics: diag });
+}
+ });
 }
