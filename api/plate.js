@@ -32,7 +32,9 @@ export default async function handler(req, res) {
     'wolfoil-france.ewp.earlweb.net',
     'auto-repair-lubes.ewp.earlweb.net',
     'castrol-france.ewp.earlweb.net',
-    'oil-selector.lubricants.totalenergies.com'
+    'oil-selector.lubricants.totalenergies.com',
+    'valvoline-eu.ewp.earlweb.net',
+    'gulflubricants.ewp.earlweb.net'
   ];
 
   const platesToTry = [pSIV, pRaw];
@@ -54,23 +56,25 @@ export default async function handler(req, res) {
             if (model && model.length > 3) return res.status(200).json({ model, source: domain });
           }
         }
+
+        // Cas 200 : Parfois le résultat est dans le titre ou les liens
+        if (response.status === 200) {
+           const html = await response.text();
+           const equip = html.match(/href="([^"]*\/equipment\/[^"?#]+)/);
+           if (equip && equip[1]) {
+             const m = slugToModel(equip[1]);
+             if (m && m.length > 5) return res.status(200).json({ model: m, source: domain + '-html' });
+           }
+           const og = html.match(/<meta property="og:title" content="([^"]+)"/i);
+           if (og && og[1] && og[1].length > 10 && !og[1].includes('Site')) {
+             return res.status(200).json({ model: og[1].split('-')[0].trim(), source: domain + '-og' });
+           }
+        }
       } catch (e) { diag.sources[domain + '_err'] = e.message; }
     }
   }
 
-  // 2. BACKUP OSCARO
-  try {
-    const oscaro = await fetch(`https://www.oscaro.com/recherche-vehicule?q=${pRaw}`, { redirect: 'manual', headers: { 'User-Agent': ua } });
-    if (oscaro.status >= 300 && oscaro.status < 400) {
-      const loc = oscaro.headers.get('location');
-      if (loc && loc.includes('/vehicule/')) {
-        const model = loc.split('/vehicule/')[1].split('-').filter(p => !/^\d{4,}$/.test(p)).join(' ').replace(/\b\w/g, c => c.toUpperCase());
-        return res.status(200).json({ model, source: 'oscaro' });
-      }
-    }
-  } catch (e) { diag.sources.oscaro_err = e.message; }
-
-  // 3. ULTIME RECOURS : IA Extraction (Plus aggressive)
+  // 2. IA FALLBACK (Dernier recours critique)
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
   if (GROQ_API_KEY) {
     try {
@@ -80,12 +84,17 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           temperature: 0,
-          messages: [{ role: 'system', content: 'Identifie la voiture FR par sa plaque (Ex: Kia Rio 2012). Réponds UNIQUEMENT "Marque Modèle Année". Si inconnu, "ERR".' }, { role: 'user', content: pRaw }]
+          messages: [
+            { role: 'system', content: 'Tu es un expert SIV. Identifie le véhicule (Marque Modèle Année) pour la plaque fournie. Réponds UNIQUEMENT le texte. Sinon "ERR".' },
+            { role: 'user', content: `Plaque : ${pRaw}` }
+          ]
         })
       });
       const data = await groqRes.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      if (content && content !== 'ERR') return res.status(200).json({ model: content, source: 'ai' });
+      const resIA = data.choices?.[0]?.message?.content?.trim();
+      if (resIA && resIA !== 'ERR' && resIA.length > 5) {
+        return res.status(200).json({ model: resIA, source: 'ai-expert' });
+      }
     } catch (e) { diag.ai_err = e.message; }
   }
 
