@@ -15,77 +15,99 @@ export default async function handler(req, res) {
 
   function slugToModel(slug) {
     if (!slug) return '';
-    return slug
-      .split('?')[0]
-      .split('#')[0]
-      .split('/')
-      .pop()
-      .replace(/_[A-Za-z0-9]{6,}$/, '')
-      .replace(/_/g, ' ')
-      .replace(/\b([1-9])\s+([0-9])\b/g, '$1.$2')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  const diag = {};
-
-  // 1. SOURCE PRINCIPALE : MOOVELUB (Earlweb)
-  const moovePlates = [pSIV, pRaw];
-  for (const plate of moovePlates) {
     try {
-      const mooveUrl = `https://moove-france.ewp.earlweb.net/fr/vrm_search?vrm_type=fre:vrm:chatham&q=${plate}`;
-      const response = await fetch(mooveUrl, {
-        redirect: 'manual',
-        headers: {
-          'User-Agent': ua,
-          'Referer': 'https://moove-france.ewp.earlweb.net/',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Accept-Language': 'fr-FR,fr;q=0.9',
-        }
-      });
-
-      diag[`moove_${plate}`] = response.status;
-      if (response.status >= 300 && response.status < 400) {
-        const loc = response.headers.get('location');
-        if (loc && loc.includes('/equipment/')) {
-          const model = slugToModel(loc);
-          if (model) return res.status(200).json({ model, source: 'moovelub' });
-        }
-      }
+      // Nettoyage URL
+      let s = slug.split('?')[0].split('#')[0];
+      if (s.endsWith('/')) s = s.slice(0, -1);
+      const base = s.split('/').pop();
+      if (!base) return '';
       
-      if (response.status === 200) {
-        const html = await response.text();
-        const og = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i);
-        if (og && og[1] && !og[1].includes('Moove')) {
-           return res.status(200).json({ model: og[1].split(' - ')[0], source: 'moovelub-og' });
-        }
-      }
-    } catch (e) { diag.moove_err = e.message; }
+      return base
+        .replace(/_[A-Za-z0-9]{6,}$/, '') // Suppression du hash final
+        .replace(/_/g, ' ')
+        .replace(/\b([1-9])\s+([0-9])\b/g, '$1.$2') // Correction 1 2 -> 1.2
+        .replace(/\b(sb|sr|ql|qle|ub|pa|pa5|b9|zb|gd|nd|lb|fw|f5|f3|f1|g20|g30|f40)\b/gi, '')
+        .replace(/\b(i{1,3}|iv|v|vi|vii|viii)\b/gi, m => m.toUpperCase())
+        .replace(/\b(crdi|tdi|tfsi|tsi|fsi|gdi|jtd|dci|hdi|cdti|tce|vti|thp|crd|ivive|phev|mhev|ev)\b/gi, m => m.toUpperCase())
+        .replace(/\b(\d+)kw\b/gi, '$1kW')
+        .replace(/\b\w/g, c => c.toUpperCase())
+        .replace(/\s+/g, ' ')
+        .trim();
+    } catch (e) { return ''; }
   }
 
-  // 2. SOURCE SECONDAIRE : OSCARO (Redirection)
+  const diag = { sources: {} };
+
+  // 1. STRATÉGIE MULTI-EARLWEB (Moove, Motul, Wolf)
+  const earlwebConfigs = [
+    { domain: 'moove-france.ewp.earlweb.net', ref: 'https://moovelub.fr/' },
+    { domain: 'motul-france.ewp.earlweb.net', ref: 'https://www.motul.com/' },
+    { domain: 'wolfoil-france.ewp.earlweb.net', ref: 'https://www.wolfoil.com/' }
+  ];
+
+  const platesToTry = [pSIV, pRaw];
+
+  for (const config of earlwebConfigs) {
+    for (const plate of platesToTry) {
+      try {
+        const url = `https://${config.domain}/fr/vrm_search?vrm_type=fre:vrm:chatham&q=${plate}`;
+        const response = await fetch(url, {
+          redirect: 'manual',
+          headers: {
+            'User-Agent': ua,
+            'Referer': config.ref,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+          }
+        });
+
+        diag.sources[config.domain] = response.status;
+        
+        if (response.status >= 300 && response.status < 400) {
+          const loc = response.headers.get('location') || response.headers.get('Location');
+          if (loc && loc.includes('/equipment/')) {
+            const model = slugToModel(loc);
+            if (model && model.length > 3) {
+              return res.status(200).json({ model, source: config.domain });
+            }
+          }
+        }
+
+        if (response.status === 200) {
+          const html = await response.text();
+          // Fallback og:title
+          const og = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i);
+          if (og && og[1] && !og[1].toLowerCase().includes('oil') && !og[1].toLowerCase().includes('lub')) {
+             const m = og[1].split(' - ')[0].trim();
+             if (m.length > 4) return res.status(200).json({ model: m, source: config.domain + '-og' });
+          }
+          // Fallback equipment link in HTML
+          const equip = html.match(/href="([^"]*\/equipment\/[^"?#]+)/);
+          if (equip && equip[1]) {
+            const m = slugToModel(equip[1]);
+            if (m.length > 4) return res.status(200).json({ model: m, source: config.domain + '-html' });
+          }
+        }
+      } catch (e) {
+        diag.sources[config.domain + '_err'] = e.message;
+      }
+    }
+  }
+
+  // 2. BACKUP OSCARO
   try {
-    const oscaroRes = await fetch(`https://www.oscaro.com/recherche-vehicule?q=${pRaw}`, {
+    const oscaro = await fetch(`https://www.oscaro.com/recherche-vehicule?q=${pRaw}`, {
       redirect: 'manual',
       headers: { 'User-Agent': ua }
     });
-    diag.oscaro_status = oscaroRes.status;
-    if (oscaroRes.status >= 300 && oscaroRes.status < 400) {
-      const loc = oscaroRes.headers.get('location');
+    diag.sources.oscaro = oscaro.status;
+    if (oscaro.status >= 300 && oscaro.status < 400) {
+      const loc = oscaro.headers.get('location');
       if (loc && loc.includes('/vehicule/')) {
-        // Ex: /vehicule/peugeot-208-ii-1-2-puretech-75cv-3510-10022-0-f
-        const parts = loc.split('/vehicule/')[1].split('-');
-        // On enlève les IDs à la fin (ex: 3510-10022-0-f)
-        const modelParts = [];
-        for (const p of parts) {
-          if (/^\d{4,}$/.test(p)) break;
-          modelParts.push(p);
-        }
-        const model = modelParts.join(' ').replace(/\b\w/g, c => c.toUpperCase());
-        if (model) return res.status(200).json({ model, source: 'oscaro' });
+        const model = loc.split('/vehicule/')[1].split('-').filter(p => !/^\d{4,}$/.test(p)).join(' ').replace(/\b\w/g, c => c.toUpperCase());
+        if (model.length > 4) return res.status(200).json({ model, source: 'oscaro' });
       }
     }
-  } catch (e) { diag.oscaro_err = e.message; }
+  } catch (e) { diag.sources.oscaro_err = e.message; }
 
   // 3. SOURCE DE SECOURS : RAPIDAPI (Si configuré)
   const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
