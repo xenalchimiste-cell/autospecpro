@@ -1001,7 +1001,7 @@ async function searchFiche() {
       "Compilation des données de maintenance..."
     ],
     plate: [
-      "Connexion sécurisée aux bases de données Moovelub...",
+      "Connexion aux bases de données multi-sources (Moove/Oscaro)...",
       "Analyse technique de la motorisation (Earlweb)...",
       "Détection des spécifications constructeur...",
       "Calcul des correspondances SIV secondaires...",
@@ -1044,8 +1044,8 @@ async function searchFiche() {
             out.innerHTML = `
               <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
                 <div style="font-size:40px; margin-bottom:1rem;">📡</div>
-                <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Service plaque temporairement indisponible</div>
-                <div style="color:var(--text3); font-size:13px; margin-bottom:1.5rem;">La source Moove ne renvoie plus de données exploitables depuis l’hébergement. Tu peux ajouter <strong>RAPIDAPI_KEY</strong> (API SIV sur RapidAPI) dans Vercel pour réactiver l’identification automatique.</div>
+                <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Service d'identification saturé</div>
+                <div style="color:var(--text2); font-size:13px; margin-bottom:1.5rem;">Les serveurs d'identification partenaires ne répondent pas. Pour une identification 100% garantie, vous pouvez configurer une clé <strong>RAPIDAPI_KEY</strong> dans Vercel.</div>
                 <p style="font-size:12px; color:var(--text2); margin-bottom:1.5rem;">Sinon, passe en recherche manuelle (marque + modèle + année).</p>
                 <button class="btn btn-primary" onclick="setSearchMode('car'); document.getElementById('q1').value=''; document.getElementById('q1').focus();" style="width:auto; padding: 0.5rem 1.5rem;">Passer en recherche manuelle</button>
               </div>
