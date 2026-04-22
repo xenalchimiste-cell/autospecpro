@@ -442,7 +442,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function showPage(id, btn, fromDrawer=false){
+function showPage(id, btn, fromDrawer=false, source='nav'){
   // Check access if needed
   if (id !== 'plans') {
     const targetTab = btn || document.querySelector(`.nav-tab[onclick*="'${id}'"]`);
@@ -455,29 +455,27 @@ function showPage(id, btn, fromDrawer=false){
   }
 
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-
-  // Nav desktop
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  // Nav drawer
-  document.querySelectorAll('.drawer-tab').forEach(t=>t.classList.remove('active'));
-
-  // Activer le bon tab dans les deux navs
-  const drawerTab = document.getElementById('dtab-'+id);
-  if(drawerTab) drawerTab.classList.add('active');
-
-  if(btn){
-    if(btn.classList.contains('nav-tab') || btn.classList.contains('drawer-tab')){
-      btn.classList.add('active');
-    }
-    // Si vient de la nav desktop, activer aussi dans la nav desktop
-    if(!fromDrawer) btn.classList.add('active');
+  const page = document.getElementById('page-'+id);
+  if (page) {
+    page.classList.add('active');
+    window.scrollTo({top: 0, behavior: 'smooth'});
   }
 
-  // Sync nav desktop
+  // Reset all tabs
+  document.querySelectorAll('.nav-tab, .drawer-tab, .bnav-item').forEach(t=>t.classList.remove('active'));
+
+  // Sync Nav Desktop
   document.querySelectorAll('.nav-tab').forEach(t=>{
     if(t.getAttribute('onclick') && t.getAttribute('onclick').includes("'"+id+"'")) t.classList.add('active');
   });
+
+  // Sync Drawer
+  const drawerTab = document.getElementById('dtab-'+id);
+  if(drawerTab) drawerTab.classList.add('active');
+
+  // Sync Bottom Nav
+  const bnavTab = document.getElementById('bnav-'+id);
+  if(bnavTab) bnavTab.classList.add('active');
 
   if(fromDrawer) closeDrawer();
   if (id === 'admin') loadAdminData();
