@@ -287,6 +287,9 @@ function completeAuth(token, user) {
   } else {
     currentTier = 'free';
   }
+  if (user && (user.user_type === 'admin' || (user.email || '').toLowerCase() === 'andreasgiacomello23@gmail.com')) {
+    currentTier = 'pro';
+  }
   localStorage.setItem('autospec_tier', currentTier);
   localStorage.setItem('autospec_token', token);
 
@@ -404,6 +407,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         } else {
           currentTier = 'free';
         }
+        if (currentUser && (currentUser.user_type === 'admin' || (currentUser.email || '').toLowerCase() === 'andreasgiacomello23@gmail.com')) {
+          currentTier = 'pro';
+        }
         localStorage.setItem('autospec_tier', currentTier);
 
         updateNav();
@@ -510,6 +516,9 @@ function closeDrawer(){
 
 // ── TIERS LOGIC ──
 function checkAccess(requiredTier) {
+  if (currentUser && (currentUser.user_type === 'admin' || (currentUser.email || '').toLowerCase() === 'andreasgiacomello23@gmail.com')) {
+    return true;
+  }
   const levels = { 'free': 0, 'passionne': 1, 'pro': 2 };
   return levels[currentTier] >= levels[requiredTier];
 }
