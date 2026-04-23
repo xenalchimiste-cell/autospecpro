@@ -591,15 +591,13 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <span style="font-size:12px;color:var(--text2);">Merci de renseigner vos informations professionnelles pour bénéficier du tarif entreprise.</span>
           </div>
-          <div class="auth-field" style="margin-bottom:0;">
-            <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-            <input type="text" name="companyName" placeholder="Nom de la société" autocomplete="organization">
+          <div class="auth-field">
+            <svg class="auth-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 21V11m4 10V11m4 10V11m4 10V11M9 3h6"/><path d="M12 21V11"/></svg>
+            <input type="text" id="company-search" placeholder="Nom de l'entreprise ou SIREN" autocomplete="off" oninput="debounceCompanySearch(this.value)">
           </div>
-          <div class="auth-field" style="margin-top:14px;">
-            <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
-            <input type="text" id="siret-input" name="siret" placeholder="N° SIRET (14 chiffres)" maxlength="19" autocomplete="off" oninput="handleSiretInput(this)">
-          </div>
-          <div id="siret-status" style="display:none; margin-top:8px; padding:9px 12px; border-radius:10px; font-size:12px; display:flex; align-items:center; gap:8px;"></div>
+          <div id="company-results" class="auth-autocomplete-results"></div>
+          <input type="hidden" id="siret-input" name="siret">
+          <div id="siret-status" style="display:none; margin-top:8px; padding:9px 12px; border-radius:10px; font-size:11px; display:flex; align-items:center; gap:8px;"></div>
           
           <div style="margin-top:14px;">
             <label style="display:block; font-size:11px; font-weight:600; color:var(--text2); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Justificatif (K-bis, id prof...)</label>

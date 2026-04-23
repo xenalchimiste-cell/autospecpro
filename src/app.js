@@ -2003,3 +2003,52 @@ async function handleAdminAction(action, targetId) {
     alert('Erreur action : ' + err.message);
   }
 }
+
+// ── COMPANY SEARCH (ENTERPRISE LOOKUP) ──
+let companySearchTimeout = null;
+function debounceCompanySearch(query) {
+  clearTimeout(companySearchTimeout);
+  if (query.trim().length < 3) {
+    document.getElementById('company-results').style.display = 'none';
+    return;
+  }
+  companySearchTimeout = setTimeout(() => handleCompanySearch(query), 400);
+}
+
+async function handleCompanySearch(query) {
+  const rs = document.getElementById('company-results');
+  try {
+    const res = await fetch(`https://recherche-entreprises.api.gouv.fr/search?q=${encodeURIComponent(query)}&limite=5`);
+    const data = await res.json();
+    
+    if (data.results && data.results.length > 0) {
+      rs.innerHTML = data.results.map(company => `
+        <div class="company-item" onclick="selectCompany('${company.nom_complet}', '${company.siren}')">
+          <div class="company-name">${company.nom_complet}</div>
+          <div class="company-sub">${company.siege.adresse} • SIREN: ${company.siren}</div>
+        </div>
+      `).join('');
+      rs.style.display = 'block';
+    } else {
+      rs.style.display = 'none';
+    }
+  } catch (err) {
+    console.error('Company search error:', err);
+    rs.style.display = 'none';
+  }
+}
+
+function selectCompany(name, siren) {
+  document.getElementById('company-search').value = name;
+  document.getElementById('siret-input').value = siren; // Use SIREN as base SIRET
+  document.getElementById('company-results').style.display = 'none';
+  
+  const status = document.getElementById('siret-status');
+  status.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span>${name} sélectionné (SIREN: ${siren})</span>
+  `;
+  status.style.display = 'flex';
+  status.style.background = 'rgba(78,203,130,0.1)';
+  status.style.color = 'var(--green)';
+}
