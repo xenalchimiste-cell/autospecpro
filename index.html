@@ -38,7 +38,17 @@
   </div>
 
   <nav>
-    <div class="nav-logo">AutoSpec <small>Pro</small> <span id="current-tier-badge" class="badge badge-g" style="margin-left:6px; font-size:9px; vertical-align:middle;">GRATUIT</span></div>
+    <div class="nav-logo">
+      AutoSpec <small>Pro</small>
+    </div>
+
+    <!-- Hamburger Icon -->
+    <div class="hamburger" id="hamburger" onclick="toggleDrawer()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="showPage('fiche',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -72,53 +82,40 @@
     <div id="user-nav-area" style="margin-left:auto; display:flex; align-items:center; gap:10px; padding-right:15px;">
       <button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>
     </div>
-    <button class="hamburger" id="hamburger" onclick="toggleDrawer()" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
   </nav>
 
-  <!-- ══════════ DRAWER MOBILE ══════════ -->
+  <!-- ══════════ MOBILE DRAWER ══════════ -->
   <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
   <div class="drawer" id="drawer">
     <div class="drawer-header">
-      <div class="drawer-logo">AutoSpec <small>Pro</small></div>
-      <button class="drawer-close" onclick="closeDrawer()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+      <div class="nav-logo">AutoSpec <small>Pro</small></div>
+      <div class="close-drawer" onclick="closeDrawer()">&times;</div>
     </div>
-    <div id="drawer-auth-area" class="drawer-auth-area">
-      <button class="btn btn-outline drawer-auth-btn" onclick="openAuthModal(); closeDrawer();">Connexion</button>
+    <div class="drawer-content">
+      <div class="drawer-item active" id="dtab-fiche" onclick="showPage('fiche', null, true)">
+        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <span>Fiche Technique</span>
+      </div>
+      <div class="drawer-item" id="dtab-compare" onclick="showPage('compare', null, true)">
+        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg></div>
+        <span>Comparateur</span>
+      </div>
+      <div class="drawer-item" id="dtab-sim" onclick="showPage('sim', null, true)">
+        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <span>Simulateur</span>
+      </div>
+      <div class="drawer-item" id="dtab-conv" onclick="showPage('conv', null, true)">
+        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></div>
+        <span>Convertisseur</span>
+      </div>
+      <div class="drawer-item" id="dtab-plans" onclick="showPage('plans', null, true)">
+        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <span>Abonnements</span>
+      </div>
     </div>
-    <nav class="drawer-nav">
-      <button class="drawer-tab active" id="dtab-fiche" onclick="showPage('fiche',this,true)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
-        Fiche technique
-      </button>
-      <button class="drawer-tab" id="dtab-compare" onclick="showPage('compare',this,true)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
-        Comparer
-      </button>
-      <button class="drawer-tab" id="dtab-sim" onclick="showPage('sim',this,true)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Simulateur
-      </button>
-      <button class="drawer-tab" id="dtab-entretien" onclick="showPage('entretien',this,true)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-        Entretien
-      </button>
-      <button class="drawer-tab" id="dtab-conv" onclick="showPage('conv',this,true)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 0-2 2h-3"/></svg>
-        Convertisseur
-      </button>
-      <button class="drawer-tab" id="dtab-plans" onclick="showPage('plans',this,true)" style="color:var(--accent);">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        Nos Offres
-      </button>
-      <button id="dtab-admin" class="drawer-tab" onclick="showPage('admin',this,true)" style="display:none; color:#ff4757;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Administration
-      </button>
-    </nav>
+    <div class="drawer-footer">
+       <button class="btn btn-pro w-full" onclick="showPage('plans', null, true)">Passer à AutoSpec PRO</button>
+    </div>
   </div>
 
   <!-- ══════════ ADMIN DASHBOARD ══════════ -->

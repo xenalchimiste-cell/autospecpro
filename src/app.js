@@ -462,7 +462,7 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
   }
 
   // Reset all tabs
-  document.querySelectorAll('.nav-tab, .drawer-tab, .bnav-item').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab, .drawer-tab, .drawer-item, .bnav-item').forEach(t=>t.classList.remove('active'));
 
   // Sync Nav Desktop
   document.querySelectorAll('.nav-tab').forEach(t=>{
