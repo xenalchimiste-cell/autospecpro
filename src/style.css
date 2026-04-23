@@ -61,9 +61,11 @@ nav {
   -webkit-backdrop-filter: blur(20px) saturate(1.8);
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 0;
-  padding: 0 2rem;
-  height: 62px;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.3);
+  height: 68px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+@media (max-width: 768px) {
+  nav { height: 60px; padding: 0 12px; }
 }
 nav::after {
   content: '';
@@ -1281,19 +1283,18 @@ select.s-input {
   .car-name { font-size: 21px; }
 
   /* HERO GRID */
-  .hero-grid { grid-template-columns: repeat(3, 1fr); }
-  .hero-item { padding: .8rem .6rem; }
-  .hero-item:nth-child(3) { border-right: none; }
-  .hero-item:nth-child(4) { border-top: 1px solid var(--border); }
-  .hero-item:nth-child(5) { border-top: 1px solid var(--border); }
-  .hero-item:nth-child(6) { border-top: 1px solid var(--border); border-right: none; }
-  .h-val { font-size: 18px; }
+  .hero-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .hero-item { padding: 1.25rem 0.75rem; border: 1px solid var(--border) !important; border-radius: 16px; background: rgba(255,255,255,0.02); }
+  .h-val { font-size: 22px; font-weight: 800; color: var(--accent); }
+  .h-label { font-size: 9px; color: var(--text3); }
+  .h-unit { font-size: 10px; }
   .h-label { font-size: 8px; }
 
   /* SECTIONS */
   .section { padding: 1rem 1.1rem; }
-  .kv { grid-template-columns: 1fr 1fr; gap: 8px 10px; }
-  .kv-v { font-size: 13px; }
+  .kv { grid-template-columns: 1fr; gap: 4px; }
+  .kv-row { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .kv-v { font-size: 14px; font-weight: 600; }
 
   /* COMPARATEUR */
   .compare-inputs { grid-template-columns: 1fr; gap: 1rem; }
@@ -1411,8 +1412,9 @@ select.s-input {
   z-index: 9999;
   justify-content: space-around;
   align-items: center;
-  padding: 0 10px calc(8px + env(safe-area-inset-bottom));
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7);
+  padding: 0 16px calc(12px + env(safe-area-inset-bottom));
+  box-shadow: 0 -15px 45px rgba(0, 0, 0, 0.8);
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 .bnav-item {
