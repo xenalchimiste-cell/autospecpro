@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   let pSIV = pRaw;
   if (pRaw.length === 7) pSIV = pRaw.slice(0, 2) + '-' + pRaw.slice(2, 5) + '-' + pRaw.slice(5);
 
-  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
+  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
   function slugToModel(slug) {
     if (!slug) return '';
@@ -21,53 +21,56 @@ export default async function handler(req, res) {
     } catch (e) { return ''; }
   }
 
-  const mirrors = [
-    'moove-france.ewp.earlweb.net', 'motul-france.ewp.earlweb.net',
-    'wolfoil-france.ewp.earlweb.net', 'castrol-france.ewp.earlweb.net',
-    'valvoline-eu.ewp.earlweb.net'
+  const diag = { sources: {}, keys: {} };
+  
+  // Diagnostic des clés
+  diag.keys.GROQ = !!process.env.GROQ_API_KEY;
+  diag.keys.RAPID = !!process.env.RAPIDAPI_KEY;
+
+  const earlwebMirrors = [
+    'moove-france.ewp.earlweb.net',
+    'motul-france.ewp.earlweb.net',
+    'wolfoil-france.ewp.earlweb.net',
+    'castrol-france.ewp.earlweb.net'
   ];
 
   const types = ['fre:vrm:chatham', 'fre:vrm:motul', 'fre:vrm:total'];
   const plates = [pSIV, pRaw];
 
-  for (const domain of mirrors) {
+  for (const domain of earlwebMirrors) {
     for (const type of types) {
       for (const p of plates) {
         try {
-          const r = await fetch(`https://${domain}/fr/vrm_search?vrm_type=${type}&q=${p}`, {
-            redirect: 'manual', headers: { 'User-Agent': ua, 'Referer': `https://${domain}/` }
+          const resE = await fetch(`https://${domain}/fr/vrm_search?vrm_type=${type}&q=${p}`, {
+            redirect: 'manual',
+            headers: { 'User-Agent': ua, 'Referer': `https://${domain}/` }
           });
-          if (r.status >= 300 && r.status < 400) {
-            const loc = r.headers.get('location');
+          diag.sources[`${domain}_${type}`] = resE.status;
+
+          if (resE.status >= 300 && resE.status < 400) {
+            const loc = resE.headers.get('location');
             if (loc && loc.includes('/equipment/')) {
               const model = slugToModel(loc);
               if (model) return res.status(200).json({ model, source: domain });
             }
           }
-          if (r.status === 200) {
-            const html = await r.text();
-            const equip = html.match(/href="([^"]*\/equipment\/[^"?#]+)/);
-            if (equip && equip[1]) {
-               const m = slugToModel(equip[1]);
-               if (m) return res.status(200).json({ model: m, source: domain + '-html' });
+
+          if (resE.status === 200) {
+            const html = await resE.text();
+            // Chercher le modèle dans le titre ou les metas
+            const og = html.match(/<meta property="og:title" content="([^"]+)"/i);
+            if (og && og[1] && !og[1].includes('Site') && og[1].length > 5) {
+              return res.status(200).json({ model: og[1].split('-')[0].trim(), source: domain + '-og' });
+            }
+            const h1 = html.match(/<h1>([^<]+)<\/h1>/i);
+            if (h1 && h1[1] && h1[1].length > 5 && !h1[1].includes('Recherche')) {
+              return res.status(200).json({ model: h1[1].trim(), source: domain + '-h1' });
             }
           }
-        } catch (e) { }
+        } catch (e) { diag.sources[`${domain}_err`] = e.message; }
       }
     }
   }
-
-  // OSCARO BACKUP
-  try {
-    const osc = await fetch(`https://www.oscaro.com/recherche-vehicule?q=${pRaw}`, { redirect: 'manual', headers: { 'User-Agent': ua } });
-    if (osc.status >= 300 && osc.status < 400) {
-      const loc = osc.headers.get('location');
-      if (loc && loc.includes('/vehicule/')) {
-        const m = loc.split('/vehicule/')[1].split('-').filter(x => !/^\d+$/.test(x)).join(' ').toUpperCase();
-        return res.status(200).json({ model: m, source: 'oscaro' });
-      }
-    }
-  } catch (e) { }
 
   // IA FALLBACK
   const key = process.env.GROQ_API_KEY;
@@ -78,17 +81,20 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
+          temperature: 0,
           messages: [
-            { role: 'system', content: 'Tu es un expert SIV. Identifie MARQUE MODELE ANNEE de la plaque FR. Réponds UNIQUEMENT le texte. Sinon "ERR".' },
+            { role: 'system', content: 'Tu es un expert SIV français. Pour une plaque, identifie MARQUE MODELE ANNEE. Sinon "ERR".' },
             { role: 'user', content: pRaw }
           ]
         })
       });
-      const d = await groq.json();
-      const m = d.choices?.[0]?.message?.content?.trim();
-      if (m && m !== 'ERR') return res.status(200).json({ model: m, source: 'ai-expert' });
-    } catch (e) { }
+      const data = await groq.json();
+      const resIA = data.choices?.[0]?.message?.content?.trim();
+      if (resIA && resIA !== 'ERR' && resIA.length > 5) {
+        return res.status(200).json({ model: resIA, source: 'ai-fallback' });
+      }
+    } catch (e) { diag.ai_err = e.message; }
   }
 
-  return res.status(404).json({ error: 'identification_failed' });
+  return res.status(404).json({ error: 'identification_failed', diagnostics: diag });
 }

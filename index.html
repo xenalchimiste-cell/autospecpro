@@ -2,69 +2,707 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>AutoSpec PRO | Central Intelligence</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="src/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>AutoSpec Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+  <link rel="stylesheet" href="src/style.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
-  <header>
-    <div class="brand">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--accent)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-      AUTOSPEC <span>PRO</span>
-    </div>
-    <div class="nav-tabs">
-      <div class="tab active" onclick="showPage('search')">Identification</div>
-      <div class="tab" onclick="showPage('compare')">Comparatif</div>
-      <div class="tab" onclick="showPage('plans')">Abonnements</div>
-    </div>
-  </header>
-
-  <main>
-    <!-- PAGE : SEARCH -->
-    <div id="page-search" class="page active">
-      <div class="search-orb">
-        <div class="search-field">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="vrm-input" placeholder="PLAQUE D'IMMATRICULATION..." autocomplete="off" spellcheck="false"/>
+  <!-- ══════════ PERSONNALISATION ══════════ -->
+  <div class="perso-overlay" id="perso-overlay">
+    <div class="perso-modal">
+      <div class="perso-title">Dossier Client</div>
+      <div class="perso-sub">Personnalisez le document avant l'export.</div>
+      <form id="perso-form" onsubmit="event.preventDefault(); finalizeProDossier();">
+        <div class="p-field">
+          <label class="p-label" for="p-client">Nom du Client / Entreprise</label>
+          <input class="p-input" id="p-client" placeholder="ex: Jean Dupont" autocomplete="off"/>
         </div>
-        <button class="search-btn" onclick="doSearch()">ANALYSER</button>
-      </div>
-
-      <div id="results-engine">
-        <!-- Dashboard injecté -->
-        <div style="text-align:center; padding:5rem; opacity:0.3;">
-          <p style="font-family:var(--font-mono); font-size:12px; letter-spacing:0.2em;">SYSTEM READY // AWAITING INPUT</p>
+        <div class="p-field">
+          <label class="p-label" for="p-km">Kilométrage actuel</label>
+          <input class="p-input" id="p-km" type="text" placeholder="ex: 45 000 km" autocomplete="off"/>
         </div>
-      </div>
+        <div class="p-field">
+          <label class="p-label" for="p-vin">Numéro VIN (Optionnel)</label>
+          <input class="p-input" id="p-vin" placeholder="ex: VF3123..." autocomplete="off"/>
+        </div>
+        <div class="p-btns">
+          <button type="button" class="p-btn p-btn-cancel" onclick="closePerso()">Annuler</button>
+          <button type="submit" class="p-btn p-btn-submit">Générer le Dossier</button>
+        </div>
+      </form>
     </div>
-
-    <!-- OTHER PAGES -->
-    <div id="page-compare" class="page">
-      <div class="grid-item" style="text-align:center; padding:5rem;">
-        <p style="font-family:var(--font-mono); color:var(--accent);">ERROR 403: MODULE REQUIRES PRO SUBSCRIPTION</p>
-      </div>
-    </div>
-  </main>
-
-  <div class="mobile-nav">
-    <button class="m-tab active" onclick="showPage('search')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <span>SEARCH</span>
-    </button>
-    <button class="m-tab" onclick="showPage('compare')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
-      <span>COMPARE</span>
-    </button>
-    <button class="m-tab" onclick="showPage('plans')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      <span>Tier</span>
-    </button>
   </div>
+
+  <nav>
+    <div class="nav-logo">AutoSpec <small>Pro</small> <span id="current-tier-badge" class="badge badge-g" style="margin-left:6px; font-size:9px; vertical-align:middle;">GRATUIT</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('fiche',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Fiche
+      </button>
+      <button class="nav-tab" data-at="passionne" onclick="showPage('compare',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+        Comparer
+      </button>
+      <button class="nav-tab" data-at="passionne" onclick="showPage('sim',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Simulateur
+      </button>
+      <button class="nav-tab" data-at="pro" onclick="showPage('entretien',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Entretien
+      </button>
+      <button class="nav-tab" onclick="showPage('conv',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 0-2 2h-3"/></svg>
+        Convertir
+      </button>
+      <button class="nav-tab" onclick="showPage('plans',this)" style="color:var(--accent);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Plans
+      </button>
+      <button id="nav-tab-admin" class="nav-tab" onclick="showPage('admin',this)" style="display:none; color: #ff4757; font-weight: 700;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Admin
+      </button>
+    </div>
+    <div id="user-nav-area" style="margin-left:auto; display:flex; align-items:center; gap:10px; padding-right:15px;">
+      <button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>
+    </div>
+    <button class="hamburger" id="hamburger" onclick="toggleDrawer()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ══════════ DRAWER MOBILE ══════════ -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div class="drawer-logo">AutoSpec <small>Pro</small></div>
+      <button class="drawer-close" onclick="closeDrawer()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="drawer-auth-area" class="drawer-auth-area">
+      <button class="btn btn-outline drawer-auth-btn" onclick="openAuthModal(); closeDrawer();">Connexion</button>
+    </div>
+    <nav class="drawer-nav">
+      <button class="drawer-tab active" id="dtab-fiche" onclick="showPage('fiche',this,true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+        Fiche technique
+      </button>
+      <button class="drawer-tab" id="dtab-compare" onclick="showPage('compare',this,true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+        Comparer
+      </button>
+      <button class="drawer-tab" id="dtab-sim" onclick="showPage('sim',this,true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Simulateur
+      </button>
+      <button class="drawer-tab" id="dtab-entretien" onclick="showPage('entretien',this,true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Entretien
+      </button>
+      <button class="drawer-tab" id="dtab-conv" onclick="showPage('conv',this,true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 0-2 2h-3"/></svg>
+        Convertisseur
+      </button>
+      <button class="drawer-tab" id="dtab-plans" onclick="showPage('plans',this,true)" style="color:var(--accent);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Nos Offres
+      </button>
+      <button id="dtab-admin" class="drawer-tab" onclick="showPage('admin',this,true)" style="display:none; color:#ff4757;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Administration
+      </button>
+    </nav>
+  </div>
+
+  <!-- ══════════ ADMIN DASHBOARD ══════════ -->
+  <div class="page" id="page-admin">
+    <div class="page-title">Panneau de Contrôle<br/><em>Administration</em></div>
+    <div class="page-sub">Gérez les utilisateurs, validez les comptes Pro et suivez l'activité plateforme.</div>
+
+    <div class="admin-stats-grid">
+      <div class="admin-stat-card">
+        <div class="admin-stat-val" id="admin-stat-users">-</div>
+        <div class="admin-stat-label">Utilisateurs</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-val" id="admin-stat-pros">-</div>
+        <div class="admin-stat-label">Entreprises</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-val" id="admin-stat-pending">-</div>
+        <div class="admin-stat-label">En attente</div>
+      </div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" onclick="switchAdminSubTab('users', this)">Utilisateurs</button>
+      <button class="admin-tab-btn" onclick="switchAdminSubTab('pros', this)">Vérifications Enterprise</button>
+      <button class="admin-tab-btn" onclick="switchAdminSubTab('stats', this)">Parrainages</button>
+    </div>
+
+    <!-- Sub-tab: Users -->
+    <div id="admin-sub-users" class="admin-sub-page active">
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-list">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sub-tab: Enterprises -->
+    <div id="admin-sub-pros" class="admin-sub-page">
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Société</th>
+              <th>SIRET</th>
+              <th>Justificatif</th>
+              <th>Statut</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-pros-list">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sub-tab: Stats/Referrals (Optional enrichment) -->
+    <div id="admin-sub-stats" class="admin-sub-page">
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Parrain</th>
+              <th>Code</th>
+              <th>Filleuls</th>
+            </tr>
+          </thead>
+          <tbody id="admin-referrals-list">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ FICHE ══════════ -->
+  <div class="page active" id="page-fiche">
+    <div class="page-title">Toutes les specs,<br/><em>une seule recherche.</em></div>
+    <div class="page-sub">Affinez votre recherche avec les filtres, puis entrez un modèle ou une plaque.</div>
+
+    <div class="filter-row">
+      <div class="filter-group">
+        <div class="filter-label">⛽ Carburant</div>
+        <select class="filter-select" id="f-carburant" onchange="updateFilterChips()">
+          <option value="">Tous</option>
+          <option value="Essence">Essence</option>
+          <option value="Diesel">Diesel</option>
+          <option value="Hybride">Hybride</option>
+          <option value="Electrique">Électrique</option>
+          <option value="E85">E85 / Flex-fuel</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">⚡ Préparation</div>
+        <select class="filter-select" id="f-stage" onchange="updateFilterChips()">
+          <option value="">Stock</option>
+          <option value="Stage 1">Stage 1</option>
+          <option value="Stage 2">Stage 2</option>
+          <option value="Stage 3">Stage 3</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-active" id="filter-active" style="display:none">
+      <span class="filter-active-label">Filtres actifs :</span>
+      <span id="filter-active-chips"></span>
+      <button class="filter-reset" onclick="resetFilters()">✕ Réinitialiser</button>
+    </div>
+
+    <div class="search-mode-tabs">
+      <button class="mode-tab active" id="mode-car" onclick="setSearchMode('car')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+        Modèle
+      </button>
+      <button class="mode-tab" id="mode-plate" onclick="setSearchMode('plate')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>
+        Plaque
+      </button>
+    </div>
+
+    <div class="search-row">
+      <div class="search-wrap" id="search-container">
+        <div class="scanner-line"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="s-input" id="q1" placeholder="ex: BMW M3 2023, Peugeot 308 2022…" autocomplete="off" onkeydown="if(event.key==='Enter')searchFiche()"/>
+      </div>
+      <button class="btn btn-primary" id="btn-search" onclick="searchFiche()">Rechercher</button>
+    </div>
+    <div class="chips">
+      <span class="chip" onclick="qf('BMW M3 Competition 2023')">BMW M3 2023</span>
+      <span class="chip" onclick="qf('Ferrari 488 GTB 2019')">Ferrari 488</span>
+      <span class="chip" onclick="qf('Porsche 911 GT3 2024')">Porsche 911 GT3</span>
+      <span class="chip" onclick="qf('Tesla Model 3 2024')">Tesla Model 3</span>
+      <span class="chip" onclick="qf('Renault Clio 5 2023')">Renault Clio</span>
+      <span class="chip" onclick="qf('Audi RS6 Avant 2023')">Audi RS6</span>
+      <span class="chip" onclick="qf('Toyota GR86 2022')">Toyota GR86</span>
+      <span class="chip" onclick="qf('Honda Civic Type R 2023')">Honda Civic Type R</span>
+    </div>
+    <div id="out-fiche"><div class="empty"><div class="empty-icon">🏎</div>Entrez un modèle pour afficher sa fiche.</div></div>
+  </div>
+
+  <!-- ══════════ COMPARATEUR ══════════ -->
+  <div class="page" id="page-compare">
+    <div class="page-title"><em>Comparer</em> deux voitures.</div>
+    <div class="page-sub">Choisissez les filtres pour chaque voiture, puis comparez.</div>
+    <div class="compare-inputs">
+      <div class="compare-col">
+        <label>Voiture A</label>
+        <div class="search-row" style="margin-bottom:.6rem">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="s-input" id="qA" placeholder="ex: BMW M3 2023" autocomplete="off" onkeydown="if(event.key==='Enter')searchCompare()"/>
+          </div>
+        </div>
+        <div class="cmp-filter-row">
+          <div class="filter-group">
+            <div class="filter-label">⛽ Carburant</div>
+            <select class="filter-select" id="cA-carburant">
+              <option value="">Tous</option>
+              <option value="Essence">Essence</option>
+              <option value="Diesel">Diesel</option>
+              <option value="Hybride">Hybride</option>
+              <option value="Electrique">Électrique</option>
+              <option value="E85">E85</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">⚡ Stage</div>
+            <select class="filter-select" id="cA-stage">
+              <option value="">Stock</option>
+              <option value="Stage 1">Stage 1</option>
+              <option value="Stage 2">Stage 2</option>
+              <option value="Stage 3">Stage 3</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="compare-col">
+        <label>Voiture B</label>
+        <div class="search-row" style="margin-bottom:.6rem">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="s-input" id="qB" placeholder="ex: Audi RS4 2023" autocomplete="off" onkeydown="if(event.key==='Enter')searchCompare()"/>
+          </div>
+        </div>
+        <div class="cmp-filter-row">
+          <div class="filter-group">
+            <div class="filter-label">⛽ Carburant</div>
+            <select class="filter-select" id="cB-carburant">
+              <option value="">Tous</option>
+              <option value="Essence">Essence</option>
+              <option value="Diesel">Diesel</option>
+              <option value="Hybride">Hybride</option>
+              <option value="Electrique">Électrique</option>
+              <option value="E85">E85</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">⚡ Stage</div>
+            <select class="filter-select" id="cB-stage">
+              <option value="">Stock</option>
+              <option value="Stage 1">Stage 1</option>
+              <option value="Stage 2">Stage 2</option>
+              <option value="Stage 3">Stage 3</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="searchCompare()">Comparer</button>
+      <span class="chip" onclick="presetCompare('BMW M3 Competition 2023','Audi RS4 2023')">M3 vs RS4</span>
+      <span class="chip" onclick="presetCompare('Porsche 911 GT3 2024','Ferrari 488 GTB 2019')">911 GT3 vs 488</span>
+      <span class="chip" onclick="presetCompare('Tesla Model 3 2024','BMW i4 2023')">Model 3 vs i4</span>
+      <span class="chip" onclick="presetCompare('Renault Clio 5 2023','Peugeot 208 2023')">Clio vs 208</span>
+    </div>
+    <div id="out-compare"><div class="empty"><div class="empty-icon">⚖️</div>Entrez deux modèles à comparer.</div></div>
+  </div>
+
+  <!-- ══════════ SIMULATEUR ══════════ -->
+  <div class="page" id="page-sim">
+    <div class="page-title">Simulateur de<br/><em>performance.</em></div>
+    <div class="page-sub">Entrez les caractéristiques d'une voiture pour simuler son comportement.</div>
+    <div class="sim-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-label">Puissance</div>
+        <div class="ctrl-val"><span id="sv-ch">300</span> <small>ch</small></div>
+        <input type="range" id="sl-ch" min="50" max="2000" value="300" step="5" oninput="updateSim()"/>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">Couple</div>
+        <div class="ctrl-val"><span id="sv-nm">450</span> <small>N·m</small></div>
+        <input type="range" id="sl-nm" min="50" max="1600" value="450" step="10" oninput="updateSim()"/>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">Masse</div>
+        <div class="ctrl-val"><span id="sv-kg">1500</span> <small>kg</small></div>
+        <input type="range" id="sl-kg" min="700" max="3000" value="1500" step="10" oninput="updateSim()"/>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">Transmission</div>
+        <div class="ctrl-val" style="font-size:14px;margin-bottom:.75rem;" id="sv-tr">Intégrale</div>
+        <select class="s-input" id="sl-tr" style="height:36px;font-size:13px;" onchange="updateSim()">
+          <option value="0.95">Intégrale (xDrive…)</option>
+          <option value="0.90">Propulsion</option>
+          <option value="0.88">Traction</option>
+        </select>
+      </div>
+    </div>
+    <div class="sim-result fade" id="sim-result">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.25rem;">
+        <span style="font-size:13px;color:var(--text2);">0 – 100 km/h estimé</span>
+        <span style="font-size:28px;font-weight:500;color:var(--accent2);" id="sim-0100-num">—</span>
+      </div>
+      <div class="sim-bar-wrap"><div class="sim-bar" id="sim-bar" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);">
+        <span>2s (hypercar)</span><span>6s (sport)</span><span>12s (standard)</span>
+      </div>
+      <div class="sim-grid">
+        <div class="sim-stat"><div class="sim-stat-val" id="sim-pw-num">—</div><div class="sim-stat-lbl">Rapport poids/puissance</div></div>
+        <div class="sim-stat"><div class="sim-stat-val" id="sim-kw-num">—</div><div class="sim-stat-lbl">Puissance en kW</div></div>
+        <div class="sim-stat"><div class="sim-stat-val" id="sim-vmax-num">—</div><div class="sim-stat-lbl">Vitesse max estimée</div></div>
+        <div class="sim-stat"><div class="sim-stat-val" id="sim-0200-num">—</div><div class="sim-stat-lbl">0 – 200 km/h estimé</div></div>
+      </div>
+      <div style="margin-top:1.25rem;margin-bottom:-.25rem;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:500;">Courbe vitesse / temps</span>
+        <span style="font-size:9px;color:var(--text3);">0 → 250 km/h</span>
+      </div>
+      <canvas id="simChart"></canvas>
+    </div>
+    <p style="font-size:11px;color:var(--text3);text-align:center;">Simulation basée sur des formules physiques — valeurs indicatives.</p>
+  </div>
+
+  <!-- ══════════ ENTRETIEN ══════════ -->
+  <div class="page" id="page-entretien">
+    <div class="page-title">Coût d'<em>entretien</em><br/>annuel estimé.</div>
+    <div class="page-sub">Configurez votre profil pour estimer vos dépenses annuelles.</div>
+    <div class="entretien-inputs">
+      <div class="entretien-card">
+        <div class="ent-label">Type de véhicule</div>
+        <select class="s-input" id="ent-type" style="height:40px;font-size:13px;margin-top:.5rem;" onchange="updateEntretien()">
+          <option value="citadine">Citadine (Clio, 208…)</option>
+          <option value="berline">Berline (308, Golf…)</option>
+          <option value="suv">SUV (Tucson, RAV4…)</option>
+          <option value="sport" selected>Sport (M3, RS4…)</option>
+          <option value="supersport">Supersport (911, Ferrari…)</option>
+          <option value="electrique">Électrique</option>
+        </select>
+      </div>
+      <div class="entretien-card">
+        <div class="ent-label">Kilométrage annuel</div>
+        <div class="ctrl-val" style="margin:.4rem 0;"><span id="ent-km-val">15 000</span> <small style="font-size:12px;color:var(--text2);">km/an</small></div>
+        <input type="range" id="ent-km" min="5000" max="60000" value="15000" step="1000" oninput="updateEntretien()"/>
+      </div>
+      <div class="entretien-card">
+        <div class="ent-label">Âge du véhicule</div>
+        <div class="ctrl-val" style="margin:.4rem 0;"><span id="ent-age-val">3</span> <small style="font-size:12px;color:var(--text2);">ans</small></div>
+        <input type="range" id="ent-age" min="0" max="20" value="3" step="1" oninput="updateEntretien()"/>
+      </div>
+      <div class="entretien-card">
+        <div class="ent-label">Carburant (prix/L)</div>
+        <div class="ctrl-val" style="margin:.4rem 0;"><span id="ent-fuel-val">1.85</span> <small style="font-size:12px;color:var(--text2);">€/L</small></div>
+        <input type="range" id="ent-fuel" min="1.20" max="3.00" value="1.85" step="0.05" oninput="updateEntretien()"/>
+      </div>
+    </div>
+    <div class="cost-grid" id="cost-grid"></div>
+    <div class="cost-total">
+      <div>
+        <div class="cost-total-lbl">Coût total estimé / an</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">Hors assurance et financement</div>
+      </div>
+      <div class="cost-total-val" id="cost-total-val">—</div>
+    </div>
+    <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:1rem;">Estimations moyennes — varient selon le garage, la région et l'usure réelle.</p>
+  </div>
+
+  <!-- ══════════ CONVERTISSEUR ══════════ -->
+  <div class="page" id="page-conv">
+    <div class="page-title"><em>Convertisseur</em><br/>automobile.</div>
+    <div class="page-sub">Puissance, couple, vitesse, consommation — toutes les unités.</div>
+    <div class="conv-tabs">
+      <button class="conv-tab active" onclick="setConvTab('puissance',this)">⚡ Puissance</button>
+      <button class="conv-tab" onclick="setConvTab('couple',this)">🔩 Couple</button>
+      <button class="conv-tab" onclick="setConvTab('vitesse',this)">💨 Vitesse</button>
+      <button class="conv-tab" onclick="setConvTab('conso',this)">⛽ Conso.</button>
+      <button class="conv-tab" onclick="setConvTab('masse',this)">⚖️ Masse</button>
+      <button class="conv-tab" onclick="setConvTab('pression',this)">🔴 Pression</button>
+    </div>
+    <div id="conv-area"></div>
+  </div>
+
+
+  <!-- ══════════ PAGE PLANS ══════════ -->
+  <div id="page-plans" class="page fade">
+    <h1 class="page-title">Choisissez votre <em>expérience</em></h1>
+    <p class="page-sub">Débloquez la puissance maximale d'AutoSpec Pro avec nos offres adaptées.</p>
+
+    <div class="pricing-grid">
+      <!-- GRATUIT -->
+      <div class="pricing-card" id="tier-free">
+        <div class="p-tier">Gratuit</div>
+        <div class="p-price">0€<small>/site</small></div>
+        <div class="p-desc">Pour une consultation rapide et occasionnelle.</div>
+        <ul class="p-features">
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Fiche technique manuelle</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Convertisseur d'unités</li>
+          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recherche par Plaque (SIV)</li>
+          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Radar Comparatif</li>
+          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Export PDF Professionnel</li>
+        </ul>
+        <button class="p-btn" onclick="selectTier('free')">Rester en Gratuit</button>
+      </div>
+
+      <!-- PASSIONNÉ -->
+      <div class="pricing-card tier-premium" id="tier-passionne">
+        <div class="p-tier">Passionné</div>
+        <div class="p-price">9€<small>/mois</small></div>
+        <div class="p-desc">L'outil idéal pour les amateurs de performance.</div>
+        <ul class="p-features">
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Recherche par Plaque (Illimité)</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Radar Comparatif 360°</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Simulateur de Performances</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Export PDF Basic</li>
+          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Fiche Entretien Garage</li>
+        </ul>
+        <button class="p-btn" onclick="selectTier('passionne')">Choisir Passionné</button>
+      </div>
+
+      <!-- PROFESSIONNEL -->
+      <div class="pricing-card tier-pro" id="tier-pro">
+        <div class="p-tier">Professionnel</div>
+        <div class="p-price">29€<small>/mois</small></div>
+        <div class="p-desc">Tout l'arsenal AutoSpec pour votre garage.</div>
+        <ul class="p-features">
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Accès Intégral (Tous modules)</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Fiche Entretien & Préconisations</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Export Dossier Expert (VIN + KM)</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Rapports SIV Techniques</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Support Prioritaire</li>
+        </ul>
+        <button class="p-btn" onclick="selectTier('pro')">Choisir Pro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODALE AUTH ══════════ -->
+  <div id="auth-modal" class="auth-overlay" onclick="closeAuthModal()" style="display:none;">
+    <div class="auth-panel" onclick="event.stopPropagation()">
+      <div class="auth-blob auth-blob-1"></div>
+      <div class="auth-blob auth-blob-2"></div>
+      <button class="auth-close" onclick="closeAuthModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="auth-header">
+        <div class="auth-logo-mark">A</div>
+        <h2 class="auth-title">AutoSpec <em>Pro</em></h2>
+        <p class="auth-subtitle">Votre espace automobile personnel</p>
+      </div>
+      <div class="auth-tabs">
+        <button id="toggle-login" class="auth-tab active" onclick="setAuthMode('login')">Connexion</button>
+        <button id="toggle-register" class="auth-tab" onclick="setAuthMode('register')">Inscription</button>
+      </div>
+      <form id="login-form" class="auth-form">
+        <div class="auth-field">
+          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <input type="email" name="email" placeholder="Adresse email" required autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" name="password" placeholder="Mot de passe" required autocomplete="current-password">
+        </div>
+        <label class="auth-remember">
+          <input type="checkbox" name="rememberMe" id="login-remember">
+          <span>Se souvenir de moi</span>
+        </label>
+        <button type="button" class="auth-submit-btn" onclick="handleLogin(event)">
+          Se connecter
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </form>
+      <form id="register-form" class="auth-form" style="display:none;">
+        <div class="auth-row-2">
+          <div class="auth-field">
+            <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" name="firstName" placeholder="Prénom" required>
+          </div>
+          <div class="auth-field">
+            <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" name="lastName" placeholder="Nom" required>
+          </div>
+        </div>
+        <div class="auth-field">
+          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <input type="email" name="email" placeholder="Adresse email" required>
+        </div>
+        <div class="auth-field">
+          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" name="password" placeholder="Mot de passe" required>
+        </div>
+        <div class="auth-type-group">
+          <label class="auth-type-opt">
+            <input type="radio" name="userType" value="individual" checked onchange="toggleEnterpriseFields(this)">
+            <div class="auth-type-card">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <div><div class="auth-type-name">Particulier</div><div class="auth-type-desc">Prix standard</div></div>
+            </div>
+          </label>
+          <label class="auth-type-opt">
+            <input type="radio" name="userType" value="enterprise" onchange="toggleEnterpriseFields(this)">
+            <div class="auth-type-card">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              <div><div class="auth-type-name">Entreprise</div><div class="auth-type-desc auth-accent">-30% sur tous les plans</div></div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Section entreprise (conditionnelle) -->
+        <div id="enterprise-fields" style="display:none; margin-top: 4px; animation: authPanelIn 0.3s ease;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:12px 14px;background:rgba(212,168,67,0.07);border:1px solid rgba(212,168,67,0.2);border-radius:12px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span style="font-size:12px;color:var(--text2);">Merci de renseigner vos informations professionnelles pour bénéficier du tarif entreprise.</span>
+          </div>
+          <div class="auth-field" style="margin-bottom:0;">
+            <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            <input type="text" name="companyName" placeholder="Nom de la société" autocomplete="organization">
+          </div>
+          <div class="auth-field" style="margin-top:14px;">
+            <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+            <input type="text" id="siret-input" name="siret" placeholder="N° SIRET (14 chiffres)" maxlength="19" autocomplete="off" oninput="handleSiretInput(this)">
+          </div>
+          <div id="siret-status" style="display:none; margin-top:8px; padding:9px 12px; border-radius:10px; font-size:12px; display:flex; align-items:center; gap:8px;"></div>
+          
+          <div style="margin-top:14px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:var(--text2); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Justificatif (K-bis, id prof...)</label>
+            <div class="auth-field" style="height:auto; min-height:52px; padding:10px 14px;">
+              <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:static; margin-right:12px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <input type="file" name="proofFile" id="proof-file-input" style="padding:0; height:auto; font-size:12px;" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+          </div>
+        </div>
+        <div class="auth-field auth-field-sm">
+          <svg class="auth-field-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <input type="text" name="referralCode" placeholder="Code parrain (optionnel · -15%)">
+        </div>
+        <label class="auth-remember" style="margin-top: 5px;">
+          <input type="checkbox" name="rememberMe" id="register-remember">
+          <span>Se souvenir de moi</span>
+        </label>
+        <button type="button" class="auth-submit-btn" onclick="handleRegister(event)">
+          Créer mon compte
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </form>
+      <div class="auth-sep"><span>ou</span></div>
+      <div id="google-signin-btn" style="display: flex; justify-content: center; margin-top: 5px;"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODALE PAIEMENT ══════════ -->
+  <div id="payment-modal" class="auth-overlay" onclick="closePaymentModal()" style="display:none;">
+    <div class="payment-panel" onclick="event.stopPropagation()">
+      <div class="auth-blob auth-blob-1" style="background:var(--accent);"></div>
+      <div class="auth-blob auth-blob-2" style="background:var(--bg3);"></div>
+      <button class="auth-close" onclick="closePaymentModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="payment-layout">
+        <!-- Colonne résumé -->
+        <div class="payment-sidebar">
+          <div style="font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Récapitulatif</div>
+          <div class="payment-plan-name" id="pay-plan-name">Autospec <em>Passionné</em></div>
+          <div class="payment-plan-price"><span id="pay-plan-price">9€</span><small> /mois</small></div>
+          <div class="payment-features" id="pay-features">
+            <!-- Injecté dynamiquement par JS -->
+          </div>
+          <div style="margin-top:auto; font-size:11px; color:var(--text2); display:flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> 
+            Paiement 100% sécurisé
+          </div>
+        </div>
+
+        <!-- Colonne formulaire -->
+        <div class="payment-content">
+          <h3 style="font-size:18px;font-weight:500;margin-bottom:20px;color:var(--text);">Paiement Sécurisé</h3>
+          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; text-align:center; margin-bottom:24px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-bottom:12px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <p style="font-size:13px; color:var(--text2); line-height:1.5;">
+              Pour une sécurité maximale, les transactions sont traitées par le portail bancaire <strong>Stripe</strong>. Vos informations ne transitent pas sur nos serveurs.
+            </p>
+          </div>
+          
+          <form id="payment-form" onsubmit="processPayment(event)">
+            <button type="submit" class="pay-submit-btn" id="pay-btn-submit" style="display:flex; justify-content:center; align-items:center; gap:8px;">
+              Procéder au paiement 
+              <span id="pay-btn-price" style="display:none;"></span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+            <div class="pay-footer-trusted">
+              <div class="mock-stripe-logo">Secured by <strong>Stripe</strong></div>
+              <span>Annulable à tout moment.</span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ BOTTOM NAV MOBILE ══════════ -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="bnav-item active" id="bnav-fiche" onclick="showPage('fiche',this,true,'bnav')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Fiche</span>
+    </button>
+    <button class="bnav-item" id="bnav-compare" onclick="showPage('compare',this,true,'bnav')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+      <span>Comparer</span>
+    </button>
+    <button class="bnav-item" id="bnav-sim" onclick="showPage('sim',this,true,'bnav')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Simuler</span>
+    </button>
+    <button class="bnav-item" id="bnav-conv" onclick="showPage('conv',this,true,'bnav')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 0-2 2h-3"/></svg>
+      <span>Convertir</span>
+    </button>
+    <button class="bnav-item" id="bnav-plans" onclick="showPage('plans',this,true,'bnav')" style="color:var(--accent);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span>Plans</span>
+    </button>
+  </nav>
 
   <script src="src/app.js"></script>
 </body>
