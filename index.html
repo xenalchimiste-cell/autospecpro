@@ -3,105 +3,68 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>AutoSpec Pro | Expert Automobile IA</title>
+  <title>AutoSpec PRO | Central Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="src/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
-  <nav>
-    <div class="logo">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-      AutoSpec <small style="font-size:10px; opacity:0.6; letter-spacing:1px;">PRO</small>
+  <header>
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--accent)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      AUTOSPEC <span>PRO</span>
     </div>
-    <div class="nav-links">
-      <button class="nav-tab active" onclick="showPage('search')">Identification</button>
-      <button class="nav-tab" onclick="showPage('compare')">Comparatif</button>
-      <button class="nav-tab" onclick="showPage('plans')">Abonnements</button>
-      <button class="nav-tab" id="auth-btn" onclick="openAuth()">Connexion</button>
+    <div class="nav-tabs">
+      <div class="tab active" onclick="showPage('search')">Identification</div>
+      <div class="tab" onclick="showPage('compare')">Comparatif</div>
+      <div class="tab" onclick="showPage('plans')">Abonnements</div>
     </div>
-  </nav>
+  </header>
 
-  <div class="container">
-    
+  <main>
     <!-- PAGE : SEARCH -->
     <div id="page-search" class="page active">
-      <section class="hero">
-        <h1>L'intelligence automobile<br/><span style="color:var(--accent)">sans compromis.</span></h1>
-        <p>Identifiez n'importe quel véhicule par sa plaque et accédez aux données techniques constructeur en une seconde.</p>
-      </section>
-
-      <div class="control-center">
-        <div class="search-input-group">
-          <div class="search-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </div>
-          <input type="text" id="q-input" class="search-input" placeholder="Entrez une plaque (ex: CE-334-WM)..." autocomplete="off" spellcheck="false"/>
+      <div class="search-orb">
+        <div class="search-field">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="vrm-input" placeholder="PLAQUE D'IMMATRICULATION..." autocomplete="off" spellcheck="false"/>
         </div>
-        <button class="btn-search" onclick="doSearch()">Identifier</button>
+        <button class="search-btn" onclick="doSearch()">ANALYSER</button>
       </div>
 
-      <div class="filters">
-        <select class="filter-select" id="f-carbu">
-          <option value="">Carburant (Auto)</option>
-          <option value="Essence">Essence</option>
-          <option value="Diesel">Diesel</option>
-          <option value="Hybride">Hybride</option>
-          <option value="Electrique">Électrique</option>
-        </select>
-        <select class="filter-select" id="f-stage">
-          <option value="Stock">Configuration Stock</option>
-          <option value="Stage 1">Stage 1</option>
-          <option value="Stage 2">Stage 2</option>
-          <option value="Stage 3">Stage 3</option>
-        </select>
-      </div>
-
-      <div id="results-area">
-        <!-- Les résultats seront injectés ici -->
+      <div id="results-engine">
+        <!-- Dashboard injecté -->
+        <div style="text-align:center; padding:5rem; opacity:0.3;">
+          <p style="font-family:var(--font-mono); font-size:12px; letter-spacing:0.2em;">SYSTEM READY // AWAITING INPUT</p>
+        </div>
       </div>
     </div>
 
-    <!-- PAGE : COMPARE -->
+    <!-- OTHER PAGES -->
     <div id="page-compare" class="page">
-      <section class="hero">
-        <h1>Duel de <span style="color:var(--accent)">Performances.</span></h1>
-        <p>Comparez deux véhicules côte à côte avec précision chirurgicale.</p>
-      </section>
-      <div style="text-align:center; padding:4rem; background:var(--surface); border-radius:24px; border:1px solid var(--border);">
-        <p style="color:var(--text3)">Le module de comparaison haute précision est en cours de recalibrage.</p>
+      <div class="grid-item" style="text-align:center; padding:5rem;">
+        <p style="font-family:var(--font-mono); color:var(--accent);">ERROR 403: MODULE REQUIRES PRO SUBSCRIPTION</p>
       </div>
     </div>
+  </main>
 
-    <!-- PAGE : PLANS -->
-    <div id="page-plans" class="page">
-      <section class="hero">
-        <h1>Passez à la <span style="color:var(--accent)">vitesse supérieure.</span></h1>
-        <p>Choisissez l'offre qui correspond à vos besoins d'expertise.</p>
-      </section>
-      <!-- Pricing cards logic goes here -->
-    </div>
-
-  </div>
-
-  <!-- FOOTER MOBILE -->
-  <div class="footer-nav">
-    <button class="nav-tab active" onclick="showPage('search')">
+  <div class="mobile-nav">
+    <button class="m-tab active" onclick="showPage('search')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>SEARCH</span>
     </button>
-    <button class="nav-tab" onclick="showPage('compare')">
+    <button class="m-tab" onclick="showPage('compare')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+      <span>COMPARE</span>
     </button>
-    <button class="nav-tab" onclick="showPage('plans')">
+    <button class="m-tab" onclick="showPage('plans')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <span>Tier</span>
     </button>
   </div>
-
-  <div id="status-msg" class="status-msg"></div>
 
   <script src="src/app.js"></script>
 </body>
