@@ -55,7 +55,7 @@ export default async function handler(req, res) {
 
   try {
       const basePayload = {
-        model: body.model || 'llama-3.1-8b-instant',
+        model: body.model || 'llama-3.3-70b-versatile',
         max_tokens: body.max_tokens || 800,
         messages: body.messages,
         temperature: 0.1,
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
           ];
           const finalAttempt = await requestGroq({
             ...basePayload,
-            model: 'llama-3.1-8b-instant',
+            model: 'llama-3.3-70b-versatile',
             messages: fallbackMessages,
           });
           if (finalAttempt.ok) {

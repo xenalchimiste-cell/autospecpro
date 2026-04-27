@@ -10,7 +10,7 @@ let authToken = localStorage.getItem('autospec_token');
 let carA = null, carB = null;
 window.carCache = window.carCache || {};
 const GROQ_URL = API_BASE + '/api/chat';
-const MODEL = 'llama-3.1-8b-instant';
+const MODEL = 'llama-3.3-70b-versatile';
 
 // ── AUTH LOGIC ──
 function getDiscountMultiplier() {

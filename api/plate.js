@@ -37,6 +37,47 @@ export default async function handler(req, res) {
   const types = ['fre:vrm:chatham', 'fre:vrm:motul', 'fre:vrm:total'];
   const plates = [pSIV, pRaw];
 
+  async function tryRapidApiSiv(plateParam) {
+    const rapidKey = (process.env.RAPIDAPI_KEY || '').trim();
+    if (!rapidKey) return null;
+    const host = process.env.RAPIDAPI_PLATE_HOST || 'api-siv-systeme-d-immatriculation-des-vehicules.p.rapidapi.com';
+    const hostClean = host.replace(/^https?:\/\//, '');
+    const path = process.env.RAPIDAPI_PLATE_PATH || '/';
+    const base = `https://${hostClean}${path.startsWith('/') ? path : '/' + path}`;
+    const url = `${base}?${new URLSearchParams({ plaque: plateParam }).toString()}`;
+    
+    try {
+      const r = await fetch(url, {
+        headers: {
+          'X-RapidAPI-Key': rapidKey,
+          'X-RapidAPI-Host': hostClean,
+          Accept: 'application/json',
+        },
+      });
+      if (!r.ok) return null;
+      const data = await r.json();
+      if (!data) return null;
+      
+      const marque = data.marque || data.AWN_marque || '';
+      const modele = data.modele || data.AWN_modele || '';
+      if (marque && modele) {
+        return { model: `${marque} ${modele}`.trim(), source: 'rapidapi' };
+      }
+      return null;
+    } catch (e) {
+      diag.rapidapi_exception = e.message;
+      return null;
+    }
+  }
+
+  // ----- PRIORITÉ : RapidAPI si clé présente -----
+  if (process.env.RAPIDAPI_KEY) {
+    for (const p of plates) {
+      const rapid = await tryRapidApiSiv(p);
+      if (rapid) return res.status(200).json(rapid);
+    }
+  }
+
   for (const domain of earlwebMirrors) {
     for (const type of types) {
       for (const p of plates) {
@@ -96,5 +137,9 @@ export default async function handler(req, res) {
     } catch (e) { diag.ai_err = e.message; }
   }
 
-  return res.status(404).json({ error: 'identification_failed', diagnostics: diag });
+  return res.status(503).json({ 
+    error: 'plate_provider_unavailable', 
+    message: 'Le service gratuit d\'identification par plaque (Moove) ne répond plus. Pour restaurer ce service, ajoutez la clé RAPIDAPI_KEY dans vos variables d\'environnement Vercel (API SIV Autoways sur RapidAPI).',
+    diagnostics: diag 
+  });
 }
