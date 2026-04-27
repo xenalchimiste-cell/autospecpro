@@ -34,7 +34,7 @@ function setSearchMode(m) {
   searchMode = m;
   const input = document.getElementById('q1');
   const container = document.getElementById('search-row-text');
-  const photoContainer = document.getElementById('search-row-photo');
+  const adContainer = document.getElementById('search-row-ad');
   const icon = document.getElementById('search-icon');
   
   document.getElementById('mode-car').classList.toggle('active', m === 'car');
@@ -42,10 +42,11 @@ function setSearchMode(m) {
   
   if (m === 'ad') {
     container.style.display = 'none';
-    photoContainer.style.display = 'flex';
+    adContainer.style.display = 'flex';
+    document.getElementById('ad-status').style.display = 'none';
   } else {
     container.style.display = 'flex';
-    photoContainer.style.display = 'none';
+    adContainer.style.display = 'none';
     input.placeholder = "ex: BMW M3 2023, Peugeot 308 2022…";
     icon.innerHTML = '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
   }
