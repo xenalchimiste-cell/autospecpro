@@ -1941,6 +1941,7 @@ async function loadAdminData() {
         <td><span class="admin-badge badge-${u.user_type}">${u.user_type}</span></td>
         <td>${new Date(u.created_at).toLocaleDateString()}</td>
         <td>
+          ${u.account_tier !== 'pro' ? `<button class="admin-action-btn btn-verify" style="background:var(--purple);" onclick="handleAdminAction('grant_pro', ${u.id})">Passer Pro</button>` : `<span style="font-size:12px; color:var(--purple); font-weight:bold; margin-right:8px;">★ PRO</span>`}
           <button class="admin-action-btn btn-delete" onclick="handleAdminAction('delete', ${u.id})">Supprimer</button>
         </td>
       </tr>
@@ -1983,7 +1984,9 @@ async function loadAdminData() {
 }
 
 async function handleAdminAction(action, targetId) {
-  const confirmMsg = action === 'delete' ? "Êtes-vous sûr de vouloir supprimer cet utilisateur ?" : "Voulez-vous valider ce compte entreprise ?";
+  const confirmMsg = action === 'delete' ? "Êtes-vous sûr de vouloir supprimer cet utilisateur ?" : 
+                     action === 'grant_pro' ? "Voulez-vous donner l'accès Pro complet à cet utilisateur ?" :
+                     "Voulez-vous valider ce compte entreprise ?";
   if (!confirm(confirmMsg)) return;
 
   try {

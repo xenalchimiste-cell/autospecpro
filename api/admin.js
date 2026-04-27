@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
     // ----- GET: Fetch Dashboard Data -----
     if (req.method === 'GET') {
-      const { rows: users } = await sql`SELECT id, email, first_name, last_name, user_type, company_name, siret, proof_url, is_verified, created_at FROM users ORDER BY created_at DESC`;
+      const { rows: users } = await sql`SELECT id, email, first_name, last_name, user_type, account_tier, company_name, siret, proof_url, is_verified, created_at FROM users ORDER BY created_at DESC`;
       
       const stats = {
         totalUsers: users.length,
@@ -58,6 +58,11 @@ export default async function handler(req, res) {
         await sql`UPDATE users SET is_verified = TRUE WHERE id = ${targetUserId}`;
         return res.status(200).json({ message: 'User verified successfully' });
       } 
+
+      if (action === 'grant_pro') {
+        await sql`UPDATE users SET account_tier = 'pro', user_type = 'pro', is_verified = TRUE WHERE id = ${targetUserId}`;
+        return res.status(200).json({ message: 'User granted Pro access successfully' });
+      }
       
       if (action === 'delete') {
         if (parseInt(targetUserId) === userId) return res.status(400).json({ error: 'Cannot delete yourself' });

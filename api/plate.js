@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  
+
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Plaque manquante' });
   const pRaw = q.replace(/[^A-Z0-9]/gi, '').toUpperCase();
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   const diag = { sources: {}, keys: {} };
-  
+
   // Diagnostic des clés
   diag.keys.GROQ = !!process.env.GROQ_API_KEY;
   diag.keys.RAPID = !!process.env.RAPIDAPI_KEY;
