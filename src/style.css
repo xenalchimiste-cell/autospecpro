@@ -606,44 +606,20 @@ select.s-input {
   background: var(--bg4); color: var(--accent);
   box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
-.photo-upload-row { display: flex; gap: 10px; margin-bottom: 1rem; flex-direction: column; }
-.photo-dropzone {
-  border: 1px dashed var(--border3); border-radius: var(--radius);
-  background: rgba(255,255,255,0.01); text-align: center;
-  padding: 2.5rem 1rem; cursor: pointer; position: relative;
-  transition: border-color .25s, background .25s; overflow: hidden;
+.ad-upload-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
+.ad-textarea {
+  width: 100%; height: 120px; padding: 16px;
+  font-size: 14px; font-family: 'DM Sans', sans-serif;
+  background: var(--bg2); color: var(--text); outline: none;
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  resize: vertical; line-height: 1.5;
+  transition: border-color .25s, box-shadow .25s;
 }
-.photo-dropzone:hover {
-  border-color: var(--accent); background: rgba(212,168,67,0.03);
+.ad-textarea:focus {
+  border-color: rgba(212,168,67,0.5);
+  box-shadow: 0 0 0 3px rgba(212,168,67,0.08), var(--glow-gold);
 }
-.photo-icon-wrap {
-  width: 48px; height: 48px; margin: 0 auto 12px;
-  background: rgba(212,168,67,0.1); color: var(--accent);
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-}
-.photo-dropzone-text {
-  font-size: 13px; color: var(--text2); line-height: 1.5;
-}
-.photo-dropzone-text strong { color: var(--text); }
-.photo-preview {
-  position: absolute; inset: 0; background-size: cover; background-position: center;
-}
-.photo-preview::after {
-  content: ''; position: absolute; inset: 0;
-  background: rgba(8,8,16,0.6);
-}
-
-@keyframes scanline {
-  0% { transform: translateY(-100%); opacity: 0; }
-  50% { opacity: 0.8; }
-  100% { transform: translateY(100%); opacity: 0; }
-}
-.photo-scanner-line {
-  position: absolute; top: 0; left: 0; right: 0; height: 4px;
-  background: linear-gradient(90deg, transparent, var(--accent2), transparent);
-  box-shadow: 0 0 15px var(--accent); z-index: 10;
-  animation: scanline 2s infinite linear;
-}
+.ad-textarea::placeholder { color: var(--text3); }
 
 /* ═══════════════════════════════════════════
    FICHE TABS

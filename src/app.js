@@ -38,14 +38,11 @@ function setSearchMode(m) {
   const icon = document.getElementById('search-icon');
   
   document.getElementById('mode-car').classList.toggle('active', m === 'car');
-  document.getElementById('mode-photo').classList.toggle('active', m === 'photo');
+  document.getElementById('mode-ad').classList.toggle('active', m === 'ad');
   
-  if (m === 'photo') {
+  if (m === 'ad') {
     container.style.display = 'none';
     photoContainer.style.display = 'flex';
-    document.getElementById('photo-preview').style.display = 'none';
-    document.getElementById('photo-icon-wrap').style.display = 'flex';
-    document.getElementById('photo-dropzone-text').innerHTML = '<strong>Cliquez ici</strong> pour prendre une photo ou sélectionner une image.';
   } else {
     container.style.display = 'flex';
     photoContainer.style.display = 'none';
@@ -54,67 +51,46 @@ function setSearchMode(m) {
   }
 }
 
-async function handlePhotoUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+async function handleAdScan() {
+  const adText = document.getElementById('ad-input').value.trim();
+  const statusDiv = document.getElementById('ad-status');
+  
+  if (!adText) {
+    statusDiv.style.display = 'block';
+    statusDiv.style.color = 'var(--red)';
+    statusDiv.innerHTML = "Veuillez coller le texte d'une annonce d'abord.";
+    return;
+  }
 
-  const dropzoneText = document.getElementById('photo-dropzone-text');
-  const iconWrap = document.getElementById('photo-icon-wrap');
-  const preview = document.getElementById('photo-preview');
+  statusDiv.style.display = 'block';
+  statusDiv.style.color = 'var(--text)';
+  statusDiv.innerHTML = '<span style="display:inline-block; animation:spin 1s linear infinite;">⏳</span> Analyse du texte en cours...';
 
-  // Afficher l'image
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const originalBase64 = e.target.result;
-    preview.style.backgroundImage = `url(${originalBase64})`;
-    preview.style.display = 'block';
-    iconWrap.style.display = 'none';
-    dropzoneText.style.position = 'relative';
-    dropzoneText.style.zIndex = '20';
-    dropzoneText.innerHTML = '<strong style="color:#fff;">Analyse visuelle en cours...</strong>';
-    
-    // Create an image object to resize
-    const img = new Image();
-    img.src = originalBase64;
-    await new Promise(r => img.onload = r);
+  try {
+    const res = await fetch(`${API_BASE}/api/extract-ad`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adText })
+    });
 
-    // Resize logic (max width 800)
-    const MAX_WIDTH = 800;
-    let width = img.width;
-    let height = img.height;
-    if (width > MAX_WIDTH) {
-      height = Math.round((height * MAX_WIDTH) / width);
-      width = MAX_WIDTH;
-    }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'analyse');
 
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, width, height);
-    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/vision`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: compressedBase64 })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur IA');
-
-      if (data.model) {
+    if (data.model) {
+      statusDiv.innerHTML = `<span style="color:var(--green);">Véhicule détecté : ${data.model}. Génération de la fiche...</span>`;
+      setTimeout(() => {
         setSearchMode('car');
         document.getElementById('q1').value = data.model;
+        document.getElementById('ad-input').value = '';
+        statusDiv.style.display = 'none';
         searchFiche();
-      }
-    } catch (err) {
-      console.error(err);
-      dropzoneText.innerHTML = `<span style="color:var(--red);">Erreur: ${err.message}</span>`;
+      }, 800);
     }
-  };
-  reader.readAsDataURL(file);
+  } catch (err) {
+    console.error(err);
+    statusDiv.style.color = 'var(--red)';
+    statusDiv.innerHTML = `Erreur: ${err.message}`;
+  }
 }
 
 // ── AUTH UI FUNCTIONS ──

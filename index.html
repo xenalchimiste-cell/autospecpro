@@ -243,9 +243,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
         Modèle
       </button>
-      <button class="mode-tab" id="mode-photo" onclick="setSearchMode('photo')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Photo
+      <button class="mode-tab" id="mode-ad" onclick="setSearchMode('ad')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Annonce
       </button>
     </div>
 
@@ -257,17 +257,10 @@
       <button class="btn btn-primary" id="btn-search" onclick="searchFiche()">Rechercher</button>
     </div>
 
-    <div class="photo-upload-row" id="search-row-photo" style="display:none;">
-      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event)">
-      <div class="photo-dropzone" id="photo-dropzone" onclick="document.getElementById('photo-input').click()">
-        <div class="photo-icon-wrap" id="photo-icon-wrap">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        </div>
-        <div class="photo-dropzone-text" id="photo-dropzone-text">
-          <strong>Cliquez ici</strong> pour prendre une photo ou sélectionner une image.
-        </div>
-        <div class="photo-preview" id="photo-preview" style="display:none;"></div>
-      </div>
+    <div class="ad-upload-row" id="search-row-ad" style="display:none;">
+      <textarea class="ad-textarea" id="ad-input" placeholder="Collez ici la description complète de l'annonce (Leboncoin, LaCentrale...)" onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); handleAdScan(); }"></textarea>
+      <button class="btn btn-primary" id="btn-search-ad" onclick="handleAdScan()">Analyser l'annonce</button>
+      <div id="ad-status" style="font-size: 13px; color: var(--text2); display: none; text-align: center; margin-top: 5px;"></div>
     </div>
     <div class="chips">
       <span class="chip" onclick="qf('BMW M3 Competition 2023')">BMW M3 2023</span>
@@ -487,7 +480,7 @@
         <ul class="p-features">
           <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Fiche technique manuelle</li>
           <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Convertisseur d'unités</li>
-          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Reconnaissance par Photo (IA)</li>
+          <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Scanner d'Annonce (IA)</li>
           <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Radar Comparatif</li>
           <li class="p-feature no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Export PDF Professionnel</li>
         </ul>
@@ -500,7 +493,7 @@
         <div class="p-price">9€<small>/mois</small></div>
         <div class="p-desc">L'outil idéal pour les amateurs de performance.</div>
         <ul class="p-features">
-          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Reconnaissance par Photo (IA)</li>
+          <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Scanner d'Annonce (IA)</li>
           <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Radar Comparatif 360°</li>
           <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Simulateur de Performances</li>
           <li class="p-feature"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Export PDF Basic</li>
