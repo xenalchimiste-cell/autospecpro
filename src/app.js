@@ -35,20 +35,49 @@ function setSearchMode(m) {
   const input = document.getElementById('q1');
   const container = document.getElementById('search-row-text');
   const adContainer = document.getElementById('search-row-ad');
+  const vinContainer = document.getElementById('search-row-vin');
   const icon = document.getElementById('search-icon');
-  
+
   document.getElementById('mode-car').classList.toggle('active', m === 'car');
   document.getElementById('mode-ad').classList.toggle('active', m === 'ad');
-  
-  if (m === 'ad') {
-    container.style.display = 'none';
-    adContainer.style.display = 'flex';
-    document.getElementById('ad-status').style.display = 'none';
-  } else {
-    container.style.display = 'flex';
-    adContainer.style.display = 'none';
+  document.getElementById('mode-vin').classList.toggle('active', m === 'vin');
+
+  container.style.display = m === 'car' ? 'flex' : 'none';
+  adContainer.style.display = m === 'ad' ? 'flex' : 'none';
+  vinContainer.style.display = m === 'vin' ? 'flex' : 'none';
+
+  if (m === 'ad') document.getElementById('ad-status').style.display = 'none';
+  if (m === 'car') {
     input.placeholder = "ex: BMW M3 2023, Peugeot 308 2022…";
     icon.innerHTML = '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
+  }
+}
+
+async function searchVin() {
+  const vin = document.getElementById('vin-input').value.trim().toUpperCase();
+  if (!vin) return;
+
+  if (vin.length !== 17) {
+    document.getElementById('out-fiche').innerHTML = `<div class="err">Le VIN doit contenir exactement 17 caractères (vous en avez saisi ${vin.length}).</div>`;
+    return;
+  }
+
+  document.getElementById('out-fiche').innerHTML = `<div class="loading"><div class="spin"></div>Interrogation de la base NHTSA...</div>`;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/plate?vin=${encodeURIComponent(vin)}`);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'VIN invalide ou introuvable');
+
+    // Switch back to car mode and trigger full spec sheet
+    setSearchMode('car');
+    document.getElementById('q1').value = data.model;
+    document.getElementById('vin-input').value = '';
+    await searchFiche();
+
+  } catch (err) {
+    document.getElementById('out-fiche').innerHTML = `<div class="err">⚠️ ${err.message}</div>`;
   }
 }
 
