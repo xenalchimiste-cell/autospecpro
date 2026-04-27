@@ -1669,107 +1669,64 @@ function updateEntretien(){
 }
 
 // ── CONVERTISSEUR ──
-const convDefs={
-  puissance:{
-    label:'Puissance',
-    from:{label:'Chevaux (ch / CV)',unit:'ch'},
-    conversions:[
-      {label:'Kilowatts (kW)',unit:'kW',fn:x=>x*0.7355},
-      {label:'Horsepower US (hp)',unit:'hp',fn:x=>x*0.9863},
-      {label:'Watts (W)',unit:'W',fn:x=>x*735.5},
-      {label:'Ft·lbf/s',unit:'ft·lbf/s',fn:x=>x*542.5},
-    ]
-  },
-  couple:{
-    label:'Couple',
-    from:{label:'Newton-mètre (N·m)',unit:'N·m'},
-    conversions:[
-      {label:'Kilogramme-force·mètre (kgf·m)',unit:'kgf·m',fn:x=>x*0.10197},
-      {label:'Pound-foot (lb·ft)',unit:'lb·ft',fn:x=>x*0.7376},
-      {label:'Pound-inch (lb·in)',unit:'lb·in',fn:x=>x*8.851},
-      {label:'Joule (J)',unit:'J',fn:x=>x},
-    ]
-  },
-  vitesse:{
-    label:'Vitesse',
-    from:{label:'km/h',unit:'km/h'},
-    conversions:[
-      {label:'Mètres/seconde (m/s)',unit:'m/s',fn:x=>x/3.6},
-      {label:'Miles/heure (mph)',unit:'mph',fn:x=>x*0.6214},
-      {label:'Nœuds (kt)',unit:'kt',fn:x=>x*0.5400},
-      {label:'Pieds/seconde (ft/s)',unit:'ft/s',fn:x=>x*0.9113},
-    ]
-  },
-  conso:{
-    label:'Consommation',
-    from:{label:'Litres/100km (L/100km)',unit:'L/100km'},
-    conversions:[
-      {label:'km/L',unit:'km/L',fn:x=>100/x},
-      {label:'Miles per gallon US (mpg)',unit:'mpg US',fn:x=>235.2/x},
-      {label:'Miles per gallon UK (mpg)',unit:'mpg UK',fn:x=>282.5/x},
-      {label:'L/mile',unit:'L/mile',fn:x=>x*1.609/100},
-    ]
-  },
-  masse:{
-    label:'Masse',
-    from:{label:'Kilogrammes (kg)',unit:'kg'},
-    conversions:[
-      {label:'Livres (lb)',unit:'lb',fn:x=>x*2.2046},
-      {label:'Tonnes (t)',unit:'t',fn:x=>x/1000},
-      {label:'Grammes (g)',unit:'g',fn:x=>x*1000},
-      {label:'Onces (oz)',unit:'oz',fn:x=>x*35.274},
-    ]
-  },
-  pression:{
-    label:'Pression pneus',
-    from:{label:'Bar',unit:'bar'},
-    conversions:[
-      {label:'PSI (lb/in²)',unit:'PSI',fn:x=>x*14.504},
-      {label:'kPa',unit:'kPa',fn:x=>x*100},
-      {label:'Atmosphères (atm)',unit:'atm',fn:x=>x*0.9869},
-      {label:'mmHg',unit:'mmHg',fn:x=>x*750.06},
-    ]
-  },
-};
+// ── EXPERT IA ──
+let expertChatHistory = [
+  { role: 'system', content: 'Tu es un expert automobile passionné et technique pour le site AutoSpec Pro. Tu réponds de manière précise, utile et élégante. Aide l\'utilisateur avec ses questions sur l\'entretien, l\'achat, les performances ou l\'histoire automobile. Si l\'utilisateur pose une question hors sujet auto, recentre poliment la conversation.' }
+];
 
-let currentConvTab='puissance';
-function setConvTab(id,btn){
-  currentConvTab=id;
-  document.querySelectorAll('.conv-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  renderConv(1);
-}
+async function askExpert() {
+  const input = document.getElementById('expert-input');
+  const box = document.getElementById('expert-chat-box');
+  const text = input.value.trim();
+  if (!text) return;
 
-function renderConv(val){
-  const def=convDefs[currentConvTab];
-  const out=document.getElementById('conv-area');
-  out.innerHTML=`
-  <div class="conv-box">
-    <div class="conv-side">
-      <label>${def.from.label}</label>
-      <input class="conv-input" id="conv-in" type="number" value="${val}" oninput="renderConv(this.value)" min="0"/>
-      <span class="conv-unit">${def.from.unit}</span>
-    </div>
-    <div class="conv-arrow">→</div>
-    <div class="conv-side">
-      <label>Résultats</label>
-      <div style="font-size:13px;color:var(--text2);margin-top:.25rem;">${def.conversions.length} unités disponibles</div>
-    </div>
-  </div>
-  <div class="conv-result-grid">${def.conversions.map(c=>{
-    const num=c.fn(parseFloat(val)||0);
-    const disp=num<0.001?num.toExponential(3):num<10?num.toFixed(4):num<1000?num.toFixed(2):Math.round(num).toLocaleString('fr-FR');
-    return`<div class="conv-result-card">
-      <div class="conv-result-lbl">${c.label}</div>
-      <div class="conv-result-val">${disp} <span style="font-size:12px;color:var(--text3)">${c.unit}</span></div>
-    </div>`;
-  }).join('')}</div>`;
+  // Add user message
+  expertChatHistory.push({ role: 'user', content: text });
+  input.value = '';
+  
+  const userMsg = document.createElement('div');
+  userMsg.className = 'chat-msg user';
+  userMsg.textContent = text;
+  box.appendChild(userMsg);
+  box.scrollTop = box.scrollHeight;
+
+  // Loading state
+  const aiMsg = document.createElement('div');
+  aiMsg.className = 'chat-msg ai loading';
+  aiMsg.innerHTML = '<div class="spin"></div> Analyse en cours...';
+  box.appendChild(aiMsg);
+  box.scrollTop = box.scrollHeight;
+
+  try {
+    const res = await fetch(API_BASE + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        json: false,
+        messages: expertChatHistory
+      })
+    });
+
+    const data = await res.json();
+    aiMsg.classList.remove('loading');
+    
+    if (res.ok && data.choices && data.choices[0]) {
+      const reply = data.choices[0].message.content;
+      expertChatHistory.push({ role: 'assistant', content: reply });
+      aiMsg.innerHTML = reply.replace(/\n/g, '<br/>');
+    } else {
+      aiMsg.innerHTML = `<span style="color:var(--red);">Désolé, j'ai rencontré une erreur. Réessayez bientôt.</span>`;
+    }
+  } catch (err) {
+    aiMsg.classList.remove('loading');
+    aiMsg.innerHTML = `<span style="color:var(--red);">Erreur de connexion : ${err.message}</span>`;
+  }
+  box.scrollTop = box.scrollHeight;
 }
 
 // ── INIT ──
 updateSim();
 updateEntretien();
-renderConv(1);
 
 // ── FICHE CLIENT PDF ──
 let currentCertCardId = null;

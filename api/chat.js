@@ -54,13 +54,20 @@ export default async function handler(req, res) {
   }
 
   try {
+      const useJson = body.json !== false;
+
       const basePayload = {
         model: body.model || 'llama-3.3-70b-versatile',
-        max_tokens: body.max_tokens || 800,
+        max_tokens: body.max_tokens || 1000,
         messages: body.messages,
-        temperature: 0.1,
+        temperature: 0.2,
         top_p: 0.1,
       };
+
+      if (!useJson) {
+        const attempt = await requestGroq(basePayload);
+        return res.status(attempt.status).json(attempt.data);
+      }
 
       const firstAttempt = await requestGroq({
         ...basePayload,
