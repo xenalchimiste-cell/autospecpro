@@ -31,27 +31,90 @@ function formatPrice(basePrice) {
 // ── SEARCH LOGIC ──
 let searchMode = 'car';
 function setSearchMode(m) {
-  if (m === 'plate' && !checkAccess('passionne')) {
-    showPage('plans');
-    return;
-  }
   searchMode = m;
   const input = document.getElementById('q1');
-  const container = document.getElementById('search-container');
+  const container = document.getElementById('search-row-text');
+  const photoContainer = document.getElementById('search-row-photo');
   const icon = document.getElementById('search-icon');
   
   document.getElementById('mode-car').classList.toggle('active', m === 'car');
-  document.getElementById('mode-plate').classList.toggle('active', m === 'plate');
+  document.getElementById('mode-photo').classList.toggle('active', m === 'photo');
   
-  if (m === 'plate') {
-    input.placeholder = "AA-123-AA";
-    container.classList.add('plate-mode');
-    icon.innerHTML = '<rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 12h.01"/><path d="M17 12h.01"/>';
+  if (m === 'photo') {
+    container.style.display = 'none';
+    photoContainer.style.display = 'flex';
+    document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('photo-icon-wrap').style.display = 'flex';
+    document.getElementById('photo-dropzone-text').innerHTML = '<strong>Cliquez ici</strong> pour prendre une photo ou sélectionner une image.';
   } else {
+    container.style.display = 'flex';
+    photoContainer.style.display = 'none';
     input.placeholder = "ex: BMW M3 2023, Peugeot 308 2022…";
-    container.classList.remove('plate-mode');
     icon.innerHTML = '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
   }
+}
+
+async function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const dropzoneText = document.getElementById('photo-dropzone-text');
+  const iconWrap = document.getElementById('photo-icon-wrap');
+  const preview = document.getElementById('photo-preview');
+
+  // Afficher l'image
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const originalBase64 = e.target.result;
+    preview.style.backgroundImage = `url(${originalBase64})`;
+    preview.style.display = 'block';
+    iconWrap.style.display = 'none';
+    dropzoneText.style.position = 'relative';
+    dropzoneText.style.zIndex = '20';
+    dropzoneText.innerHTML = '<strong style="color:#fff;">Analyse visuelle en cours...</strong>';
+    
+    // Create an image object to resize
+    const img = new Image();
+    img.src = originalBase64;
+    await new Promise(r => img.onload = r);
+
+    // Resize logic (max width 800)
+    const MAX_WIDTH = 800;
+    let width = img.width;
+    let height = img.height;
+    if (width > MAX_WIDTH) {
+      height = Math.round((height * MAX_WIDTH) / width);
+      width = MAX_WIDTH;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/vision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: compressedBase64 })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur IA');
+
+      if (data.model) {
+        setSearchMode('car');
+        document.getElementById('q1').value = data.model;
+        searchFiche();
+      }
+    } catch (err) {
+      console.error(err);
+      dropzoneText.innerHTML = `<span style="color:var(--red);">Erreur: ${err.message}</span>`;
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 // ── AUTH UI FUNCTIONS ──
