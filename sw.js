@@ -47,7 +47,7 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const title = data.title || 'AutoSpec Pro';
+  const title = data.title || 'AutoSpec';
   const options = {
     body: data.body || 'Vous avez reçu un nouveau message.',
     icon: '/icons/icon.png',
