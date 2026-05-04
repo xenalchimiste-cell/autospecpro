@@ -379,6 +379,7 @@ function updateNav() {
   const adminNav = document.getElementById('nav-tab-admin');
   const adminDrawer = document.getElementById('dtab-admin');
   const adminBnav = document.getElementById('bnav-admin');
+  const accountNav = document.getElementById('nav-tab-account');
 
   if (currentUser) {
     const fn = currentUser.first_name || 'U';
@@ -429,6 +430,8 @@ function updateNav() {
     const userEmail = (currentUser.email || "").toLowerCase().trim();
     const isAdmin = currentUser.user_type === 'admin' || userEmail === 'andreasgiacomello23@gmail.com';
     
+    if (accountNav) accountNav.style.display = 'flex';
+    
     if (isAdmin) {
       if (adminNav) adminNav.style.display = 'flex';
       if (adminDrawer) adminDrawer.style.display = 'flex';
@@ -441,6 +444,10 @@ function updateNav() {
       if (adminBnav) adminBnav.style.display = 'none';
     }
   } else {
+    if (adminNav) adminNav.style.display = 'none';
+    if (adminDrawer) adminDrawer.style.display = 'none';
+    if (adminBnav) adminBnav.style.display = 'none';
+    if (accountNav) accountNav.style.display = 'none';
     area.innerHTML = `<button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>`;
     if (drawerAuthArea) {
       drawerAuthArea.innerHTML = `<button class="btn btn-outline drawer-auth-btn" onclick="openAuthModal(); closeDrawer();">Connexion</button>`;
