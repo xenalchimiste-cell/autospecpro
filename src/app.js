@@ -2290,7 +2290,6 @@ async function subscribeUserToPush(registration) {
 }
 
 window.requestNotificationPermission = async function() {
-  // If already granted, just silently re-subscribe without showing a popup
   if (Notification.permission === 'granted') {
     try {
       const registration = await navigator.serviceWorker.ready;
@@ -2301,14 +2300,13 @@ window.requestNotificationPermission = async function() {
     return;
   }
 
-  // First time - ask for permission
   const permission = await Notification.requestPermission();
   if (permission === 'granted') {
     const registration = await navigator.serviceWorker.ready;
     await subscribeUserToPush(registration);
-    updateNav(); // Update UI to show static bell
+    updateNav();
   } else {
-    console.warn("Les notifications ont été bloquées par le navigateur.");
+    console.warn("Notifications blocked.");
   }
 };
 
@@ -2351,6 +2349,10 @@ window.deleteAdminReview = async function(id) {
 };
 
 window.handlePlateOCR = async function(input) {
+  if (typeof Tesseract === 'undefined') {
+    alert("L'outil d'analyse est encore en cours de chargement. Réessayez dans quelques secondes.");
+    return;
+  }
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
   
