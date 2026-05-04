@@ -35,19 +35,18 @@ function setSearchMode(m) {
   searchMode = m;
   const input = document.getElementById('q1');
   const container = document.getElementById('search-row-text');
-  const adContainer = document.getElementById('search-row-ad');
   const vinContainer = document.getElementById('search-row-vin');
+  const ocrContainer = document.getElementById('search-row-ocr');
   const icon = document.getElementById('search-icon');
 
   document.getElementById('mode-car').classList.toggle('active', m === 'car');
-  document.getElementById('mode-ad').classList.toggle('active', m === 'ad');
   document.getElementById('mode-vin').classList.toggle('active', m === 'vin');
+  document.getElementById('mode-ocr').classList.toggle('active', m === 'ocr');
 
   container.style.display = m === 'car' ? 'flex' : 'none';
-  adContainer.style.display = m === 'ad' ? 'flex' : 'none';
   vinContainer.style.display = m === 'vin' ? 'flex' : 'none';
+  if (ocrContainer) ocrContainer.style.display = m === 'ocr' ? 'flex' : 'none';
 
-  if (m === 'ad') document.getElementById('ad-status').style.display = 'none';
   if (m === 'car') {
     input.placeholder = "ex: BMW M3 2023, Peugeot 308 2022…";
     icon.innerHTML = '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
@@ -2364,53 +2363,45 @@ window.handlePlateOCR = async function(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
   
-  // Show loading in search input
+  // UI Loading
+  const dropzone = document.querySelector('.ocr-dropzone');
+  const originalHtml = dropzone.innerHTML;
+  dropzone.innerHTML = `
+    <div class="spinner" style="width:40px; height:40px; border-top-color:var(--accent);"></div>
+    <p>Analyse de la photo en cours...</p>
+  `;
+
   const searchInput = document.getElementById('q1');
-  const originalPlaceholder = searchInput.placeholder;
-  searchInput.value = '';
-  searchInput.placeholder = "🔍 Analyse de la plaque...";
-  searchInput.disabled = true;
 
   try {
-    const { data: { text } } = await Tesseract.recognize(file, 'eng', {
-      logger: m => console.log(m)
-    });
-    
+    const { data: { text } } = await Tesseract.recognize(file, 'eng');
     console.log("OCR Result:", text);
     
-    // Clean text and look for plate patterns
-    // French: AA-123-BB or 1234 AB 56
     const cleanText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    
-    // Simple logic: if we find something that looks like a 7-9 char plate
-    // We can be more precise later.
-    const plateRegex = /[A-Z]{2}[0-9]{3}[A-Z]{2}/; // AA123BB
+    const plateRegex = /[A-Z]{2}[0-9]{3}[A-Z]{2}/; 
     const match = cleanText.match(plateRegex);
     
     if (match) {
       const plate = match[0];
-      // Format as AA-123-BB
       const formatted = plate.substring(0,2) + '-' + plate.substring(2,5) + '-' + plate.substring(5,7);
+      setSearchMode('car');
       searchInput.value = formatted;
-      searchInput.disabled = false;
-      searchInput.placeholder = originalPlaceholder;
       searchFiche();
     } else {
-      // Try a looser match for other formats
       const looseMatch = cleanText.match(/[A-Z0-9]{5,9}/);
       if (looseMatch) {
+        setSearchMode('car');
         searchInput.value = looseMatch[0];
+        searchFiche();
       } else {
-        alert("Impossible de lire la plaque. Essayez de prendre la photo de plus près et bien en face.");
+        alert("Impossible de lire la plaque. Essayez de prendre la photo de plus près.");
       }
-      searchInput.disabled = false;
-      searchInput.placeholder = originalPlaceholder;
     }
   } catch (err) {
     console.error("OCR Error:", err);
-    alert("Erreur lors de l'analyse de l'image.");
-    searchInput.disabled = false;
-    searchInput.placeholder = originalPlaceholder;
+    alert("Erreur lors de l'analyse.");
+  } finally {
+    dropzone.innerHTML = originalHtml;
   }
 };
 

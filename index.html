@@ -327,9 +327,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/></svg>
         VIN
       </button>
-      <button class="mode-tab" id="mode-ad" onclick="setSearchMode('ad')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Annonce
+      <button class="mode-tab" id="mode-ocr" onclick="setSearchMode('ocr')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Photo
       </button>
     </div>
 
@@ -337,10 +337,6 @@
       <div class="search-wrap" id="search-container">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input class="s-input" id="q1" placeholder="ex: BMW M3 2023, Peugeot 308 2022…" autocomplete="off" onkeydown="if(event.key==='Enter')searchFiche()"/>
-        <button id="camera-btn" class="camera-search-btn" onclick="document.getElementById('plate-ocr-input').click()" title="Scanner une plaque">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </button>
-        <input type="file" id="plate-ocr-input" accept="image/*" capture="environment" style="display:none;" onchange="handlePlateOCR(this)">
       </div>
       <button class="btn btn-primary" id="btn-search" onclick="searchFiche()">Rechercher</button>
     </div>
@@ -348,14 +344,18 @@
     <div class="vin-upload-row" id="search-row-vin" style="display:none;">
       <div class="search-wrap" style="flex:1;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:15px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text3);"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/></svg>
-        <input class="s-input" id="vin-input" placeholder="ex: WBA3A5C5XDF354057" autocomplete="off" maxlength="17" style="text-transform:uppercase; font-family:'DM Mono',monospace; letter-spacing:2px; font-weight:700; font-size:16px;" onkeydown="if(event.key==='Enter') searchVin()" oninput="this.value=this.value.toUpperCase()"/>
+        <input class="s-input" id="vin-input" placeholder="ex: WBA3A5C5XDF354057" autocomplete="off" maxlength="17" style="text-transform:uppercase; font-family:'DM Sans',sans-serif; letter-spacing:2px; font-weight:700; font-size:16px;" onkeydown="if(event.key==='Enter') searchVin()" oninput="this.value=this.value.toUpperCase()"/>
       </div>
       <button class="btn btn-primary" onclick="searchVin()">Décoder le VIN</button>
     </div>
-    <div class="ad-upload-row" id="search-row-ad" style="display:none;">
-      <textarea class="ad-textarea" id="ad-input" placeholder="Collez ici la description complète de l'annonce (Leboncoin, LaCentrale...)" onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); handleAdScan(); }"></textarea>
-      <button class="btn btn-primary" id="btn-search-ad" onclick="handleAdScan()">Analyser l'annonce</button>
-      <div id="ad-status" style="font-size: 13px; color: var(--text2); display: none; text-align: center; margin-top: 5px;"></div>
+
+    <div class="ocr-upload-row" id="search-row-ocr" style="display:none;">
+      <div class="ocr-dropzone" onclick="document.getElementById('plate-ocr-input').click()">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <p>Prendre en photo ou importer une plaque</p>
+        <span style="font-size:12px; opacity:0.6;">Analyse automatique par IA</span>
+      </div>
+      <input type="file" id="plate-ocr-input" accept="image/*" capture="environment" style="display:none;" onchange="handlePlateOCR(this)">
     </div>
     <div class="chips">
       <span class="chip" onclick="qf('BMW M3 Competition 2023')">BMW M3 2023</span>
