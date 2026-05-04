@@ -408,7 +408,7 @@ function updateNav() {
         ${pushBtn}
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           <div class="user-profile-nav" onclick="handleLogout()">
-            <div class="user-initials">${initials}</div>
+            ${getUserAvatarHtml(currentUser)}
             <span style="font-size:12px; font-weight:600;">${fn}</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </div>
@@ -2438,6 +2438,7 @@ window.updateAccountPage = async function() {
   }
 
   // Profile display
+  document.getElementById('p-display-avatar').outerHTML = getUserAvatarHtml(currentUser, 'profile-main-avatar');
   document.getElementById('p-display-firstname').innerText = currentUser.first_name || '---';
   document.getElementById('p-display-lastname').innerText = currentUser.last_name || '---';
   document.getElementById('p-display-email').innerText = currentUser.email || '---';
@@ -2489,10 +2490,13 @@ window.fetchCommunityPosts = async function() {
     
     feed.innerHTML = posts.map(p => `
       <div class="post-card">
-        <img src="${p.image_url}" class="post-img" onclick="openPostDetail(${p.id})" onerror="this.src='https://placehold.co/600x400/1a1a1a/ffffff?text=Image+Non+Disponible'">
+        <img class="post-img" src="${p.image_url}" loading="lazy" onclick="openPostDetail(${p.id})">
         <div class="post-content">
           <div class="post-header">
-            <span class="post-author">${p.author_name}${getUserBadge(p.user_type)}</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${getUserAvatarHtml({ first_name: p.author_name, avatar_url: p.author_avatar_url }, 'user-avatar-nav')}
+              <span class="post-author">${p.author_name}${getUserBadge(p.user_type)}</span>
+            </div>
             <div style="display:flex; align-items:center; gap:10px;">
               <span class="post-date">${new Date(p.created_at).toLocaleDateString()}</span>
               ${(currentUser && currentUser.user_type === 'admin') ? `<button class="btn-delete-post" onclick="deletePost(${p.id})" title="Supprimer (Admin)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}
@@ -2752,8 +2756,8 @@ window.openPostDetail = async function(postId) {
 
   // Fill data
   img.src = post.image_url;
+  avatar.outerHTML = getUserAvatarHtml({ first_name: post.author_name, avatar_url: post.author_avatar_url }, 'pd-avatar');
   author.innerHTML = `${post.author_name}${getUserBadge(post.user_type)}`;
-  avatar.innerText = post.author_name.charAt(0).toUpperCase();
   date.innerText = new Date(post.created_at).toLocaleDateString();
   desc.innerText = post.description || '';
   likes.innerText = post.likes_count || 0;
@@ -2797,9 +2801,9 @@ window.loadDetailComments = async function(postId) {
     }
 
     list.innerHTML = comments.map(c => `
-      <div class="comment-bubble" style="background:none; border:none; padding:0; margin-bottom:5px;">
+      <div class="comment-bubble" style="background:none; border:none; padding:0; margin-bottom:15px;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
-          <div class="pd-avatar" style="width:28px; height:28px; font-size:10px; flex-shrink:0;">${c.author_name.charAt(0)}</div>
+          ${getUserAvatarHtml({ first_name: c.author_name, avatar_url: c.author_avatar_url }, 'pd-avatar')}
           <div>
             <div style="font-size:13px;"><strong style="color:#fff; margin-right:6px;">${c.author_name}${getUserBadge(c.user_type)}</strong> ${c.content}</div>
             <div style="font-size:10px; color:var(--text3); margin-top:4px;">${new Date(c.created_at).toLocaleDateString()}</div>
@@ -2844,6 +2848,15 @@ window.getUserBadge = function(userType) {
 };
 
 // ════════════════════ GESTION DU PROFIL ════════════════════
+window.getUserAvatarHtml = function(user, sizeClass = 'user-avatar-nav') {
+  if (!user) return `<div class="${sizeClass}">?</div>`;
+  if (user.avatar_url) {
+    return `<div class="${sizeClass}"><img src="${user.avatar_url}" onerror="this.parentElement.innerHTML='${user.first_name?.[0] || 'U'}'"></div>`;
+  }
+  const initials = ((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase() || user.email?.[0].toUpperCase() || 'U';
+  return `<div class="${sizeClass}">${initials}</div>`;
+};
+
 window.toggleEditProfile = function() {
   const display = document.getElementById('profile-display');
   const form = document.getElementById('profile-form');
@@ -2857,6 +2870,7 @@ window.toggleEditProfile = function() {
     // Fill form with current data
     document.getElementById('p-edit-firstname').value = currentUser.first_name || '';
     document.getElementById('p-edit-lastname').value = currentUser.last_name || '';
+    document.getElementById('p-edit-avatar').value = currentUser.avatar_url || '';
   } else {
     form.style.display = 'none';
     display.style.display = 'block';
@@ -2868,18 +2882,20 @@ window.handleSaveProfile = async function(e) {
   e.preventDefault();
   const firstName = document.getElementById('p-edit-firstname').value.trim();
   const lastName = document.getElementById('p-edit-lastname').value.trim();
+  const avatarUrl = document.getElementById('p-edit-avatar').value.trim();
 
   try {
     const res = await fetch(API_BASE + '/api/auth/update-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-      body: JSON.stringify({ firstName, lastName })
+      body: JSON.stringify({ firstName, lastName, avatarUrl })
     });
     const data = await res.json();
     if (res.ok) {
       currentUser = data.user;
       localStorage.setItem('user', JSON.stringify(currentUser));
       updateAccountPage();
+      updateNav();
       toggleEditProfile();
       alert("Profil mis à jour !");
     } else {

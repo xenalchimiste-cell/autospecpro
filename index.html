@@ -592,6 +592,9 @@
         </div>
         
         <div id="profile-display">
+          <div style="text-align:center; margin-bottom:20px;">
+            <div id="p-display-avatar" class="profile-main-avatar">A</div>
+          </div>
           <div class="profile-info-row">
             <span class="p-label">Prénom</span>
             <span class="p-value" id="p-display-firstname">---</span>
@@ -607,6 +610,11 @@
         </div>
 
         <form id="profile-form" style="display:none;" onsubmit="handleSaveProfile(event)">
+          <div class="auth-field-sm" style="margin-bottom:10px;">
+            <div class="auth-field">
+              <input type="text" id="p-edit-avatar" placeholder="URL de la photo de profil (ex: https://...)">
+            </div>
+          </div>
           <div class="auth-field-sm" style="margin-bottom:10px;">
             <div class="auth-field">
               <input type="text" id="p-edit-firstname" placeholder="Prénom" required>

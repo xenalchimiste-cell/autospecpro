@@ -56,10 +56,13 @@ async function handleGetPosts(req, res) {
   try {
     // Fetch posts with likes, comments counts and author type
     const { rows: posts } = await sql`
-      SELECT p.*, u.user_type,
+      SELECT p.*, 
+             u.first_name || ' ' || u.last_name as author_name,
+             u.user_type,
+             u.avatar_url as author_avatar_url,
+             EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = ${userId}) as is_liked,
              (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
-             (SELECT COUNT(*) FROM post_comments WHERE post_id = p.id) as comments_count,
-             EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = ${userId}) as is_liked
+             (SELECT COUNT(*) FROM post_comments WHERE post_id = p.id) as comments_count
       FROM posts p
       LEFT JOIN users u ON p.user_id = u.id
       ORDER BY p.created_at DESC
@@ -181,7 +184,7 @@ async function handleGetComments(req, res) {
 
   try {
     const { rows: comments } = await sql`
-      SELECT c.id, c.author_name, c.content, c.created_at, c.user_id, u.user_type
+      SELECT c.id, c.author_name, c.content, c.created_at, c.user_id, u.user_type, u.avatar_url as author_avatar_url
       FROM post_comments c
       LEFT JOIN users u ON c.user_id = u.id
       WHERE c.post_id = ${postId}
