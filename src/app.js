@@ -389,7 +389,8 @@ function updateNav() {
     let pushBtn = '';
     if (notifSupported) {
       if (notifGranted) {
-        pushBtn = `<button class="btn btn-outline" onclick="requestNotificationPermission()" title="Notifications activées - Cliquer pour re-synchroniser" style="height:32px; font-size:16px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent);">🔔</button>`;
+        // Already granted - show static bell icon, no click needed
+        pushBtn = `<button class="btn btn-outline" title="Notifications activées ✓" style="height:32px; font-size:16px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent); cursor:default;">🔔</button>`;
       } else {
         pushBtn = `<button class="btn btn-outline" onclick="requestNotificationPermission()" title="Activer les notifications" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent);">🔔 Activer Push</button>`;
       }
@@ -2186,12 +2187,24 @@ async function subscribeUserToPush(registration) {
 }
 
 window.requestNotificationPermission = async function() {
+  // If already granted, just silently re-subscribe without showing a popup
+  if (Notification.permission === 'granted') {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await subscribeUserToPush(registration);
+    } catch(e) {
+      console.error('Re-subscribe error:', e);
+    }
+    return;
+  }
+
+  // First time - ask for permission
   const permission = await Notification.requestPermission();
   if (permission === 'granted') {
     const registration = await navigator.serviceWorker.ready;
-    subscribeUserToPush(registration);
-    updateNav();
-    alert("Notifications activées avec succès !");
+    await subscribeUserToPush(registration);
+    updateNav(); // Update UI to show static bell
+    alert("🔔 Notifications activées ! Vous recevrez désormais les nouveautés AutoSpec Pro.");
   } else {
     alert("Les notifications ont été bloquées par le navigateur.");
   }
