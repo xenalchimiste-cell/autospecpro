@@ -2752,7 +2752,7 @@ window.openPostDetail = async function(postId) {
 
   // Fill data
   img.src = post.image_url;
-  author.innerHTML = \`\${post.author_name}\${getUserBadge(post.user_type)}\`;
+  author.innerHTML = `${post.author_name}${getUserBadge(post.user_type)}`;
   avatar.innerText = post.author_name.charAt(0).toUpperCase();
   date.innerText = new Date(post.created_at).toLocaleDateString();
   desc.innerText = post.description || '';
