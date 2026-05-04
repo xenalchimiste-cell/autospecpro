@@ -1737,25 +1737,61 @@ select.s-input {
 .drawer.open { right: 0; }
 
 .drawer-header {
-  padding: 24px; border-bottom: 1px solid var(--border);
+  padding: 30px 24px; 
+  border-bottom: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.02), transparent);
+}
+.drawer-header .nav-logo {
+  font-size: 20px;
+  background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
 }
 .close-drawer { font-size: 32px; color: var(--text3); cursor: pointer; }
 
 .drawer-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
 .drawer-item {
-  display: flex; align-items: center; gap: 14px;
-  padding: 14px 16px; border-radius: 12px;
-  color: var(--text2); font-size: 15px; font-weight: 600;
-  transition: all 0.2s; cursor: pointer;
+  display: flex; align-items: center; gap: 18px;
+  padding: 12px 16px; border-radius: 16px;
+  color: var(--text2); font-size: 15px; font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;
+  margin-bottom: 2px;
 }
+.drawer-item:active { transform: scale(0.96); background: rgba(255,255,255,0.03); }
+
 .drawer-item .d-icon {
-  width: 32px; height: 32px;
+  width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--bg3); border-radius: 8px; color: var(--text3);
+  background: rgba(255,255,255,0.03); 
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px; color: var(--text3);
+  transition: all 0.3s;
+  flex-shrink: 0;
 }
-.drawer-item.active { background: rgba(212, 168, 67, 0.1); color: var(--accent); }
-.drawer-item.active .d-icon { background: var(--accent); color: #000; }
+.drawer-item .d-icon svg { width: 20px; height: 20px; }
+
+.drawer-item.active { 
+  background: rgba(212, 168, 67, 0.08); 
+  color: var(--accent);
+  font-weight: 700;
+}
+.drawer-item.active .d-icon { 
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); 
+  color: #000;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(212, 168, 67, 0.3);
+}
+
+/* Couleurs spécifiques pour le côté vivant */
+#dtab-fiche .d-icon { color: #3498db; }
+#dtab-compare .d-icon { color: #9b59b6; }
+#dtab-sim .d-icon { color: #2ecc71; }
+#dtab-community .d-icon { color: #f1c40f; }
+#dtab-account .d-icon { color: #e67e22; }
+#dtab-plans .d-icon { color: var(--accent); }
+#dtab-admin .d-icon { color: #ff4757; }
 
 .drawer-footer { padding: 24px; border-top: 1px solid var(--border); }
 
