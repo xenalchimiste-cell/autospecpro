@@ -148,6 +148,27 @@
       <button class="admin-tab-btn" onclick="switchAdminSubTab('pros', this)">Vérifications Enterprise</button>
       <button class="admin-tab-btn" onclick="switchAdminSubTab('stats', this)">Parrainages</button>
       <button class="admin-tab-btn" onclick="switchAdminSubTab('push', this)">Notifications</button>
+      <button class="admin-tab-btn" onclick="switchAdminSubTab('reviews', this)">Avis</button>
+    </div>
+
+    <!-- ONGLET REVIEWS (ADMIN) -->
+    <div id="admin-sub-reviews" class="admin-sub-page">
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Auteur</th>
+              <th>Note</th>
+              <th>Commentaire</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-reviews-list">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ONGLET PUSH -->

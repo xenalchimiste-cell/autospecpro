@@ -2150,6 +2150,9 @@ async function loadAdminData() {
       </tr>
     `).join('');
 
+    // Admin Reviews List
+    fetchAdminReviews();
+
   } catch (err) {
     console.error('Failed to load admin data:', err);
   }
@@ -2157,6 +2160,7 @@ async function loadAdminData() {
 
 async function handleAdminAction(action, targetId) {
   const confirmMsg = action === 'delete' ? "Êtes-vous sûr de vouloir supprimer cet utilisateur ?" : 
+                     action === 'delete_review' ? "Supprimer cet avis ?" :
                      action === 'grant_pro' ? "Voulez-vous donner l'accès Pro complet à cet utilisateur ?" :
                      "Voulez-vous valider ce compte entreprise ?";
   if (!confirm(confirmMsg)) return;
@@ -2301,5 +2305,43 @@ window.requestNotificationPermission = async function() {
     updateNav(); // Update UI to show static bell
   } else {
     console.warn("Les notifications ont été bloquées par le navigateur.");
+  }
+};
+
+window.fetchAdminReviews = async function() {
+  try {
+    const res = await fetch(API_BASE + '/api/reviews');
+    const reviews = await res.json();
+    const list = document.getElementById('admin-reviews-list');
+    if (!list) return;
+    list.innerHTML = reviews.map(r => `
+      <tr>
+        <td>${r.author_name}</td>
+        <td>${'★'.repeat(r.rating)}</td>
+        <td style="font-size:12px; max-width:300px;">${r.comment}</td>
+        <td>${new Date(r.created_at).toLocaleDateString()}</td>
+        <td>
+          <button class="admin-action-btn btn-delete" onclick="deleteAdminReview(${r.id})">Supprimer</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error('Fetch admin reviews error:', err);
+  }
+};
+
+window.deleteAdminReview = async function(id) {
+  if (!confirm("Supprimer cet avis ?")) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/reviews?id=${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    if (res.ok) {
+      fetchAdminReviews();
+      fetchReviews(); 
+    }
+  } catch (err) {
+    alert("Erreur: " + err.message);
   }
 };
