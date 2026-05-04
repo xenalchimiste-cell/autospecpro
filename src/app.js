@@ -383,9 +383,17 @@ function updateNav() {
     const ln = currentUser.last_name || '';
     const initials = (fn[0] + (ln[0] || '')).toUpperCase();
     
-    const pushBtn = ('Notification' in window && Notification.permission !== 'granted') 
-      ? `<button class="btn btn-outline" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent);" onclick="requestNotificationPermission()">🔔 Activer Push</button>` 
-      : '';
+    const notifGranted = 'Notification' in window && Notification.permission === 'granted';
+    const notifSupported = 'Notification' in window && 'serviceWorker' in navigator;
+
+    let pushBtn = '';
+    if (notifSupported) {
+      if (notifGranted) {
+        pushBtn = `<button class="btn btn-outline" title="Notifications activées" style="height:32px; font-size:16px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent); opacity:0.6; cursor:default;">🔔</button>`;
+      } else {
+        pushBtn = `<button class="btn btn-outline" onclick="requestNotificationPermission()" title="Activer les notifications" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent);">🔔 Activer Push</button>`;
+      }
+    }
 
     area.innerHTML = `
       <div style="display:flex; align-items:center;">
@@ -400,6 +408,11 @@ function updateNav() {
         </div>
       </div>
     `;
+    // Auto re-subscribe if permission already granted (ensures DB is up to date)
+    if (notifGranted) {
+      navigator.serviceWorker.ready.then(reg => subscribeUserToPush(reg)).catch(() => {});
+    }
+
     if (drawerAuthArea) {
       drawerAuthArea.innerHTML = `<button class="btn btn-outline drawer-auth-btn" onclick="handleLogout(); closeDrawer();">Déconnexion</button>`;
     }
