@@ -653,6 +653,10 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
     if (id === 'account') updateAccountPage();
     if (id === 'community') {
       fetchCommunityPosts();
+      localStorage.setItem('last_comm_visit', Date.now().toString());
+      if (document.getElementById('comm-badge')) document.getElementById('comm-badge').style.display = 'none';
+      if (document.getElementById('comm-dot')) document.getElementById('comm-dot').style.display = 'none';
+      
       if (Notification.permission === 'default') {
         setTimeout(requestNotificationPermission, 2000);
       }
@@ -2592,3 +2596,35 @@ window.deletePost = async function(postId) {
     alert("Erreur lors de la suppression.");
   }
 };
+
+// ════════════════════ GESTION DES BADGES NOTIFS ════════════════════
+window.updateCommunityBadges = async function() {
+  const lastVisit = parseInt(localStorage.getItem('last_comm_visit') || '0');
+  const badge = document.getElementById('comm-badge');
+  const dot = document.getElementById('comm-dot');
+
+  try {
+    const res = await fetch(API_BASE + '/api/posts');
+    const posts = await res.json();
+    if (!res.ok) return;
+
+    const newPosts = posts.filter(p => new Date(p.created_at).getTime() > lastVisit);
+    const count = newPosts.length;
+
+    if (count > 0) {
+      if (badge) { badge.innerText = count; badge.style.display = 'block'; }
+      if (dot) { dot.style.display = 'block'; }
+    } else {
+      if (badge) badge.style.display = 'none';
+      if (dot) dot.style.display = 'none';
+    }
+  } catch (err) {
+    console.error("Badge update error:", err);
+  }
+};
+
+// Vérification au démarrage
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(updateCommunityBadges, 3000);
+  setInterval(updateCommunityBadges, 60000 * 5); // Toutes les 5 mins
+});

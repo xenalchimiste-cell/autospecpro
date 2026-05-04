@@ -1911,3 +1911,38 @@ select.s-input {
   background: #ff4757;
   color: #fff;
 }
+
+/* BADGES NOTIFICATIONS */
+.nav-tab { position: relative; }
+.bnav-item { position: relative; }
+
+/* Point jaune PC */
+.nav-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: #f1c40f;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(241, 196, 15, 0.6);
+  display: none;
+}
+
+/* Badge mobile */
+.nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 50%;
+  transform: translateX(120%);
+  background: #ff4757;
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  border: 2px solid var(--bg3);
+  display: none;
+}
