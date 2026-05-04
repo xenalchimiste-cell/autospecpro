@@ -27,10 +27,13 @@ export default async function handler(req, res) {
   await initDb();
 
   if (req.method === 'GET') {
+    const { action } = req.query;
+    if (action === 'comments') return await handleGetComments(req, res);
     return await handleGetPosts(req, res);
   } else if (req.method === 'POST') {
     const { action } = req.query;
     if (action === 'like') return await handleLikePost(req, res);
+    if (action === 'comment') return await handleAddComment(req, res);
     return await handleCreatePost(req, res);
   } else if (req.method === 'DELETE') {
     return await handleDeletePost(req, res);
@@ -51,10 +54,11 @@ async function handleGetPosts(req, res) {
   }
 
   try {
-    // Fetch posts with a check if the current user liked them
+    // Fetch posts with likes and comments counts
     const { rows: posts } = await sql`
       SELECT p.*, 
              (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
+             (SELECT COUNT(*) FROM post_comments WHERE post_id = p.id) as comments_count,
              EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = ${userId}) as is_liked
       FROM posts p
       ORDER BY p.created_at DESC
@@ -159,12 +163,57 @@ async function handleDeletePost(req, res) {
     const { postId } = req.body;
     if (!postId) return res.status(400).json({ error: 'Post ID is required' });
 
-    // Delete likes first
+    // Delete related data first
     await sql`DELETE FROM post_likes WHERE post_id = ${postId}`;
+    await sql`DELETE FROM post_comments WHERE post_id = ${postId}`;
     await sql`DELETE FROM posts WHERE id = ${postId}`;
 
     return res.status(200).json({ message: 'Post deleted successfully' });
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token or server error' });
+  }
+}
+
+async function handleGetComments(req, res) {
+  const { postId } = req.query;
+  if (!postId) return res.status(400).json({ error: 'Post ID is required' });
+
+  try {
+    const { rows: comments } = await sql`
+      SELECT id, author_name, content, created_at, user_id
+      FROM post_comments
+      WHERE post_id = ${postId}
+      ORDER BY created_at ASC
+    `;
+    return res.status(200).json(comments);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleAddComment(req, res) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.userId;
+
+    const { postId, content } = req.body;
+    if (!postId || !content) return res.status(400).json({ error: 'Post ID and content are required' });
+
+    // Get author name
+    const { rows: users } = await sql`SELECT first_name, last_name FROM users WHERE id = ${userId}`;
+    const authorName = users[0].first_name + ' ' + (users[0].last_name || '');
+
+    const { rows: newComment } = await sql`
+      INSERT INTO post_comments (post_id, user_id, author_name, content)
+      VALUES (${postId}, ${userId}, ${authorName}, ${content})
+      RETURNING *
+    `;
+    return res.status(201).json(newComment[0]);
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token' });
   }
 }

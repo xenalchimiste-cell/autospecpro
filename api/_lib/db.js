@@ -82,6 +82,17 @@ export async function initDb() {
           UNIQUE(user_id, post_id)
         );
       `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS post_comments (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER REFERENCES posts(id),
+          user_id INTEGER REFERENCES users(id),
+          author_name VARCHAR(255) NOT NULL,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
       
       console.log('Database connected and initialized with pg driver');
     } finally {

@@ -2497,6 +2497,20 @@ window.fetchCommunityPosts = async function() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="${p.is_liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               <span class="like-count">${p.likes_count || 0}</span>
             </button>
+            <button class="comment-trigger" onclick="toggleComments(${p.id}, this)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              <span>${p.comments_count || 0}</span>
+            </button>
+          </div>
+          
+          <div class="post-comments-section" id="comments-${p.id}" style="display:none;">
+            <div class="comments-list" id="comments-list-${p.id}"></div>
+            <div class="comment-input-wrap">
+              <input type="text" placeholder="Ajouter un commentaire..." id="comment-input-${p.id}" onkeyup="if(event.key==='Enter') submitComment(${p.id})">
+              <button onclick="submitComment(${p.id})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -2657,3 +2671,70 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
+
+// ════════════════════ GESTION DES COMMENTAIRES ════════════════════
+window.toggleComments = async function(postId, btn) {
+  const section = document.getElementById('comments-' + postId);
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    loadComments(postId);
+  } else {
+    section.style.display = 'none';
+  }
+};
+
+window.loadComments = async function(postId) {
+  const list = document.getElementById('comments-list-' + postId);
+  list.innerHTML = '<div style="padding:10px; font-size:12px; color:var(--text3);">Chargement...</div>';
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/posts?action=comments&postId=${postId}`);
+    const comments = await res.json();
+    
+    if (comments.length === 0) {
+      list.innerHTML = '<div style="padding:15px; font-size:13px; color:var(--text3); text-align:center;">Soyez le premier à commenter !</div>';
+      return;
+    }
+
+    list.innerHTML = comments.map(c => `
+      <div class="comment-bubble">
+        <div class="comment-header">
+          <span class="comment-author">${c.author_name}</span>
+          <span class="comment-date">${new Date(c.created_at).toLocaleDateString()}</span>
+        </div>
+        <div class="comment-text">${c.content}</div>
+      </div>
+    `).join('');
+    
+    // Scroll to bottom
+    list.scrollTop = list.scrollHeight;
+  } catch (err) {
+    list.innerHTML = '<div style="color:var(--red); padding:10px;">Erreur de chargement</div>';
+  }
+};
+
+window.submitComment = async function(postId) {
+  const input = document.getElementById('comment-input-' + postId);
+  const content = input.value.trim();
+  if (!content) return;
+  if (!authToken) { openAuthModal(); return; }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/posts?action=comment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ postId, content })
+    });
+    
+    if (res.ok) {
+      input.value = '';
+      loadComments(postId);
+      // Optionnel: rafraîchir le compteur sur le bouton
+    } else {
+      const err = await res.json();
+      alert(err.error || "Erreur");
+    }
+  } catch (err) {
+    alert("Erreur réseau");
+  }
+};
