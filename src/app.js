@@ -2833,13 +2833,14 @@ window.submitDetailComment = async function(postId) {
 
 // ════════════════════ BADGES UTILISATEURS ════════════════════
 window.getUserBadge = function(userType) {
+  let badges = '';
   if (userType === 'admin') {
-    return `<span class="user-badge"><span class="badge-admin">Admin</span></span>`;
+    badges += `<span class="user-badge"><span class="badge-admin">Admin</span></span>`;
   }
-  if (userType === 'pro' || userType === 'verified') {
-    return `<span class="user-badge badge-verified"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zM10 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"/></svg></span>`;
+  if (userType === 'admin' || userType === 'pro' || userType === 'verified') {
+    badges += `<span class="user-badge badge-verified"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zM10 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"/></svg></span>`;
   }
-  return '';
+  return badges;
 };
 
 // ════════════════════ GESTION DU PROFIL ════════════════════
