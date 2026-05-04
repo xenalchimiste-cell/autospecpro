@@ -651,6 +651,7 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
     page.classList.add('active');
     window.scrollTo({top: 0, behavior: 'smooth'});
     if (id === 'account') updateAccountPage();
+    if (id === 'community') fetchCommunityPosts();
   }
 
   // Reset all tabs
@@ -2453,4 +2454,114 @@ window.copyReferralCode = function() {
   const code = document.getElementById('account-referral-code').innerText;
   navigator.clipboard.writeText(code);
   alert("Code copié ! Partagez-le avec vos amis.");
+};
+
+// ════════════════════ COMMUNAUTÉ ════════════════════
+window.fetchCommunityPosts = async function() {
+  const feed = document.getElementById('community-feed');
+  try {
+    const res = await fetch(API_BASE + '/api/posts', {
+      headers: authToken ? { 'Authorization': 'Bearer ' + authToken } : {}
+    });
+    const posts = await res.json();
+    if (!res.ok) throw new Error(posts.error);
+
+    if (posts.length === 0) {
+      feed.innerHTML = '<div style="text-align:center; padding:50px; opacity:0.5;">Aucun post pour le moment. Soyez le premier !</div>';
+      return;
+    }
+
+    feed.innerHTML = posts.map(p => `
+      <div class="post-card">
+        <img src="${p.image_url}" class="post-img" onerror="this.src='https://placehold.co/600x400/1a1a1a/ffffff?text=Image+Non+Disponible'">
+        <div class="post-content">
+          <div class="post-header">
+            <span class="post-author">${p.author_name}</span>
+            <span class="post-date">${new Date(p.created_at).toLocaleDateString()}</span>
+          </div>
+          <p class="post-desc">${p.description || ''}</p>
+          <div class="post-actions">
+            <button class="like-btn ${p.is_liked ? 'active' : ''}" onclick="toggleLikePost(${p.id}, this)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="${p.is_liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span class="like-count">${p.likes_count || 0}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error("Fetch posts error:", err);
+    feed.innerHTML = '<div style="color:var(--red); text-align:center; padding:20px;">Erreur de chargement.</div>';
+  }
+};
+
+window.toggleLikePost = async function(postId, btn) {
+  if (!authToken) {
+    alert("Connectez-vous pour réagir aux posts !");
+    return;
+  }
+  try {
+    const res = await fetch(API_BASE + '/api/posts?action=like', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ postId })
+    });
+    const result = await res.json();
+    if (res.ok) {
+      const countSpan = btn.querySelector('.like-count');
+      let count = parseInt(countSpan.innerText);
+      if (result.liked) {
+        btn.classList.add('active');
+        btn.querySelector('svg').setAttribute('fill', 'currentColor');
+        countSpan.innerText = count + 1;
+      } else {
+        btn.classList.remove('active');
+        btn.querySelector('svg').setAttribute('fill', 'none');
+        countSpan.innerText = count - 1;
+      }
+    }
+  } catch (err) {
+    console.error("Like error:", err);
+  }
+};
+
+window.openPostModal = function() {
+  if (!authToken) {
+    alert("Connectez-vous pour partager votre voiture !");
+    return;
+  }
+  document.getElementById('postModal').style.display = 'flex';
+};
+
+window.closePostModal = function() {
+  document.getElementById('postModal').style.display = 'none';
+};
+
+window.submitPost = async function() {
+  const image_url = document.getElementById('post-image-url').value.trim();
+  const description = document.getElementById('post-description').value.trim();
+
+  if (!image_url) {
+    alert("L'URL de l'image est requise.");
+    return;
+  }
+
+  try {
+    const res = await fetch(API_BASE + '/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ image_url, description })
+    });
+    if (res.ok) {
+      closePostModal();
+      document.getElementById('post-image-url').value = '';
+      document.getElementById('post-description').value = '';
+      fetchCommunityPosts();
+    } else {
+      const err = await res.json();
+      alert("Erreur: " + err.error);
+    }
+  } catch (err) {
+    alert("Erreur lors de la publication.");
+  }
 };

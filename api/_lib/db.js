@@ -60,6 +60,28 @@ export async function initDb() {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
       `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS posts (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id),
+          author_name VARCHAR(255) NOT NULL,
+          image_url TEXT NOT NULL,
+          description TEXT,
+          likes_count INTEGER DEFAULT 0,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS post_likes (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id),
+          post_id INTEGER REFERENCES posts(id),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, post_id)
+        );
+      `);
       
       console.log('Database connected and initialized with pg driver');
     } finally {
