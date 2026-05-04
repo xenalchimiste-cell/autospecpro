@@ -386,14 +386,19 @@ function updateNav() {
     const notifGranted = 'Notification' in window && Notification.permission === 'granted';
     const notifSupported = 'Notification' in window && 'serviceWorker' in navigator;
 
+    console.log("Push support check:", { supported: notifSupported, granted: notifGranted });
+
     let pushBtn = '';
     if (notifSupported) {
       if (notifGranted) {
-        // Already granted - show static bell icon, no click needed
-        pushBtn = `<button class="btn btn-outline" title="Notifications activées ✓" style="height:32px; font-size:16px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent); cursor:default;">🔔</button>`;
+        // Already granted - show status
+        pushBtn = `<button class="btn btn-outline" title="Notifications activées" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: #4ecb82; color: #4ecb82; cursor:default; background: rgba(78,203,130,0.05);">🔔 Activé ✓</button>`;
       } else {
-        pushBtn = `<button class="btn btn-outline" onclick="requestNotificationPermission()" title="Activer les notifications" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent);">🔔 Activer Push</button>`;
+        pushBtn = `<button class="btn btn-outline" onclick="requestNotificationPermission()" title="Activer les notifications" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent); font-weight:700; animation: pulse 2s infinite;">🔔 Activer Push</button>`;
       }
+    } else {
+      // Small debug hint for dev
+      console.warn("Push notifications are not supported in this browser environment.");
     }
 
     area.innerHTML = `
