@@ -2480,3 +2480,37 @@ select.s-input {
   background: var(--accent);
   color: #000;
 }
+
+/* PROFIL PUBLIC PREMIUM */
+.profile-header-premium {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  background: linear-gradient(135deg, rgba(212,168,67,0.1), rgba(0,0,0,0.2));
+  padding: 40px;
+  border-radius: 20px;
+  border: 1px solid rgba(212,168,67,0.15);
+  margin-bottom: 30px;
+}
+.up-info { flex: 1; }
+
+.up-content-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 30px;
+}
+
+@media (max-width: 768px) {
+  .profile-header-premium { flex-direction: column; text-align: center; padding: 30px 20px; gap: 20px; }
+  .up-content-grid { grid-template-columns: 1fr; }
+  .up-meta { justify-content: center; }
+}
+
+.clickable-author {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.clickable-author:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}

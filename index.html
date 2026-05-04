@@ -588,6 +588,54 @@
   </div>
 
 
+  <!-- ══════════ PAGE PROFIL PUBLIC ══════════ -->
+  <div id="page-user-profile" class="page">
+    <div class="profile-header-premium">
+      <div id="up-avatar" class="profile-main-avatar">?</div>
+      <div class="up-info">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <h1 id="up-name" style="margin:0; font-size:28px;">---</h1>
+          <div id="up-badges"></div>
+        </div>
+        <div id="up-meta" style="font-size:13px; color:var(--text3); margin-top:5px; display:flex; gap:15px;">
+          <span><strong id="up-count-followers">0</strong> Abonnés</span>
+          <span><strong id="up-count-following">0</strong> Abonnements</span>
+          <span id="up-location-box" style="display:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span id="up-location">---</span></span>
+        </div>
+        <div style="margin-top:15px; display:flex; gap:10px;">
+          <button id="up-follow-btn" class="btn btn-primary" onclick="handleFollowUser()">Suivre</button>
+          <button id="up-msg-btn" class="btn btn-outline" onclick="handleProfileMessage()">Message</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="up-content-grid">
+      <div class="up-sidebar">
+        <div class="account-card">
+          <h3>Bio</h3>
+          <p id="up-bio" style="font-size:14px; color:var(--text2); line-height:1.6; font-style:italic;">Aucune bio.</p>
+          <hr style="border:none; border-top:1px solid var(--border); margin:15px 0;">
+          <h3>Garage</h3>
+          <div id="up-garage" style="font-size:14px; color:var(--accent); font-weight:600;">Vide</div>
+          <hr style="border:none; border-top:1px solid var(--border); margin:15px 0;">
+          <h3>Réseaux</h3>
+          <div id="up-instagram-box" style="display:none;">
+            <a id="up-instagram-link" href="#" target="_blank" style="color:var(--text2); text-decoration:none; display:flex; align-items:center; gap:8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              <span id="up-instagram">@---</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="up-main">
+        <h3 style="margin-bottom:20px;">Publications</h3>
+        <div id="up-posts-grid" class="community-grid">
+          <!-- Posts de l'utilisateur -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════ PAGE MESSAGES ══════════ -->
   <div id="page-messages" class="page">
     <h1 class="page-title">Mes <em>Messages</em></h1>

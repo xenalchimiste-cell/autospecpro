@@ -2550,7 +2550,7 @@ window.fetchCommunityPosts = async function() {
           <div class="post-header">
             <div style="display:flex; align-items:center; gap:8px;">
               ${getUserAvatarHtml({ first_name: p.author_name, avatar_url: p.author_avatar_url }, 'user-avatar-nav')}
-              <span class="post-author">${p.author_name}${getUserBadge(p.user_type, p.user_rank)}</span>
+              <span class="post-author clickable-author" onclick="event.stopPropagation(); openUserProfile(${p.user_id})">${p.author_name}${getUserBadge(p.user_type, p.user_rank)}</span>
               ${(currentUser && p.user_id !== currentUser.id) ? `<button class="btn-contact-mini" onclick="event.stopPropagation(); openChat(${p.user_id}, '${p.author_name}', '${p.author_avatar_url}'); showPage('messages')">Contacter</button>` : ''}
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -2814,6 +2814,8 @@ window.openPostDetail = async function(postId) {
   img.src = post.image_url;
   avatar.outerHTML = getUserAvatarHtml({ first_name: post.author_name, avatar_url: post.author_avatar_url }, 'pd-avatar');
   author.innerHTML = `${post.author_name}${getUserBadge(post.user_type, post.user_rank)}`;
+  author.className = 'pd-author clickable-author';
+  author.onclick = () => { closePostDetail(); openUserProfile(post.user_id); };
   
   // Contact button in detail
   const header = document.querySelector('.pd-header-info');
@@ -2874,7 +2876,7 @@ window.loadDetailComments = async function(postId) {
         <div style="display:flex; gap:10px; align-items:flex-start;">
           ${getUserAvatarHtml({ first_name: c.author_name, avatar_url: c.author_avatar_url }, 'pd-avatar')}
           <div>
-            <div style="font-size:13px;"><strong style="color:#fff; margin-right:6px;">${c.author_name}${getUserBadge(c.user_type, c.user_rank)}</strong> ${c.content}</div>
+            <div style="font-size:13px;"><strong class="clickable-author" onclick="closePostDetail(); openUserProfile(${c.user_id})" style="color:#fff; margin-right:6px;">${c.author_name}${getUserBadge(c.user_type, c.user_rank)}</strong> ${c.content}</div>
             <div style="font-size:10px; color:var(--text3); margin-top:4px;">${new Date(c.created_at).toLocaleDateString()}</div>
           </div>
         </div>
@@ -3105,4 +3107,110 @@ window.closeChat = function() {
     document.querySelector('.chat-window').classList.add('hidden-mobile');
   }
   fetchConversations();
+};
+
+// ════════════════════ GESTION PROFIL PUBLIC ════════════════════
+let activeProfileId = null;
+
+window.openUserProfile = async function(userId) {
+  if (currentUser && userId == currentUser.id) {
+    showPage('account');
+    return;
+  }
+  
+  activeProfileId = userId;
+  showPage('user-profile');
+  
+  const upPosts = document.getElementById('up-posts-grid');
+  upPosts.innerHTML = '<div style="color:var(--text3);">Chargement du profil...</div>';
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/social?action=profile&userId=${userId}`, {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    const data = await res.json();
+    const u = data.user;
+    
+    // Fill user info
+    document.getElementById('up-avatar').outerHTML = getUserAvatarHtml(u, 'profile-main-avatar');
+    document.getElementById('up-name').innerText = u.first_name + ' ' + (u.last_name || '');
+    document.getElementById('up-badges').innerHTML = getUserBadge(u.user_type, u.user_rank);
+    document.getElementById('up-count-followers').innerText = u.followers_count;
+    document.getElementById('up-count-following').innerText = u.following_count;
+    
+    document.getElementById('up-bio').innerText = u.bio || "Aucune bio renseignée.";
+    document.getElementById('up-garage').innerText = u.garage || "Garage vide.";
+    
+    if (u.location) {
+      document.getElementById('up-location-box').style.display = 'flex';
+      document.getElementById('up-location').innerText = u.location;
+    } else {
+      document.getElementById('up-location-box').style.display = 'none';
+    }
+    
+    if (u.instagram) {
+      document.getElementById('up-instagram-box').style.display = 'block';
+      document.getElementById('up-instagram').innerText = u.instagram;
+    } else {
+      document.getElementById('up-instagram-box').style.display = 'none';
+    }
+    
+    // Follow button state
+    const followBtn = document.getElementById('up-follow-btn');
+    if (u.is_following) {
+      followBtn.innerText = 'Se désabonner';
+      followBtn.classList.add('btn-outline');
+      followBtn.classList.remove('btn-primary');
+    } else {
+      followBtn.innerText = 'S\'abonner';
+      followBtn.classList.remove('btn-outline');
+      followBtn.classList.add('btn-primary');
+    }
+    
+    // Fill posts
+    if (data.posts.length === 0) {
+      upPosts.innerHTML = '<div style="color:var(--text3); grid-column:1/-1; text-align:center; padding:40px;">Aucune publication.</div>';
+    } else {
+      upPosts.innerHTML = data.posts.map(p => `
+        <div class="post-card">
+          <img class="post-img" src="${p.image_url}" onclick="openPostDetail(${p.id})">
+          <div class="post-content">
+            <p class="post-desc" style="margin:0;">${p.description || ''}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+  } catch (err) {
+    showToast("Erreur lors du chargement du profil", "error");
+  }
+};
+
+window.handleFollowUser = async function() {
+  if (!authToken) {
+    showToast("Connectez-vous pour suivre des membres", "info");
+    return;
+  }
+  if (!activeProfileId) return;
+  
+  try {
+    const res = await fetch(API_BASE + '/api/social', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ action: 'follow', targetId: activeProfileId })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(data.following ? "Abonnement réussi !" : "Désabonnement réussi", "success");
+      openUserProfile(activeProfileId); // Refresh
+    }
+  } catch (err) { showToast("Erreur réseau", "error"); }
+};
+
+window.handleProfileMessage = function() {
+  if (!activeProfileId) return;
+  const name = document.getElementById('up-name').innerText;
+  const avatar = document.getElementById('up-avatar').src;
+  openChat(activeProfileId, name, avatar);
+  showPage('messages');
 };

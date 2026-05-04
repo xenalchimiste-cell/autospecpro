@@ -113,6 +113,16 @@ export async function initDb() {
         );
       `);
       
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS follows (
+          id SERIAL PRIMARY KEY,
+          follower_id INTEGER REFERENCES users(id),
+          following_id INTEGER REFERENCES users(id),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(follower_id, following_id)
+        );
+      `);
+      
       console.log('Database connected and initialized with pg driver');
     } finally {
       client.release();
