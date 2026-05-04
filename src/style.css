@@ -122,21 +122,21 @@ nav::after {
 ═══════════════════════════════════════════ */
 .page {
   display: none;
-  max-width: 980px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 3rem 2rem 6rem;
+  padding: 2.5rem 2rem 6rem;
 }
 .page.active { display: block; }
 
 /* ── SECTION TITLES ── */
 .page-title {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(30px, 4.5vw, 48px);
-  line-height: 1.08; letter-spacing: -1px;
-  margin-bottom: .6rem;
-  background: linear-gradient(135deg, var(--text) 60%, var(--text2));
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: clamp(32px, 4vw, 44px);
+  color: #fff; line-height: 1.1; margin-bottom: 0.5rem;
+  letter-spacing: -1px;
+}
+@media (min-width: 1200px) {
+  .page-title { font-size: 40px; }
 }
 .page-title em {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -1332,9 +1332,12 @@ select.s-input {
 /* ACCOUNT PAGE */
 .account-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 25px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
   margin-top: 30px;
+}
+@media (min-width: 1200px) {
+  .account-grid { grid-template-columns: repeat(3, 1fr); }
 }
 .account-card {
   background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
@@ -1868,22 +1871,32 @@ select.s-input {
 /* COMMUNAUTÉ */
 .community-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 25px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+@media (min-width: 1200px) {
+  .community-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 .post-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 16px;
   overflow: hidden;
-  transition: transform 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.post-card:hover { transform: translateY(-5px); }
+.post-card:hover { 
+  transform: translateY(-8px);
+  border-color: rgba(212,168,67,0.3);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
 .post-img {
   width: 100%;
-  aspect-ratio: 4/3;
+  aspect-ratio: 16/10;
   object-fit: cover;
   background: #000;
+  border-bottom: 1px solid var(--border);
 }
 .post-content {
   padding: 16px;
