@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
   <link rel="stylesheet" href="src/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -112,6 +113,10 @@
       <div class="drawer-item" id="dtab-expert" onclick="showPage('expert', null, true)">
         <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <span>Expert IA</span>
+      </div>
+      <div class="drawer-item" id="dtab-account" onclick="showPage('account', null, true)">
+        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <span>Mon Compte</span>
       </div>
       <div class="drawer-item" id="dtab-plans" onclick="showPage('plans', null, true)">
         <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
@@ -328,6 +333,10 @@
       <div class="search-wrap" id="search-container">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input class="s-input" id="q1" placeholder="ex: BMW M3 2023, Peugeot 308 2022…" autocomplete="off" onkeydown="if(event.key==='Enter')searchFiche()"/>
+        <button id="camera-btn" class="camera-search-btn" onclick="document.getElementById('plate-ocr-input').click()" title="Scanner une plaque">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <input type="file" id="plate-ocr-input" accept="image/*" capture="environment" style="display:none;" onchange="handlePlateOCR(this)">
       </div>
       <button class="btn btn-primary" id="btn-search" onclick="searchFiche()">Rechercher</button>
     </div>
@@ -562,6 +571,57 @@
     </div>
   </div>
 
+
+  <!-- ══════════ PAGE MON COMPTE ══════════ -->
+  <div id="page-account" class="page fade">
+    <h1 class="page-title">Mon <em>Compte</em></h1>
+    <p class="page-sub">Gérez votre abonnement et suivez vos parrainages.</p>
+
+    <div class="account-grid">
+      <!-- Abonnement -->
+      <div class="account-card">
+        <h3>Mon Abonnement</h3>
+        <div id="account-tier-display" class="account-tier-badge">Chargement...</div>
+        <p style="font-size:13px; color:var(--text2); margin-top:10px;" id="account-tier-desc"></p>
+        <button class="btn btn-primary" onclick="showPage('plans')" style="margin-top:15px; width:100%;">Gérer mon offre</button>
+      </div>
+
+      <!-- Parrainage -->
+      <div class="account-card">
+        <h3>Parrainage</h3>
+        <p style="font-size:13px; color:var(--text2); margin-bottom:15px;">Partagez votre code et gagnez des mois <strong>PRO</strong> gratuits !</p>
+        
+        <div class="referral-code-box">
+          <span id="account-referral-code">------</span>
+          <button onclick="copyReferralCode()" title="Copier">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+
+        <div class="referral-stats">
+          <div class="ref-stat-item">
+            <div class="ref-stat-val" id="ref-count-total">0</div>
+            <div class="ref-stat-label">Filleuls</div>
+          </div>
+          <div class="ref-stat-item">
+            <div class="ref-stat-val" id="ref-reward-earned">0</div>
+            <div class="ref-stat-label">Mois offerts</div>
+          </div>
+        </div>
+
+        <div class="referral-progress-container">
+          <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px;">
+            <span>Prochain palier : 3 amis</span>
+            <span id="ref-progress-text">0/3</span>
+          </div>
+          <div class="ref-progress-bar">
+            <div id="ref-progress-fill" class="ref-progress-fill" style="width: 0%;"></div>
+          </div>
+          <p style="font-size:10px; color:var(--text3); margin-top:8px; text-align:center;">3 filleuls PRO = 1 mois PASSIONNÉ offert !</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════ PAGE PLANS ══════════ -->
   <div id="page-plans" class="page fade">

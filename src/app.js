@@ -643,6 +643,7 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
   if (page) {
     page.classList.add('active');
     window.scrollTo({top: 0, behavior: 'smooth'});
+    if (id === 'account') updateAccountPage();
   }
 
   // Reset all tabs
@@ -2347,4 +2348,108 @@ window.deleteAdminReview = async function(id) {
   } catch (err) {
     alert("Erreur: " + err.message);
   }
+};
+
+window.handlePlateOCR = async function(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  
+  // Show loading in search input
+  const searchInput = document.getElementById('q1');
+  const originalPlaceholder = searchInput.placeholder;
+  searchInput.value = '';
+  searchInput.placeholder = "🔍 Analyse de la plaque...";
+  searchInput.disabled = true;
+
+  try {
+    const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+      logger: m => console.log(m)
+    });
+    
+    console.log("OCR Result:", text);
+    
+    // Clean text and look for plate patterns
+    // French: AA-123-BB or 1234 AB 56
+    const cleanText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    
+    // Simple logic: if we find something that looks like a 7-9 char plate
+    // We can be more precise later.
+    const plateRegex = /[A-Z]{2}[0-9]{3}[A-Z]{2}/; // AA123BB
+    const match = cleanText.match(plateRegex);
+    
+    if (match) {
+      const plate = match[0];
+      // Format as AA-123-BB
+      const formatted = plate.substring(0,2) + '-' + plate.substring(2,5) + '-' + plate.substring(5,7);
+      searchInput.value = formatted;
+      searchInput.disabled = false;
+      searchInput.placeholder = originalPlaceholder;
+      searchFiche();
+    } else {
+      // Try a looser match for other formats
+      const looseMatch = cleanText.match(/[A-Z0-9]{5,9}/);
+      if (looseMatch) {
+        searchInput.value = looseMatch[0];
+      } else {
+        alert("Impossible de lire la plaque. Essayez de prendre la photo de plus près et bien en face.");
+      }
+      searchInput.disabled = false;
+      searchInput.placeholder = originalPlaceholder;
+    }
+  } catch (err) {
+    console.error("OCR Error:", err);
+    alert("Erreur lors de l'analyse de l'image.");
+    searchInput.disabled = false;
+    searchInput.placeholder = originalPlaceholder;
+  }
+};
+
+window.updateAccountPage = async function() {
+  if (!currentUser) return;
+  
+  // Basic info
+  const tier = currentUser.account_tier || 'free';
+  const display = document.getElementById('account-tier-display');
+  const desc = document.getElementById('account-tier-desc');
+  
+  if (tier === 'free') {
+    display.innerText = "Gratuit";
+    display.style.background = "var(--border)";
+    desc.innerText = "Vous utilisez la version limitée d'AutoSpec Pro.";
+  } else if (tier === 'passionne') {
+    display.innerText = "Passionné";
+    display.style.background = "var(--accent)";
+    desc.innerText = "Profitez de toutes les fonctionnalités premium !";
+  } else if (tier === 'pro') {
+    display.innerText = "Professionnel";
+    display.style.background = "var(--purple)";
+    desc.innerText = "Accès complet illimité pour les experts.";
+  }
+
+  document.getElementById('account-referral-code').innerText = currentUser.referral_code || '---';
+
+  // Fetch referral stats
+  try {
+    const res = await fetch(API_BASE + '/api/auth/referral-stats', {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    const stats = await res.json();
+    if (res.ok) {
+      document.getElementById('ref-count-total').innerText = stats.totalReferred;
+      document.getElementById('ref-reward-earned').innerText = stats.rewardsEarned;
+      
+      const progress = stats.totalReferred % 3;
+      const percent = (progress / 3) * 100;
+      document.getElementById('ref-progress-fill').style.width = percent + '%';
+      document.getElementById('ref-progress-text').innerText = progress + '/3';
+    }
+  } catch (err) {
+    console.error("Failed to load referral stats:", err);
+  }
+};
+
+window.copyReferralCode = function() {
+  const code = document.getElementById('account-referral-code').innerText;
+  navigator.clipboard.writeText(code);
+  alert("Code copié ! Partagez-le avec vos amis.");
 };

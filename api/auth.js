@@ -25,6 +25,7 @@ export default async function handler(req, res) {
     if (action === 'login') return await handleLogin(req, res);
     if (action === 'google') return await handleGoogle(req, res);
     if (action === 'me') return await handleMe(req, res);
+    if (action === 'referral-stats') return await handleReferralStats(req, res);
 
     return res.status(404).json({ error: 'Action not found' });
   } catch (error) {
@@ -166,6 +167,32 @@ async function handleMe(req, res) {
     const user = rows[0];
     delete user.password_hash;
     return res.status(200).json({ user });
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+async function handleReferralStats(req, res) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'No token provided' });
+  
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.userId;
+
+    // Count referred users who are PRO or ENTERPRISE
+    const { rows: stats } = await sql`
+      SELECT COUNT(*) as total 
+      FROM users 
+      WHERE referred_by_id = ${userId} 
+      AND (account_tier = 'passionne' OR account_tier = 'pro' OR user_type = 'pro' OR user_type = 'enterprise')
+    `;
+    
+    const totalReferred = parseInt(stats[0].total) || 0;
+    const rewardsEarned = Math.floor(totalReferred / 3);
+
+    return res.status(200).json({ totalReferred, rewardsEarned });
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
