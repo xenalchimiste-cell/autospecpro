@@ -1244,6 +1244,48 @@ select.s-input {
 .btn-delete:hover { background: var(--red); color: #fff; }
 
 /* ═══════════════════════════════════════════
+   MARQUES & AVIS (MARQUEE)
+═══════════════════════════════════════════ */
+.brands-marquee-container {
+  width: 100%; overflow: hidden; margin-bottom: 2rem;
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+}
+.brands-marquee {
+  display: flex; gap: 2rem; align-items: center; width: max-content;
+  animation: marquee-scroll 25s linear infinite;
+  color: var(--text3); font-weight: 700; font-size: 13px; letter-spacing: 2px;
+}
+.brands-marquee .dot { color: var(--border2); font-size: 10px; opacity: 0.5; }
+
+.reviews-marquee-container {
+  width: 100%; overflow: hidden; margin: 2rem 0; padding: 10px 0;
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+.reviews-marquee {
+  display: flex; gap: 1.5rem; width: max-content;
+  animation: marquee-scroll 40s linear infinite;
+}
+.review-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px; padding: 1.25rem 1.5rem;
+  width: 280px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  transition: transform 0.2s, border-color 0.2s;
+}
+.review-card:hover { transform: translateY(-3px); border-color: rgba(212,168,67,0.3); }
+.review-stars { color: var(--accent); font-size: 14px; letter-spacing: 2px; }
+.review-text { font-size: 13px; color: var(--text); white-space: normal; line-height: 1.5; font-style: italic; }
+.review-author { font-size: 11px; color: var(--text3); font-weight: 600; margin-top: auto; }
+
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ═══════════════════════════════════════════
    RESPONSIVE MOBILE — BREAKPOINT 768px
 ═══════════════════════════════════════════ */
 @media (max-width: 768px) {

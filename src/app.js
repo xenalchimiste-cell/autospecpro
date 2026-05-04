@@ -421,7 +421,10 @@ function updateNav() {
 }
 
 function initializeGoogleAuth() {
-  if (typeof google === 'undefined') return;
+  if (typeof google === 'undefined') {
+    setTimeout(initializeGoogleAuth, 100);
+    return;
+  }
   google.accounts.id.initialize({
     client_id: "548892582580-mh5isg91gtg86hjn7rb11vd5e8dton4f.apps.googleusercontent.com",
     callback: handleGoogleCredential
