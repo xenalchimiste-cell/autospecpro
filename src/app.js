@@ -2178,7 +2178,6 @@ async function subscribeUserToPush(registration) {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
     console.log('Abonnement Push reçu');
-    alert('Abonnement Push réussi');
     
     const token = localStorage.getItem('autospec_token');
     if (token) {
@@ -2188,13 +2187,15 @@ async function subscribeUserToPush(registration) {
         body: JSON.stringify(subscription)
       });
       const data = await res.json();
-      console.log('Push Subscribe Result:', data);
-      if (!res.ok) {
-        console.error('Subscription failed:', data.error);
+      if (res.ok) {
+        alert("✅ Abonnement aux notifications activé et synchronisé !");
+      } else {
+        alert("❌ Erreur serveur lors de l'abonnement : " + (data.error || 'Inconnue'));
       }
     }
   } catch (error) {
     console.error('Erreur inscription Push:', error);
+    alert('❌ Erreur technique : ' + error.message);
   }
 }
 

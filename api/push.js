@@ -56,6 +56,7 @@ async function handleSubscribe(req, res) {
     return res.status(400).json({ error: 'Invalid subscription object' });
   }
 
+  // Ensure table has the correct schema (using ALTER just in case)
   await sql`
     CREATE TABLE IF NOT EXISTS push_subscriptions (
       id SERIAL PRIMARY KEY,
@@ -65,6 +66,13 @@ async function handleSubscribe(req, res) {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
+  
+  // Migration: ensure endpoint column exists if table was created earlier without it
+  try {
+    await sql`ALTER TABLE push_subscriptions ADD COLUMN IF NOT EXISTS endpoint TEXT UNIQUE`;
+  } catch (e) {
+    // Column might already exist or table doesn't exist yet
+  }
 
   try {
     const endpoint = subscription.endpoint;
