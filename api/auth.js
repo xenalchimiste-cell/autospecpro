@@ -21,6 +21,7 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
+    await initDb();
     if (action === 'register') return await handleRegister(req, res);
     if (action === 'login') return await handleLogin(req, res);
     if (action === 'google') return await handleGoogle(req, res);

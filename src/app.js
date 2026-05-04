@@ -2869,7 +2869,7 @@ window.handleSaveProfile = async function(e) {
   const lastName = document.getElementById('p-edit-lastname').value.trim();
 
   try {
-    const res = await fetch(API_BASE + '/api/auth?action=update-profile', {
+    const res = await fetch(API_BASE + '/api/auth/update-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
       body: JSON.stringify({ firstName, lastName })
