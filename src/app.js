@@ -1944,10 +1944,37 @@ function finalizeProDossier() {
 function switchAdminSubTab(tabId, btn) {
   document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.admin-sub-page').forEach(p => p.classList.remove('active'));
-  
+  // Hide push tab too (it uses display:none style, not the class)
+  const pushTab = document.getElementById('admin-sub-push');
+  if (pushTab) pushTab.style.display = 'none';
+
   if (btn) btn.classList.add('active');
-  const target = document.getElementById('admin-sub-' + tabId);
-  if (target) target.classList.add('active');
+
+  if (tabId === 'push') {
+    if (pushTab) pushTab.style.display = 'block';
+  } else {
+    const target = document.getElementById('admin-sub-' + tabId);
+    if (target) target.classList.add('active');
+  }
+}
+
+async function sendAdminPush() {
+  const title = document.getElementById('push-title').value.trim();
+  const body = document.getElementById('push-body').value.trim();
+  if (!title || !body) return alert('Veuillez remplir le titre et le message.');
+
+  try {
+    const res = await fetch(API_BASE + '/api/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ title, message: body, url: '/' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur inconnue');
+    alert(`✅ Notifications envoyées !\n${data.success} succès / ${data.failed} échecs`);
+  } catch (err) {
+    alert('❌ Erreur : ' + err.message);
+  }
 }
 
 async function loadAdminData() {

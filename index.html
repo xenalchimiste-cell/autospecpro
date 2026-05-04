@@ -147,6 +147,15 @@
       <button class="admin-tab-btn active" onclick="switchAdminSubTab('users', this)">Utilisateurs</button>
       <button class="admin-tab-btn" onclick="switchAdminSubTab('pros', this)">Vérifications Enterprise</button>
       <button class="admin-tab-btn" onclick="switchAdminSubTab('stats', this)">Parrainages</button>
+      <button class="admin-tab-btn" onclick="switchAdminSubTab('push', this)">Notifications</button>
+    </div>
+
+    <!-- ONGLET PUSH -->
+    <div id="admin-sub-push" style="display:none; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-top: 20px; border: 1px solid var(--border);">
+      <h3 style="margin-bottom:15px; color:var(--text); font-family: 'DM Serif Display', serif;">Envoyer une Notification</h3>
+      <input type="text" id="push-title" class="p-input" placeholder="Titre de la notification" style="margin-bottom:10px;" value="Nouveauté AutoSpec Pro">
+      <textarea id="push-body" class="p-input" placeholder="Message..." style="margin-bottom:10px; height:80px;">Découvrez nos dernières fonctionnalités !</textarea>
+      <button class="btn btn-primary" onclick="sendAdminPush()">🚀 Envoyer à tous les abonnés</button>
     </div>
 
     <!-- Sub-tab: Users -->
