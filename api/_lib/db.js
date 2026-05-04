@@ -99,6 +99,20 @@ export async function initDb() {
         );
       `);
       
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS user_rank VARCHAR(50) DEFAULT 'Novice'`);
+      
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS messages (
+          id SERIAL PRIMARY KEY,
+          sender_id INTEGER REFERENCES users(id),
+          receiver_id INTEGER REFERENCES users(id),
+          content TEXT NOT NULL,
+          is_read BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      
       console.log('Database connected and initialized with pg driver');
     } finally {
       client.release();

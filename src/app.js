@@ -676,6 +676,11 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
     page.classList.add('active');
     window.scrollTo({top: 0, behavior: 'smooth'});
     if (id === 'account') updateAccountPage();
+    if (id === 'messages') {
+      fetchConversations();
+      if (document.getElementById('msg-dot')) document.getElementById('msg-dot').style.display = 'none';
+      if (document.getElementById('msg-dot-drawer')) document.getElementById('msg-dot-drawer').style.display = 'none';
+    }
     if (id === 'community') {
       fetchCommunityPosts();
       localStorage.setItem('last_comm_visit', Date.now().toString());
@@ -2480,6 +2485,19 @@ window.updateAccountPage = async function() {
   document.getElementById('p-display-instagram').innerText = currentUser.instagram || 'Instagram non lié';
   document.getElementById('p-display-garage').innerText = currentUser.garage || 'Garage vide';
 
+  // Points & Rank
+  document.getElementById('p-display-points').innerText = (currentUser.points || 0) + ' pts';
+  document.getElementById('p-display-rank').innerText = currentUser.user_rank || 'Novice';
+  
+  // Progress bar calculation
+  let nextThreshold = 50;
+  if (currentUser.points >= 500) nextThreshold = 1000; // Legendary?
+  else if (currentUser.points >= 200) nextThreshold = 500;
+  else if (currentUser.points >= 50) nextThreshold = 200;
+  
+  const progress = Math.min(100, (currentUser.points / nextThreshold) * 100);
+  document.getElementById('p-points-fill').style.width = progress + '%';
+
   document.getElementById('account-referral-code').innerText = currentUser.referral_code || '---';
 
   // Fetch referral stats
@@ -2532,7 +2550,8 @@ window.fetchCommunityPosts = async function() {
           <div class="post-header">
             <div style="display:flex; align-items:center; gap:8px;">
               ${getUserAvatarHtml({ first_name: p.author_name, avatar_url: p.author_avatar_url }, 'user-avatar-nav')}
-              <span class="post-author">${p.author_name}${getUserBadge(p.user_type)}</span>
+              <span class="post-author">${p.author_name}${getUserBadge(p.user_type, p.user_rank)}</span>
+              ${(currentUser && p.user_id !== currentUser.id) ? `<button class="btn-contact-mini" onclick="event.stopPropagation(); openChat(${p.user_id}, '${p.author_name}', '${p.author_avatar_url}'); showPage('messages')">Contacter</button>` : ''}
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
               <span class="post-date">${new Date(p.created_at).toLocaleDateString()}</span>
@@ -2794,7 +2813,20 @@ window.openPostDetail = async function(postId) {
   // Fill data
   img.src = post.image_url;
   avatar.outerHTML = getUserAvatarHtml({ first_name: post.author_name, avatar_url: post.author_avatar_url }, 'pd-avatar');
-  author.innerHTML = `${post.author_name}${getUserBadge(post.user_type)}`;
+  author.innerHTML = `${post.author_name}${getUserBadge(post.user_type, post.user_rank)}`;
+  
+  // Contact button in detail
+  const header = document.querySelector('.pd-header-info');
+  if (header && currentUser && post.user_id !== currentUser.id) {
+    const existingBtn = header.querySelector('.btn-contact-mini');
+    if (existingBtn) existingBtn.remove();
+    const btn = document.createElement('button');
+    btn.className = 'btn-contact-mini';
+    btn.style.marginTop = '5px';
+    btn.innerText = 'Contacter';
+    btn.onclick = () => { closePostDetail(); openChat(post.user_id, post.author_name, post.author_avatar_url); showPage('messages'); };
+    header.appendChild(btn);
+  }
   date.innerText = new Date(post.created_at).toLocaleDateString();
   desc.innerText = post.description || '';
   likes.innerText = post.likes_count || 0;
@@ -2842,7 +2874,7 @@ window.loadDetailComments = async function(postId) {
         <div style="display:flex; gap:10px; align-items:flex-start;">
           ${getUserAvatarHtml({ first_name: c.author_name, avatar_url: c.author_avatar_url }, 'pd-avatar')}
           <div>
-            <div style="font-size:13px;"><strong style="color:#fff; margin-right:6px;">${c.author_name}${getUserBadge(c.user_type)}</strong> ${c.content}</div>
+            <div style="font-size:13px;"><strong style="color:#fff; margin-right:6px;">${c.author_name}${getUserBadge(c.user_type, c.user_rank)}</strong> ${c.content}</div>
             <div style="font-size:10px; color:var(--text3); margin-top:4px;">${new Date(c.created_at).toLocaleDateString()}</div>
           </div>
         </div>
@@ -2873,13 +2905,16 @@ window.submitDetailComment = async function(postId) {
 };
 
 // ════════════════════ BADGES UTILISATEURS ════════════════════
-window.getUserBadge = function(userType) {
+window.getUserBadge = function(userType, rank) {
   let badges = '';
   if (userType === 'admin') {
     badges += `<span class="user-badge"><span class="badge-admin">Admin</span></span>`;
   }
   if (userType === 'admin' || userType === 'pro' || userType === 'verified') {
     badges += `<span class="user-badge badge-verified"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zM10 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"/></svg></span>`;
+  }
+  if (rank && rank !== 'Novice') {
+    badges += `<span class="rank-badge">\${rank}</span>`;
   }
   return badges;
 };
@@ -2949,4 +2984,125 @@ window.handleSaveProfile = async function(e) {
   } catch (err) {
     showToast("Erreur réseau", "error");
   }
+};
+
+// ════════════════════ GESTION MESSAGERIE ════════════════════
+let activeChatId = null;
+let chatInterval = null;
+
+window.fetchConversations = async function() {
+  if (!authToken) return;
+  try {
+    const res = await fetch(API_BASE + '/api/messages?action=list', {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    const data = await res.json();
+    const list = document.getElementById('conv-list');
+    
+    if (data.length === 0) {
+      list.innerHTML = '<div class="conv-empty">Aucune conversation.</div>';
+      return;
+    }
+
+    let unreadCount = 0;
+    list.innerHTML = data.map(c => {
+      if (!c.is_read && c.last_message) unreadCount++;
+      return `
+        <div class="conv-item ${activeChatId == c.other_id ? 'active' : ''}" onclick="openChat(${c.other_id}, '${c.other_name}', '${c.other_avatar}')">
+          ${getUserAvatarHtml({ first_name: c.other_name, avatar_url: c.other_avatar }, 'user-avatar-nav')}
+          <div class="conv-info">
+            <div class="conv-name">${c.other_name}</div>
+            <div class="conv-last">${c.last_message || 'Démarrer une discussion'}</div>
+          </div>
+          ${!c.is_read ? '<div style="width:8px; height:8px; background:var(--accent); border-radius:50%;"></div>' : ''}
+        </div>
+      `;
+    }).join('');
+
+    // Toggle dots
+    document.getElementById('msg-dot').style.display = unreadCount > 0 ? 'block' : 'none';
+    document.getElementById('msg-dot-drawer').style.display = unreadCount > 0 ? 'block' : 'none';
+
+  } catch (err) { console.error("Msg Error:", err); }
+};
+
+window.openChat = async function(otherId, name, avatar) {
+  activeChatId = otherId;
+  document.getElementById('chat-header').style.display = 'flex';
+  document.getElementById('chat-input-area').style.display = 'flex';
+  document.getElementById('chat-other-name').innerText = name;
+  document.getElementById('chat-other-avatar').outerHTML = getUserAvatarHtml({ first_name: name, avatar_url: avatar }, 'user-avatar-nav');
+  
+  // Refresh conversations to update active state
+  fetchConversations();
+  
+  // Load messages
+  loadMessages();
+  
+  // Auto refresh chat
+  if (chatInterval) clearInterval(chatInterval);
+  chatInterval = setInterval(loadMessages, 3000);
+
+  // Mobile layout adjustment
+  if (window.innerWidth <= 768) {
+    document.querySelector('.conv-sidebar').classList.add('hidden-mobile');
+    document.querySelector('.chat-window').classList.remove('hidden-mobile');
+  }
+};
+
+window.loadMessages = async function() {
+  if (!activeChatId || !authToken) return;
+  try {
+    const res = await fetch(API_BASE + '/api/messages?action=chat&otherId=' + activeChatId, {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    const data = await res.json();
+    const area = document.getElementById('chat-messages');
+    
+    const oldScrollHeight = area.scrollHeight;
+    
+    area.innerHTML = data.map(m => `
+      <div class="msg-bubble ${m.sender_id == currentUser.id ? 'msg-sent' : 'msg-received'}">
+        ${m.content}
+        <div style="font-size:9px; opacity:0.6; margin-top:4px; text-align:right;">
+          ${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      </div>
+    `).join('');
+
+    // Scroll to bottom only if we were already at bottom or if it's the first load
+    if (area.scrollTop + area.clientHeight >= oldScrollHeight - 100) {
+      area.scrollTop = area.scrollHeight;
+    }
+  } catch (err) { console.error("Chat Load Error:", err); }
+};
+
+window.sendMessage = async function() {
+  const input = document.getElementById('chat-input');
+  const content = input.value.trim();
+  if (!content || !activeChatId) return;
+  
+  input.value = '';
+  try {
+    await fetch(API_BASE + '/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ receiverId: activeChatId, content })
+    });
+    loadMessages();
+  } catch (err) { showToast("Erreur d'envoi", "error"); }
+};
+
+window.closeChat = function() {
+  activeChatId = null;
+  if (chatInterval) clearInterval(chatInterval);
+  document.getElementById('chat-header').style.display = 'none';
+  document.getElementById('chat-input-area').style.display = 'none';
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-welcome">Sélectionnez une conversation pour commencer à discuter.</div>';
+  
+  if (window.innerWidth <= 768) {
+    document.querySelector('.conv-sidebar').classList.remove('hidden-mobile');
+    document.querySelector('.chat-window').classList.add('hidden-mobile');
+  }
+  fetchConversations();
 };

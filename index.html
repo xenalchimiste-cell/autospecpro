@@ -81,6 +81,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         Plans
       </button>
+      <button id="nav-tab-messages" class="nav-tab" onclick="showPage('messages',this)" style="display:none; position:relative;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Messages
+        <span class="nav-dot" id="msg-dot" style="display:none;"></span>
+      </button>
       <button id="nav-tab-account" class="nav-tab" onclick="showPage('account',this)" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Compte
@@ -118,6 +123,11 @@
       <div class="drawer-item" id="dtab-community" onclick="showPage('community', null, true)">
         <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <span>Communauté</span>
+      </div>
+      <div class="drawer-item" id="dtab-messages" onclick="showPage('messages', null, true)" style="display:none; position:relative;">
+        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <span>Messages</span>
+        <span class="nav-dot" id="msg-dot-drawer" style="display:none;"></span>
       </div>
       <div class="drawer-item" id="dtab-account" onclick="showPage('account', null, true)">
         <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
@@ -578,6 +588,45 @@
   </div>
 
 
+  <!-- ══════════ PAGE MESSAGES ══════════ -->
+  <div id="page-messages" class="page">
+    <h1 class="page-title">Mes <em>Messages</em></h1>
+    <p class="page-sub">Discutez avec les autres passionnés du club.</p>
+    
+    <div class="messages-layout">
+      <!-- Liste des conversations -->
+      <div class="conv-sidebar">
+        <div id="conv-list" class="conv-list">
+          <!-- Injecté par JS -->
+          <div class="conv-empty">Aucune conversation.</div>
+        </div>
+      </div>
+      
+      <!-- Fenêtre de Chat -->
+      <div class="chat-window">
+        <div id="chat-header" class="chat-header" style="display:none;">
+          <div id="chat-other-avatar" class="user-avatar-nav" style="width:36px; height:36px;"></div>
+          <div style="flex:1;">
+            <div id="chat-other-name" style="font-weight:700; font-size:15px; color:#fff;">---</div>
+            <div id="chat-other-status" style="font-size:11px; color:var(--green);">En ligne</div>
+          </div>
+          <button class="btn-close-chat" onclick="closeChat()">&times;</button>
+        </div>
+        
+        <div id="chat-messages" class="chat-messages-area">
+          <div class="chat-welcome">Sélectionnez une conversation pour commencer à discuter.</div>
+        </div>
+        
+        <div id="chat-input-area" class="chat-input-box" style="display:none;">
+          <input type="text" id="chat-input" placeholder="Écrivez votre message..." onkeyup="if(event.key==='Enter') sendMessage()">
+          <button class="chat-send-btn" onclick="sendMessage()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════ PAGE MON COMPTE ══════════ -->
   <div id="page-account" class="page fade">
     <h1 class="page-title">Mon <em>Compte</em></h1>
@@ -663,6 +712,31 @@
             <button type="submit" class="btn btn-primary">Enregistrer</button>
           </div>
         </form>
+      </div>
+
+      <!-- Carte Statut & Rang -->
+      <div class="account-card" style="border-top: 4px solid var(--accent);">
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+          <div class="rank-icon-hex" style="width:48px; height:48px; background:rgba(212,168,67,0.1); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px; color:var(--text3); text-transform:uppercase; letter-spacing:1px;">Mon Rang</div>
+            <div id="p-display-rank" style="font-size:24px; font-weight:800; color:#fff;">Novice</div>
+          </div>
+        </div>
+        <div class="points-bar-container">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px;">
+            <span style="color:var(--text2);">Progression</span>
+            <span id="p-display-points" style="font-weight:700; color:var(--accent);">0 pts</span>
+          </div>
+          <div class="points-bar-bg" style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
+            <div id="p-points-fill" class="points-bar-fill" style="width: 5%; height:100%; background:linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 1s ease;"></div>
+          </div>
+        </div>
+        <p style="font-size:11px; color:var(--text3); margin-top:15px; line-height:1.5;">
+          Gagnez des points en partageant vos voitures, en likant et en commentant les pépites de la communauté !
+        </p>
       </div>
 
       <!-- Abonnement -->

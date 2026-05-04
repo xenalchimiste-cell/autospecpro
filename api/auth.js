@@ -166,7 +166,19 @@ async function handleMe(req, res) {
     const { rows } = await sql`SELECT * FROM users WHERE id = ${decoded.userId}`;
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
-    const user = rows[0];
+    let user = rows[0];
+    
+    // Auto-update rank based on points
+    let newRank = 'Novice';
+    if (user.points >= 500) newRank = 'Expert';
+    else if (user.points >= 200) newRank = 'Passionné';
+    else if (user.points >= 50) newRank = 'Amateur';
+
+    if (user.user_rank !== newRank) {
+      const { rows: updated } = await sql`UPDATE users SET user_rank = ${newRank} WHERE id = ${user.id} RETURNING *`;
+      user = updated[0];
+    }
+
     delete user.password_hash;
     return res.status(200).json({ user });
   } catch (err) {
@@ -218,7 +230,7 @@ async function handleUpdateProfile(req, res) {
       SET first_name = ${firstName}, last_name = ${lastName}, avatar_url = ${avatarUrl || null},
           bio = ${bio || null}, instagram = ${instagram || null}, location = ${location || null}, garage = ${garage || null}
       WHERE id = ${userId} 
-      RETURNING id, email, first_name, last_name, user_type, referral_code, avatar_url, bio, instagram, location, garage
+      RETURNING id, email, first_name, last_name, user_type, referral_code, avatar_url, bio, instagram, location, garage, points, user_rank
     `;
 
     return res.status(200).json({ message: 'Profile updated', user: rows[0] });

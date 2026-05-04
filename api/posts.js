@@ -118,6 +118,9 @@ async function handleCreatePost(req, res) {
       } catch (err) { console.error("Push Error:", err); }
     }
 
+    // Award points for posting
+    await sql`UPDATE users SET points = points + 10 WHERE id = ${userId}`;
+    
     return res.status(201).json(newPost[0]);
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });
@@ -139,9 +142,15 @@ async function handleLikePost(req, res) {
     
     if (existing.length > 0) {
       await sql`DELETE FROM post_likes WHERE user_id = ${userId} AND post_id = ${postId}`;
+      // Decrement points of post author
+      const { rows: post } = await sql`SELECT user_id FROM posts WHERE id = ${postId}`;
+      if (post[0]) await sql`UPDATE users SET points = GREATEST(0, points - 2) WHERE id = ${post[0].user_id}`;
       return res.status(200).json({ liked: false });
     } else {
       await sql`INSERT INTO post_likes (user_id, post_id) VALUES (${userId}, ${postId})`;
+      // Increment points of post author
+      const { rows: post } = await sql`SELECT user_id FROM posts WHERE id = ${postId}`;
+      if (post[0]) await sql`UPDATE users SET points = points + 2 WHERE id = ${post[0].user_id}`;
       return res.status(200).json({ liked: true });
     }
   } catch (err) {
@@ -184,7 +193,7 @@ async function handleGetComments(req, res) {
 
   try {
     const { rows: comments } = await sql`
-      SELECT c.id, c.author_name, c.content, c.created_at, c.user_id, u.user_type, u.avatar_url as author_avatar_url
+      SELECT c.id, c.author_name, c.content, c.created_at, c.user_id, u.user_type, u.user_rank, u.avatar_url as author_avatar_url
       FROM post_comments c
       LEFT JOIN users u ON c.user_id = u.id
       WHERE c.post_id = ${postId}
@@ -217,6 +226,9 @@ async function handleAddComment(req, res) {
       VALUES (${postId}, ${userId}, ${authorName}, ${content})
       RETURNING *
     `;
+    // Award points for commenting
+    await sql`UPDATE users SET points = points + 5 WHERE id = ${userId}`;
+
     return res.status(201).json(newComment[0]);
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });
