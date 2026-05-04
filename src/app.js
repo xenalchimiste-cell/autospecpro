@@ -13,6 +13,31 @@ window.carCache = window.carCache || {};
 const GROQ_URL = API_BASE + '/api/chat';
 const MODEL = 'llama-3.3-70b-versatile';
 
+// ── PREMIUM UI UTILS ──
+window.showToast = function(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast \${type}`;
+  
+  let icon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+  if (type === 'success') icon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+  if (type === 'error') icon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+
+  toast.innerHTML = `\${icon} <span>\${message}</span>`;
+  container.appendChild(toast);
+
+  // Trigger animation
+  setTimeout(() => toast.classList.add('show'), 10);
+
+  // Auto remove
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 500);
+  }, 4000);
+};
+
 // ── AUTH LOGIC ──
 function getDiscountMultiplier() {
   let m = 1.0;
@@ -308,7 +333,7 @@ window.handleRegister = async function(e) {
       completeAuth(result.token, result.user);
     } else {
       const msg = result.error + (result.details ? ' : ' + result.details : '');
-      alert(msg || 'Erreur serveur');
+      showToast(msg || 'Erreur serveur', 'error');
       btn.innerHTML = oldHtml;
       btn.style.pointerEvents = 'auto';
     }
@@ -339,7 +364,7 @@ window.handleLogin = async function(e) {
     if (res.ok) {
       completeAuth(result.token, result.user);
     } else {
-      alert(result.error || 'Erreur serveur');
+      showToast(result.error || 'Erreur serveur', 'error');
     }
   } catch (err) {
     console.error('Fetch error:', err);
@@ -2564,7 +2589,7 @@ window.toggleLikePost = async function(postId, btn, isModal = false) {
 
 window.openPostModal = function() {
   if (!authToken) {
-    alert("Connectez-vous pour partager votre voiture !");
+    showToast("Connectez-vous pour partager votre voiture !", "info");
     return;
   }
   document.getElementById('postModal').style.display = 'flex';
@@ -2596,10 +2621,10 @@ window.submitPost = async function() {
       fetchCommunityPosts();
     } else {
       const err = await res.json();
-      alert("Erreur: " + err.error);
+      showToast("Erreur: " + err.error, "error");
     }
   } catch (err) {
-    alert("Erreur lors de la publication.");
+    showToast("Erreur lors de la publication.", "error");
   }
 };
 
@@ -2917,11 +2942,11 @@ window.handleSaveProfile = async function(e) {
       updateAccountPage();
       updateNav();
       toggleEditProfile();
-      alert("Profil mis à jour !");
+      showToast("Profil mis à jour !", "success");
     } else {
-      alert(data.error || "Erreur lors de la mise à jour");
+      showToast(data.error || "Erreur lors de la mise à jour", "error");
     }
   } catch (err) {
-    alert("Erreur réseau");
+    showToast("Erreur réseau", "error");
   }
 };

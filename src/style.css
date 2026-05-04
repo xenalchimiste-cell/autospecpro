@@ -2238,3 +2238,90 @@ select.s-input {
   margin-bottom: 5px;
   margin-left: 5px;
 }
+
+/* SYSTÈME DE TOASTS CRYSTAL */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast {
+  background: rgba(15, 15, 25, 0.8);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 15px 25px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  transform: translateX(120%);
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: auto;
+  border-left: 4px solid var(--accent);
+}
+.toast.show { transform: translateX(0); }
+.toast.error { border-left-color: var(--red); }
+.toast.success { border-left-color: var(--green); }
+
+/* INPUTS ANIMÉS PRO */
+.auth-field {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.auth-field::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; width: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.4s ease;
+}
+.auth-field:focus-within {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(212,168,67,0.4);
+  box-shadow: 0 0 15px rgba(212,168,67,0.1);
+}
+.auth-field:focus-within::after {
+  width: 100%;
+}
+
+/* BOUTON D'ACTION FLOTTANT (FAB) */
+.fab-post {
+  position: fixed;
+  bottom: 90px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(212,168,67,0.4);
+  z-index: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: fab-pulse 2s infinite;
+}
+.fab-post:hover {
+  transform: scale(1.1) rotate(90deg);
+}
+@keyframes fab-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(212,168,67,0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(212,168,67,0); }
+  100% { box-shadow: 0 0 0 0 rgba(212,168,67,0); }
+}
+@media (max-width: 768px) {
+  .fab-post { bottom: 100px; right: 20px; width: 54px; height: 54px; }
+}
