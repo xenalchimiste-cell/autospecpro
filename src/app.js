@@ -1964,7 +1964,7 @@ async function sendAdminPush() {
   if (!title || !body) return alert('Veuillez remplir le titre et le message.');
 
   try {
-    const res = await fetch(API_BASE + '/api/push/send', {
+    const res = await fetch(API_BASE + '/api/push?action=send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
       body: JSON.stringify({ title, message: body, url: '/' })
@@ -2161,7 +2161,7 @@ async function subscribeUserToPush(registration) {
     
     const token = localStorage.getItem('autospec_token');
     if (token) {
-      await fetch('/api/push/subscribe', {
+      await fetch('/api/push?action=subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(subscription)
