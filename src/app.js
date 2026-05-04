@@ -389,7 +389,7 @@ function updateNav() {
     let pushBtn = '';
     if (notifSupported) {
       if (notifGranted) {
-        pushBtn = `<button class="btn btn-outline" title="Notifications activées" style="height:32px; font-size:16px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent); opacity:0.6; cursor:default;">🔔</button>`;
+        pushBtn = `<button class="btn btn-outline" onclick="requestNotificationPermission()" title="Notifications activées - Cliquer pour re-synchroniser" style="height:32px; font-size:16px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent);">🔔</button>`;
       } else {
         pushBtn = `<button class="btn btn-outline" onclick="requestNotificationPermission()" title="Activer les notifications" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent);">🔔 Activer Push</button>`;
       }
