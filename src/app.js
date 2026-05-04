@@ -377,6 +377,7 @@ function updateNav() {
   const drawerAuthArea = document.getElementById('drawer-auth-area');
   const adminNav = document.getElementById('nav-tab-admin');
   const adminDrawer = document.getElementById('dtab-admin');
+  const adminBnav = document.getElementById('bnav-admin');
 
   if (currentUser) {
     const fn = currentUser.first_name || 'U';
@@ -430,11 +431,13 @@ function updateNav() {
     if (isAdmin) {
       if (adminNav) adminNav.style.display = 'flex';
       if (adminDrawer) adminDrawer.style.display = 'flex';
+      if (adminBnav) adminBnav.style.display = 'flex';
       // Sécurité : au cas où l'élément est manquant ou ne s'affiche pas
       console.log("Admin access detected for:", userEmail);
     } else {
       if (adminNav) adminNav.style.display = 'none';
       if (adminDrawer) adminDrawer.style.display = 'none';
+      if (adminBnav) adminBnav.style.display = 'none';
     }
   } else {
     area.innerHTML = `<button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>`;
