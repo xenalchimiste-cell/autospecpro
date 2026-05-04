@@ -1,0 +1,18 @@
+{
+  "name": "AutoSpec Pro",
+  "short_name": "AutoSpec",
+  "description": "Base de données automobile, specs et simulateur d'entretien.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080810",
+  "theme_color": "#080810",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

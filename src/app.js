@@ -383,14 +383,21 @@ function updateNav() {
     const ln = currentUser.last_name || '';
     const initials = (fn[0] + (ln[0] || '')).toUpperCase();
     
+    const pushBtn = ('Notification' in window && Notification.permission !== 'granted') 
+      ? `<button class="btn btn-outline" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent);" onclick="requestNotificationPermission()">🔔 Activer Push</button>` 
+      : '';
+
     area.innerHTML = `
-      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-        <div class="user-profile-nav" onclick="handleLogout()">
-          <div class="user-initials">${initials}</div>
-          <span style="font-size:12px; font-weight:600;">${fn}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <div style="display:flex; align-items:center;">
+        ${pushBtn}
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <div class="user-profile-nav" onclick="handleLogout()">
+            <div class="user-initials">${initials}</div>
+            <span style="font-size:12px; font-weight:600;">${fn}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </div>
+          <div style="font-size:9px; color:var(--text3); cursor:default;">Parrain : <span style="color:var(--accent); font-weight:700;">${currentUser.referral_code || '---'}</span></div>
         </div>
-        <div style="font-size:9px; color:var(--text3); cursor:default;">Parrain : <span style="color:var(--accent); font-weight:700;">${currentUser.referral_code || '---'}</span></div>
       </div>
     `;
     if (drawerAuthArea) {
@@ -458,6 +465,7 @@ async function handleGoogleCredential(response) {
 // Session check on load
 window.addEventListener('DOMContentLoaded', async () => {
   initializeGoogleAuth();
+  registerServiceWorker();
   
   // Custom Callback Handler pour le retour Stripe
   const urlParams = new URLSearchParams(window.location.search);
@@ -2084,3 +2092,62 @@ function selectCompany(name, siren) {
   status.style.background = 'rgba(78,203,130,0.1)';
   status.style.color = 'var(--green)';
 }
+
+// ════════════════════ PWA & PUSH NOTIFICATIONS ════════════════════
+const VAPID_PUBLIC_KEY = "BENk7CYgAuJCfCv3-H0EJNQEs3VfyYVS7TcEe1ZfZZPxiXlBEOnpIN-d4yYOIRI62Hgn8brRg_ZmVUMODDqiTJ0";
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+  return outputArray;
+}
+
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator && 'PushManager' in window) {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service Worker enregistré:', registration);
+      if (Notification.permission === 'granted') {
+        subscribeUserToPush(registration);
+      }
+    } catch (error) {
+      console.error('Erreur SW:', error);
+    }
+  }
+}
+
+async function subscribeUserToPush(registration) {
+  try {
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    console.log('Abonnement Push reçu');
+    
+    const token = localStorage.getItem('autospec_token');
+    if (token) {
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(subscription)
+      });
+    }
+  } catch (error) {
+    console.error('Erreur inscription Push:', error);
+  }
+}
+
+window.requestNotificationPermission = async function() {
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    const registration = await navigator.serviceWorker.ready;
+    subscribeUserToPush(registration);
+    updateNav();
+    alert("Notifications activées avec succès !");
+  } else {
+    alert("Les notifications ont été bloquées par le navigateur.");
+  }
+};

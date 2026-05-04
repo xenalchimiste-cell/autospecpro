@@ -8,12 +8,13 @@
     "start": "npx -y serve ."
   },
   "dependencies": {
+    "@vercel/blob": "^0.22.1",
+    "@vercel/postgres": "^0.8.0",
     "bcryptjs": "^2.4.3",
+    "google-auth-library": "^9.7.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3",
-    "@vercel/postgres": "^0.8.0",
-    "google-auth-library": "^9.7.0",
-    "@vercel/blob": "^0.22.1",
-    "stripe": "^14.20.0"
+    "stripe": "^14.20.0",
+    "web-push": "^3.6.7"
   }
 }
