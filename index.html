@@ -941,3 +941,52 @@
   <script src="src/app.js"></script>
 </body>
 </html>
+  <!-- ══════════ MODALE DETAIL POST (STYLE INSTA) ══════════ -->
+  <div id="postDetailModal" class="auth-overlay" onclick="closePostDetail()" style="display:none; z-index:10002;">
+    <div class="post-detail-container" onclick="event.stopPropagation()">
+      <button class="auth-close" onclick="closePostDetail()" style="top:15px; right:15px; z-index:10;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="post-detail-layout">
+        <!-- Gauche: Image -->
+        <div class="post-detail-media">
+          <img id="pd-img" src="" alt="Post">
+        </div>
+
+        <!-- Droite: Infos & Commentaires -->
+        <div class="post-detail-sidebar">
+          <div class="pd-header">
+            <div class="pd-user-info">
+              <div class="pd-avatar" id="pd-avatar">A</div>
+              <div class="pd-user-meta">
+                <span class="pd-username" id="pd-author">Auteur</span>
+                <span class="pd-date" id="pd-date">Il y a 2h</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pd-content">
+            <div class="pd-description" id="pd-description"></div>
+            <div class="pd-divider"></div>
+            <div class="pd-comments" id="pd-comments-list">
+              <!-- Les commentaires iront ici -->
+            </div>
+          </div>
+
+          <div class="pd-footer">
+            <div class="pd-actions">
+              <button id="pd-like-btn" class="like-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </button>
+              <span id="pd-likes-count">0</span> likes
+            </div>
+            <div class="pd-input-wrap">
+              <input type="text" id="pd-comment-input" placeholder="Ajouter un commentaire...">
+              <button id="pd-submit-comment">Publier</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

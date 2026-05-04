@@ -2480,9 +2480,11 @@ window.fetchCommunityPosts = async function() {
       return;
     }
 
+    window.communityPosts = posts; // Store globally for access
+    
     feed.innerHTML = posts.map(p => `
       <div class="post-card">
-        <img src="${p.image_url}" class="post-img" onerror="this.src='https://placehold.co/600x400/1a1a1a/ffffff?text=Image+Non+Disponible'">
+        <img src="${p.image_url}" class="post-img" onclick="openPostDetail(${p.id})" onerror="this.src='https://placehold.co/600x400/1a1a1a/ffffff?text=Image+Non+Disponible'">
         <div class="post-content">
           <div class="post-header">
             <span class="post-author">${p.author_name}</span>
@@ -2497,20 +2499,10 @@ window.fetchCommunityPosts = async function() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="${p.is_liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               <span class="like-count">${p.likes_count || 0}</span>
             </button>
-            <button class="comment-trigger" onclick="toggleComments(${p.id}, this)">
+            <button class="comment-trigger" onclick="openPostDetail(${p.id})">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
               <span>${p.comments_count || 0}</span>
             </button>
-          </div>
-          
-          <div class="post-comments-section" id="comments-${p.id}" style="display:none;">
-            <div class="comments-list" id="comments-list-${p.id}"></div>
-            <div class="comment-input-wrap">
-              <input type="text" placeholder="Ajouter un commentaire..." id="comment-input-${p.id}" onkeyup="if(event.key==='Enter') submitComment(${p.id})">
-              <button onclick="submitComment(${p.id})">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -2521,11 +2513,8 @@ window.fetchCommunityPosts = async function() {
   }
 };
 
-window.toggleLikePost = async function(postId, btn) {
-  if (!authToken) {
-    alert("Connectez-vous pour réagir aux posts !");
-    return;
-  }
+window.toggleLikePost = async function(postId, btn, isModal = false) {
+  if (!authToken) { openAuthModal(); return; }
   try {
     const res = await fetch(API_BASE + '/api/posts?action=like', {
       method: 'POST',
@@ -2534,17 +2523,18 @@ window.toggleLikePost = async function(postId, btn) {
     });
     const result = await res.json();
     if (res.ok) {
-      const countSpan = btn.querySelector('.like-count');
+      const countSpan = isModal ? document.getElementById('pd-likes-count') : btn.querySelector('.like-count');
       let count = parseInt(countSpan.innerText);
       if (result.liked) {
         btn.classList.add('active');
         btn.querySelector('svg').setAttribute('fill', 'currentColor');
-        countSpan.innerText = count + 1;
+        if (countSpan) countSpan.innerText = count + 1;
       } else {
         btn.classList.remove('active');
         btn.querySelector('svg').setAttribute('fill', 'none');
-        countSpan.innerText = count - 1;
+        if (countSpan) countSpan.innerText = count - 1;
       }
+      if (isModal) fetchCommunityPosts(); // Sync main feed
     }
   } catch (err) {
     console.error("Like error:", err);
@@ -2737,4 +2727,101 @@ window.submitComment = async function(postId) {
   } catch (err) {
     alert("Erreur réseau");
   }
+};
+
+// ════════════════════ VUE DÉTAILLÉE (STYLE INSTA) ════════════════════
+window.openPostDetail = async function(postId) {
+  const post = (window.communityPosts || []).find(p => p.id === postId);
+  if (!post) return;
+
+  const modal = document.getElementById('postDetailModal');
+  const img = document.getElementById('pd-img');
+  const author = document.getElementById('pd-author');
+  const avatar = document.getElementById('pd-avatar');
+  const date = document.getElementById('pd-date');
+  const desc = document.getElementById('pd-description');
+  const likes = document.getElementById('pd-likes-count');
+  const likeBtn = document.getElementById('pd-like-btn');
+  const submitBtn = document.getElementById('pd-submit-comment');
+  const input = document.getElementById('pd-comment-input');
+
+  // Fill data
+  img.src = post.image_url;
+  author.innerText = post.author_name;
+  avatar.innerText = post.author_name.charAt(0).toUpperCase();
+  date.innerText = new Date(post.created_at).toLocaleDateString();
+  desc.innerText = post.description || '';
+  likes.innerText = post.likes_count || 0;
+  
+  // Like state
+  if (post.is_liked) {
+    likeBtn.classList.add('active');
+    likeBtn.querySelector('svg').setAttribute('fill', 'currentColor');
+  } else {
+    likeBtn.classList.remove('active');
+    likeBtn.querySelector('svg').setAttribute('fill', 'none');
+  }
+
+  // Click handlers
+  likeBtn.onclick = () => toggleLikePost(postId, likeBtn, true);
+  submitBtn.onclick = () => submitDetailComment(postId);
+  input.onkeyup = (e) => { if (e.key === 'Enter') submitDetailComment(postId); };
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  loadDetailComments(postId);
+};
+
+window.closePostDetail = function() {
+  document.getElementById('postDetailModal').style.display = 'none';
+  document.body.style.overflow = 'auto';
+};
+
+window.loadDetailComments = async function(postId) {
+  const list = document.getElementById('pd-comments-list');
+  list.innerHTML = '<div style="color:var(--text3); font-size:12px;">Chargement des commentaires...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/posts?action=comments&postId=${postId}`);
+    const comments = await res.json();
+    
+    if (comments.length === 0) {
+      list.innerHTML = '<div style="color:var(--text3); font-size:13px; text-align:center; padding:20px;">Aucun commentaire pour le moment.</div>';
+      return;
+    }
+
+    list.innerHTML = comments.map(c => `
+      <div class="comment-bubble" style="background:none; border:none; padding:0; margin-bottom:5px;">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <div class="pd-avatar" style="width:28px; height:28px; font-size:10px; flex-shrink:0;">${c.author_name.charAt(0)}</div>
+          <div>
+            <div style="font-size:13px;"><strong style="color:#fff; margin-right:6px;">${c.author_name}</strong> ${c.content}</div>
+            <div style="font-size:10px; color:var(--text3); margin-top:4px;">${new Date(c.created_at).toLocaleDateString()}</div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    list.innerHTML = 'Erreur';
+  }
+};
+
+window.submitDetailComment = async function(postId) {
+  const input = document.getElementById('pd-comment-input');
+  const content = input.value.trim();
+  if (!content || !authToken) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/posts?action=comment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ postId, content })
+    });
+    if (res.ok) {
+      input.value = '';
+      loadDetailComments(postId);
+      fetchCommunityPosts(); // Update count in background
+    }
+  } catch (err) {}
 };
