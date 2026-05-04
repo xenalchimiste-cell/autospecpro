@@ -143,5 +143,11 @@ async function handleSend(req, res) {
     }
   }));
 
-  return res.status(200).json({ message: 'Notifications envoyées', success: successCount, failed: failCount });
+  return res.status(200).json({ 
+    message: 'Notifications envoyées', 
+    successCount, 
+    failCount,
+    success: successCount, 
+    failed: failCount 
+  });
 }

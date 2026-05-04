@@ -2073,10 +2073,13 @@ async function sendAdminPush() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erreur inconnue');
     
-    if (data.success !== undefined) {
+    if (data.successCount !== undefined) {
+      alert(`✅ Notifications envoyées !\n${data.successCount} succès / ${data.failCount} échecs`);
+    } else if (data.success !== undefined) {
+      // Backwards compatibility if needed
       alert(`✅ Notifications envoyées !\n${data.success} succès / ${data.failed} échecs`);
     } else {
-      alert(`ℹ️ ${data.message}`);
+      alert(`ℹ️ ${data.message || 'Action terminée'}`);
     }
   } catch (err) {
     alert('❌ Erreur : ' + err.message);
