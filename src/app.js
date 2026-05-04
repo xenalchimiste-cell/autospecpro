@@ -2634,3 +2634,26 @@ window.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateCommunityBadges, 800);
   setInterval(updateCommunityBadges, 60000 * 2); // Toutes les 2 mins
 });
+
+// ════════════════════ AUTO-UPDATE ON FOCUS ════════════════════
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    console.log("App focused, checking for updates...");
+    
+    // Rafraîchir les badges
+    if (typeof updateCommunityBadges === 'function') updateCommunityBadges();
+    
+    // Si on est sur la page communauté, rafraîchir le flux
+    const commPage = document.getElementById('page-community');
+    if (commPage && commPage.classList.contains('active')) {
+      if (typeof fetchCommunityPosts === 'function') fetchCommunityPosts();
+    }
+
+    // Vérifier si une nouvelle version du Service Worker est dispo
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then(reg => {
+        if (reg) reg.update();
+      });
+    }
+  }
+});
