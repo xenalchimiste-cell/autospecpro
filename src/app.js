@@ -1971,7 +1971,12 @@ async function sendAdminPush() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erreur inconnue');
-    alert(`✅ Notifications envoyées !\n${data.success} succès / ${data.failed} échecs`);
+    
+    if (data.success !== undefined) {
+      alert(`✅ Notifications envoyées !\n${data.success} succès / ${data.failed} échecs`);
+    } else {
+      alert(`ℹ️ ${data.message}`);
+    }
   } catch (err) {
     alert('❌ Erreur : ' + err.message);
   }
