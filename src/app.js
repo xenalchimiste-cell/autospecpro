@@ -481,10 +481,92 @@ async function handleGoogleCredential(response) {
   }
 }
 
+// ════════════════════ REVIEWS SYSTEM ════════════════════
+let currentRating = 0;
+
+window.openReviewModal = function() {
+  if (!authToken) {
+    alert("Veuillez vous connecter pour laisser un avis.");
+    openAuthModal('login');
+    return;
+  }
+  document.getElementById('review-modal').style.display = 'flex';
+  setRating(0);
+  document.getElementById('review-comment').value = '';
+};
+
+window.closeReviewModal = function() {
+  document.getElementById('review-modal').style.display = 'none';
+};
+
+window.setRating = function(val) {
+  currentRating = val;
+  const stars = document.querySelectorAll('.star-btn');
+  stars.forEach((s, idx) => {
+    if (idx < val) s.classList.add('active');
+    else s.classList.remove('active');
+  });
+};
+
+window.submitReview = async function() {
+  const comment = document.getElementById('review-comment').value.trim();
+  if (!currentRating) return alert("Veuillez sélectionner une note.");
+  if (!comment) return alert("Veuillez écrire un petit commentaire.");
+
+  try {
+    const res = await fetch(API_BASE + '/api/reviews', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ rating: currentRating, comment })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("Merci ! Votre avis a été publié.");
+      closeReviewModal();
+      fetchReviews(); // Refresh list
+    } else {
+      alert(data.error || "Erreur lors de la publication.");
+    }
+  } catch (err) {
+    alert("Erreur technique : " + err.message);
+  }
+};
+
+window.fetchReviews = async function() {
+  try {
+    const res = await fetch(API_BASE + '/api/reviews');
+    const reviews = await res.json();
+    const container = document.getElementById('reviews-marquee-inner');
+    
+    if (reviews.length === 0) {
+      container.innerHTML = '<div class="review-card"><p class="review-text">Aucun avis pour le moment. Soyez le premier !</p></div>';
+      return;
+    }
+
+    const renderReview = (r) => `
+      <div class="review-card">
+        <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+        <p class="review-text">"${r.comment}"</p>
+        <div class="review-author">— ${r.author_name}</div>
+      </div>
+    `;
+
+    // Duplicate for infinite scroll effect
+    const html = reviews.map(renderReview).join('');
+    container.innerHTML = html + html; 
+  } catch (err) {
+    console.error('Fetch reviews error:', err);
+  }
+};
+
 // Session check on load
 window.addEventListener('DOMContentLoaded', async () => {
   initializeGoogleAuth();
   registerServiceWorker();
+  fetchReviews();
   
   // Custom Callback Handler pour le retour Stripe
   const urlParams = new URLSearchParams(window.location.search);

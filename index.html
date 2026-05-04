@@ -331,59 +331,14 @@
     </div>
 
     <!-- AVIS UTILISATEURS -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:40px; margin-bottom:15px; padding:0 20px;">
+      <h2 style="font-family:'DM Serif Display',serif; font-size:24px; color:var(--text);">Avis de la <em>communauté</em></h2>
+      <button class="btn btn-outline" onclick="openReviewModal()" style="font-size:12px; height:32px;">+ Laisser un avis</button>
+    </div>
     <div class="reviews-marquee-container">
-      <div class="reviews-marquee">
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"Ultra précis, j'ai trouvé toutes les infos pour ma M3."</p>
-          <div class="review-author">— Thomas B.</div>
-        </div>
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"L'outil indispensable pour vérifier une annonce auto."</p>
-          <div class="review-author">— Sarah L.</div>
-        </div>
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"Idéal pour comparer les specs avant un achat."</p>
-          <div class="review-author">— Julien D.</div>
-        </div>
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"Le simulateur de performance est bluffant de réalisme."</p>
-          <div class="review-author">— Marc A.</div>
-        </div>
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"Parfait pour préparer mes fiches clients au garage."</p>
-          <div class="review-author">— Nicolas Pro</div>
-        </div>
-        <!-- Duplicated for infinite scroll -->
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"Ultra précis, j'ai trouvé toutes les infos pour ma M3."</p>
-          <div class="review-author">— Thomas B.</div>
-        </div>
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"L'outil indispensable pour vérifier une annonce auto."</p>
-          <div class="review-author">— Sarah L.</div>
-        </div>
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"Idéal pour comparer les specs avant un achat."</p>
-          <div class="review-author">— Julien D.</div>
-        </div>
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"Le simulateur de performance est bluffant de réalisme."</p>
-          <div class="review-author">— Marc A.</div>
-        </div>
-        <div class="review-card">
-          <div class="review-stars">★★★★★</div>
-          <p class="review-text">"Parfait pour préparer mes fiches clients au garage."</p>
-          <div class="review-author">— Nicolas Pro</div>
-        </div>
+      <div class="reviews-marquee" id="reviews-marquee-inner">
+        <!-- Dynamically populated by JS -->
+        <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-text">Chargement des avis...</p></div>
       </div>
     </div>
 
@@ -820,6 +775,36 @@
       <span>Plans</span>
     </button>
   </nav>
+
+  <!-- ══════════ MODALE AVIS ══════════ -->
+  <div id="review-modal" class="auth-overlay" onclick="closeReviewModal()" style="display:none;">
+    <div class="auth-panel" onclick="event.stopPropagation()" style="max-width:400px;">
+      <div class="auth-blob auth-blob-1"></div>
+      <button class="auth-close" onclick="closeReviewModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      
+      <div class="auth-header" style="margin-bottom:20px;">
+        <div class="auth-title">Votre avis nous <em>intéresse</em></div>
+        <div class="auth-subtitle">Partagez votre expérience avec la communauté AutoSpec Pro.</div>
+      </div>
+
+      <div class="rating-selector" id="rating-selector" style="display:flex; justify-content:center; gap:8px; margin-bottom:20px;">
+        <button class="star-btn" data-value="1" onclick="setRating(1)">★</button>
+        <button class="star-btn" data-value="2" onclick="setRating(2)">★</button>
+        <button class="star-btn" data-value="3" onclick="setRating(3)">★</button>
+        <button class="star-btn" data-value="4" onclick="setRating(4)">★</button>
+        <button class="star-btn" data-value="5" onclick="setRating(5)">★</button>
+      </div>
+
+      <textarea id="review-comment" class="p-input" placeholder="Que pensez-vous d'AutoSpec Pro ?..." style="height:120px; margin-bottom:20px; resize:none;"></textarea>
+
+      <button class="auth-submit-btn" onclick="submitReview()">
+        Publier mon avis
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+  </div>
 
   <script src="src/app.js"></script>
 </body>

@@ -1286,6 +1286,18 @@ select.s-input {
   100% { transform: translateX(-50%); }
 }
 
+/* RATING SELECTOR */
+.star-btn {
+  background: none; border: none; font-size: 32px; color: rgba(255,255,255,0.1);
+  cursor: pointer; transition: all 0.2s; padding: 0;
+}
+.star-btn:hover, .star-btn.active {
+  color: var(--accent); transform: scale(1.1);
+}
+.star-btn.active {
+  text-shadow: 0 0 15px rgba(212,168,67,0.4);
+}
+
 /* ═══════════════════════════════════════════
    RESPONSIVE MOBILE — BREAKPOINT 768px
 ═══════════════════════════════════════════ */

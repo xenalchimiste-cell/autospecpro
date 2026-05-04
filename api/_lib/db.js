@@ -50,6 +50,17 @@ export async function initDb() {
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS account_tier VARCHAR(20) DEFAULT 'free'`);
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255)`);
       
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS reviews (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id),
+          author_name VARCHAR(255) NOT NULL,
+          rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+          comment TEXT NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      
       console.log('Database connected and initialized with pg driver');
     } finally {
       client.release();
