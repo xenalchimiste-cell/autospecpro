@@ -2487,7 +2487,7 @@ window.fetchCommunityPosts = async function() {
         <img src="${p.image_url}" class="post-img" onclick="openPostDetail(${p.id})" onerror="this.src='https://placehold.co/600x400/1a1a1a/ffffff?text=Image+Non+Disponible'">
         <div class="post-content">
           <div class="post-header">
-            <span class="post-author">${p.author_name}</span>
+            <span class="post-author">${p.author_name}${getUserBadge(p.user_type)}</span>
             <div style="display:flex; align-items:center; gap:10px;">
               <span class="post-date">${new Date(p.created_at).toLocaleDateString()}</span>
               ${(currentUser && currentUser.user_type === 'admin') ? `<button class="btn-delete-post" onclick="deletePost(${p.id})" title="Supprimer (Admin)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}
@@ -2747,7 +2747,7 @@ window.openPostDetail = async function(postId) {
 
   // Fill data
   img.src = post.image_url;
-  author.innerText = post.author_name;
+  author.innerHTML = \`\${post.author_name}\${getUserBadge(post.user_type)}\`;
   avatar.innerText = post.author_name.charAt(0).toUpperCase();
   date.innerText = new Date(post.created_at).toLocaleDateString();
   desc.innerText = post.description || '';
@@ -2796,7 +2796,7 @@ window.loadDetailComments = async function(postId) {
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <div class="pd-avatar" style="width:28px; height:28px; font-size:10px; flex-shrink:0;">${c.author_name.charAt(0)}</div>
           <div>
-            <div style="font-size:13px;"><strong style="color:#fff; margin-right:6px;">${c.author_name}</strong> ${c.content}</div>
+            <div style="font-size:13px;"><strong style="color:#fff; margin-right:6px;">${c.author_name}${getUserBadge(c.user_type)}</strong> ${c.content}</div>
             <div style="font-size:10px; color:var(--text3); margin-top:4px;">${new Date(c.created_at).toLocaleDateString()}</div>
           </div>
         </div>
@@ -2824,4 +2824,15 @@ window.submitDetailComment = async function(postId) {
       fetchCommunityPosts(); // Update count in background
     }
   } catch (err) {}
+};
+
+// ════════════════════ BADGES UTILISATEURS ════════════════════
+window.getUserBadge = function(userType) {
+  if (userType === 'admin') {
+    return `<span class="user-badge"><span class="badge-admin">Admin</span></span>`;
+  }
+  if (userType === 'pro' || userType === 'verified') {
+    return `<span class="user-badge badge-verified"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zM10 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"/></svg></span>`;
+  }
+  return '';
 };
