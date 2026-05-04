@@ -1,7 +1,18 @@
 import { sql, initDb } from './_lib/db.js';
 import jwt from 'jsonwebtoken';
+import webpush from 'web-push';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BENk7CYgAuJCfCv3-H0EJNQEs3VfyYVS7TcEe1ZfZZPxiXlBEOnpIN-d4yYOIRI62Hgn8brRg_ZmVUMODDqiTJ0";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    'mailto:contact@autospec.pro',
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
+}
 
 export default async function handler(req, res) {
   // CORS Headers
@@ -21,6 +32,8 @@ export default async function handler(req, res) {
     const { action } = req.query;
     if (action === 'like') return await handleLikePost(req, res);
     return await handleCreatePost(req, res);
+  } else if (req.method === 'DELETE') {
+    return await handleDeletePost(req, res);
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
@@ -74,6 +87,29 @@ async function handleCreatePost(req, res) {
       VALUES (${userId}, ${authorName}, ${image_url}, ${description})
       RETURNING *
     `;
+
+    // Send Notifications to all subscribers
+    if (VAPID_PRIVATE_KEY) {
+      try {
+        const { rows: subs } = await sql`SELECT subscription FROM push_subscriptions`;
+        const payload = JSON.stringify({
+          title: 'Nouveau bolide ! 🏎️',
+          body: `${authorName} a partagé sa voiture dans la communauté.`,
+          url: '/#page-community'
+        });
+
+        await Promise.all(subs.map(async (row) => {
+          try {
+            await webpush.sendNotification(row.subscription, payload);
+          } catch (err) {
+            if (err.statusCode === 404 || err.statusCode === 410) {
+              await sql`DELETE FROM push_subscriptions WHERE endpoint = ${row.subscription.endpoint}`;
+            }
+          }
+        }));
+      } catch (err) { console.error("Push Error:", err); }
+    }
+
     return res.status(201).json(newPost[0]);
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });
@@ -102,5 +138,33 @@ async function handleLikePost(req, res) {
     }
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+async function handleDeletePost(req, res) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.userId;
+
+    // Check if admin
+    const { rows: users } = await sql`SELECT user_type FROM users WHERE id = ${userId}`;
+    if (!users[0] || users[0].user_type !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: Admin access required' });
+    }
+
+    const { postId } = req.body;
+    if (!postId) return res.status(400).json({ error: 'Post ID is required' });
+
+    // Delete likes first
+    await sql`DELETE FROM post_likes WHERE post_id = ${postId}`;
+    await sql`DELETE FROM posts WHERE id = ${postId}`;
+
+    return res.status(200).json({ message: 'Post deleted successfully' });
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token or server error' });
   }
 }

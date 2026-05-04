@@ -651,7 +651,12 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
     page.classList.add('active');
     window.scrollTo({top: 0, behavior: 'smooth'});
     if (id === 'account') updateAccountPage();
-    if (id === 'community') fetchCommunityPosts();
+    if (id === 'community') {
+      fetchCommunityPosts();
+      if (Notification.permission === 'default') {
+        setTimeout(requestNotificationPermission, 2000);
+      }
+    }
   }
 
   // Reset all tabs
@@ -2477,7 +2482,10 @@ window.fetchCommunityPosts = async function() {
         <div class="post-content">
           <div class="post-header">
             <span class="post-author">${p.author_name}</span>
-            <span class="post-date">${new Date(p.created_at).toLocaleDateString()}</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="post-date">${new Date(p.created_at).toLocaleDateString()}</span>
+              ${(currentUser && currentUser.user_type === 'admin') ? `<button class="btn-delete-post" onclick="deletePost(${p.id})" title="Supprimer (Admin)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}
+            </div>
           </div>
           <p class="post-desc">${p.description || ''}</p>
           <div class="post-actions">
@@ -2563,5 +2571,24 @@ window.submitPost = async function() {
     }
   } catch (err) {
     alert("Erreur lors de la publication.");
+  }
+};
+
+window.deletePost = async function(postId) {
+  if (!confirm("Voulez-vous vraiment supprimer ce post (Action Admin) ?")) return;
+  try {
+    const res = await fetch(API_BASE + '/api/posts', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ postId })
+    });
+    if (res.ok) {
+      fetchCommunityPosts();
+    } else {
+      const err = await res.json();
+      alert("Erreur: " + err.error);
+    }
+  } catch (err) {
+    alert("Erreur lors de la suppression.");
   }
 };

@@ -1894,3 +1894,20 @@ select.s-input {
 @media (max-width: 768px) {
   .community-grid { grid-template-columns: 1fr; }
 }
+
+.btn-delete-post {
+  background: rgba(255, 71, 87, 0.1);
+  border: 1px solid rgba(255, 71, 87, 0.2);
+  color: #ff4757;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.btn-delete-post:hover {
+  background: #ff4757;
+  color: #fff;
+}
