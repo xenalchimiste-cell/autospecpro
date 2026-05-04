@@ -2166,7 +2166,7 @@ async function registerServiceWorker() {
       }
     } catch (error) {
       console.error('Erreur SW:', error);
-      alert('Erreur enregistrement SW: ' + error.message);
+      console.error('Erreur enregistrement SW:', error);
     }
   }
 }
@@ -2187,15 +2187,13 @@ async function subscribeUserToPush(registration) {
         body: JSON.stringify(subscription)
       });
       const data = await res.json();
-      if (res.ok) {
-        alert("✅ Abonnement aux notifications activé et synchronisé !");
-      } else {
-        alert("❌ Erreur serveur lors de l'abonnement : " + (data.error || 'Inconnue'));
+      if (!res.ok) {
+        console.error('Erreur serveur lors de l\'abonnement:', data.error);
       }
     }
   } catch (error) {
     console.error('Erreur inscription Push:', error);
-    alert('❌ Erreur technique : ' + error.message);
+    console.error('Erreur technique Push:', error);
   }
 }
 
@@ -2217,8 +2215,7 @@ window.requestNotificationPermission = async function() {
     const registration = await navigator.serviceWorker.ready;
     await subscribeUserToPush(registration);
     updateNav(); // Update UI to show static bell
-    alert("🔔 Notifications activées ! Vous recevrez désormais les nouveautés AutoSpec Pro.");
   } else {
-    alert("Les notifications ont été bloquées par le navigateur.");
+    console.warn("Les notifications ont été bloquées par le navigateur.");
   }
 };
