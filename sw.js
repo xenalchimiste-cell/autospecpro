@@ -5,7 +5,7 @@ const ASSETS = [
   '/src/style.css',
   '/src/app.js',
   '/manifest.json',
-  '/icons/icon.svg'
+  '/icons/icon.png'
 ];
 
 // Install event: cache assets
@@ -50,8 +50,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'AutoSpec Pro';
   const options = {
     body: data.body || 'Vous avez reçu un nouveau message.',
-    icon: '/icons/icon.svg',
-    badge: '/icons/icon.svg',
+    icon: '/icons/icon.png',
+    badge: '/icons/icon.png',
     vibrate: [100, 50, 100],
     data: data.url || '/'
   };
