@@ -584,6 +584,46 @@
     <p class="page-sub">Gérez votre abonnement et suivez vos parrainages.</p>
 
     <div class="account-grid">
+      <!-- Profil Personnel -->
+      <div class="account-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h3 style="margin:0;">Profil Personnel</h3>
+          <button id="edit-profile-btn" class="btn btn-outline" style="height:28px; font-size:11px; padding:0 12px;" onclick="toggleEditProfile()">Modifier</button>
+        </div>
+        
+        <div id="profile-display">
+          <div class="profile-info-row">
+            <span class="p-label">Prénom</span>
+            <span class="p-value" id="p-display-firstname">---</span>
+          </div>
+          <div class="profile-info-row">
+            <span class="p-label">Nom</span>
+            <span class="p-value" id="p-display-lastname">---</span>
+          </div>
+          <div class="profile-info-row">
+            <span class="p-label">Email</span>
+            <span class="p-value" id="p-display-email">---</span>
+          </div>
+        </div>
+
+        <form id="profile-form" style="display:none;" onsubmit="handleSaveProfile(event)">
+          <div class="auth-field-sm" style="margin-bottom:10px;">
+            <div class="auth-field">
+              <input type="text" id="p-edit-firstname" placeholder="Prénom" required>
+            </div>
+          </div>
+          <div class="auth-field-sm" style="margin-bottom:10px;">
+            <div class="auth-field">
+              <input type="text" id="p-edit-lastname" placeholder="Nom" required>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+            <button type="button" class="btn btn-outline" onclick="toggleEditProfile()">Annuler</button>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+
       <!-- Abonnement -->
       <div class="account-card">
         <h3>Mon Abonnement</h3>
@@ -613,17 +653,6 @@
             <div class="ref-stat-val" id="ref-reward-earned">0</div>
             <div class="ref-stat-label">Mois offerts</div>
           </div>
-        </div>
-
-        <div class="referral-progress-container">
-          <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px;">
-            <span>Prochain palier : 3 amis</span>
-            <span id="ref-progress-text">0/3</span>
-          </div>
-          <div class="ref-progress-bar">
-            <div id="ref-progress-fill" class="ref-progress-fill" style="width: 0%;"></div>
-          </div>
-          <p style="font-size:10px; color:var(--text3); margin-top:8px; text-align:center;">3 filleuls PRO = 1 mois PASSIONNÉ offert !</p>
         </div>
       </div>
     </div>

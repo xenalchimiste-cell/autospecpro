@@ -2437,6 +2437,11 @@ window.updateAccountPage = async function() {
     desc.innerText = "Accès complet illimité pour les experts.";
   }
 
+  // Profile display
+  document.getElementById('p-display-firstname').innerText = currentUser.first_name || '---';
+  document.getElementById('p-display-lastname').innerText = currentUser.last_name || '---';
+  document.getElementById('p-display-email').innerText = currentUser.email || '---';
+
   document.getElementById('account-referral-code').innerText = currentUser.referral_code || '---';
 
   // Fetch referral stats
@@ -2835,4 +2840,51 @@ window.getUserBadge = function(userType) {
     return `<span class="user-badge badge-verified"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zM10 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"/></svg></span>`;
   }
   return '';
+};
+
+// ════════════════════ GESTION DU PROFIL ════════════════════
+window.toggleEditProfile = function() {
+  const display = document.getElementById('profile-display');
+  const form = document.getElementById('profile-form');
+  const btn = document.getElementById('edit-profile-btn');
+
+  if (form.style.display === 'none') {
+    form.style.display = 'block';
+    display.style.display = 'none';
+    btn.style.display = 'none';
+    
+    // Fill form with current data
+    document.getElementById('p-edit-firstname').value = currentUser.first_name || '';
+    document.getElementById('p-edit-lastname').value = currentUser.last_name || '';
+  } else {
+    form.style.display = 'none';
+    display.style.display = 'block';
+    btn.style.display = 'block';
+  }
+};
+
+window.handleSaveProfile = async function(e) {
+  e.preventDefault();
+  const firstName = document.getElementById('p-edit-firstname').value.trim();
+  const lastName = document.getElementById('p-edit-lastname').value.trim();
+
+  try {
+    const res = await fetch(API_BASE + '/api/auth?action=update-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ firstName, lastName })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      currentUser = data.user;
+      localStorage.setItem('user', JSON.stringify(currentUser));
+      updateAccountPage();
+      toggleEditProfile();
+      alert("Profil mis à jour !");
+    } else {
+      alert(data.error || "Erreur lors de la mise à jour");
+    }
+  } catch (err) {
+    alert("Erreur réseau");
+  }
 };

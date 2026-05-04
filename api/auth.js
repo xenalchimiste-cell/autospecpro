@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     if (action === 'google') return await handleGoogle(req, res);
     if (action === 'me') return await handleMe(req, res);
     if (action === 'referral-stats') return await handleReferralStats(req, res);
+    if (action === 'update-profile') return await handleUpdateProfile(req, res);
 
     return res.status(404).json({ error: 'Action not found' });
   } catch (error) {
@@ -193,6 +194,32 @@ async function handleReferralStats(req, res) {
     const rewardsEarned = Math.floor(totalReferred / 3);
 
     return res.status(200).json({ totalReferred, rewardsEarned });
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+async function handleUpdateProfile(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'No token provided' });
+  
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.userId;
+    const { firstName, lastName } = req.body;
+
+    if (!firstName || !lastName) return res.status(400).json({ error: 'First name and last name are required' });
+
+    const { rows } = await sql`
+      UPDATE users 
+      SET first_name = ${firstName}, last_name = ${lastName} 
+      WHERE id = ${userId} 
+      RETURNING id, email, first_name, last_name, user_type, referral_code
+    `;
+
+    return res.status(200).json({ message: 'Profile updated', user: rows[0] });
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
