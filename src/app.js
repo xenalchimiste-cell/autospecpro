@@ -2608,7 +2608,13 @@ window.updateCommunityBadges = async function() {
     const posts = await res.json();
     if (!res.ok) return;
 
-    const newPosts = posts.filter(p => new Date(p.created_at).getTime() > lastVisit);
+    // On ne compte que les posts des AUTRES créés après la dernière visite
+    const newPosts = posts.filter(p => {
+      const isOthers = currentUser ? (p.user_id !== currentUser.id) : true;
+      const isNew = new Date(p.created_at).getTime() > lastVisit;
+      return isOthers && isNew;
+    });
+
     const count = newPosts.length;
 
     if (count > 0) {
@@ -2625,6 +2631,6 @@ window.updateCommunityBadges = async function() {
 
 // Vérification au démarrage
 window.addEventListener('DOMContentLoaded', () => {
-  setTimeout(updateCommunityBadges, 3000);
-  setInterval(updateCommunityBadges, 60000 * 5); // Toutes les 5 mins
+  setTimeout(updateCommunityBadges, 800);
+  setInterval(updateCommunityBadges, 60000 * 2); // Toutes les 2 mins
 });
