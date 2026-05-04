@@ -2166,6 +2166,7 @@ async function registerServiceWorker() {
       }
     } catch (error) {
       console.error('Erreur SW:', error);
+      alert('Erreur enregistrement SW: ' + error.message);
     }
   }
 }
@@ -2177,14 +2178,20 @@ async function subscribeUserToPush(registration) {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
     console.log('Abonnement Push reçu');
+    alert('Abonnement Push réussi');
     
     const token = localStorage.getItem('autospec_token');
     if (token) {
-      await fetch('/api/push?action=subscribe', {
+      const res = await fetch('/api/push?action=subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(subscription)
       });
+      const data = await res.json();
+      console.log('Push Subscribe Result:', data);
+      if (!res.ok) {
+        console.error('Subscription failed:', data.error);
+      }
     }
   } catch (error) {
     console.error('Erreur inscription Push:', error);

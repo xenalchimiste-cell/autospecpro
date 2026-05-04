@@ -61,18 +61,25 @@ async function handleSubscribe(req, res) {
       id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       subscription JSONB NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(user_id, subscription->>'endpoint')
+      endpoint TEXT UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
 
-  await sql`
-    INSERT INTO push_subscriptions (user_id, subscription)
-    VALUES (${userId}, ${subscription})
-    ON CONFLICT (user_id, (subscription->>'endpoint')) DO NOTHING
-  `;
-
-  return res.status(200).json({ message: 'Subscription saved successfully' });
+  try {
+    const endpoint = subscription.endpoint;
+    await sql`
+      INSERT INTO push_subscriptions (user_id, subscription, endpoint)
+      VALUES (${userId}, ${JSON.stringify(subscription)}, ${endpoint})
+      ON CONFLICT (endpoint) DO UPDATE SET 
+        user_id = ${userId}, 
+        subscription = ${JSON.stringify(subscription)}
+    `;
+    return res.status(200).json({ message: 'Subscription saved successfully' });
+  } catch (err) {
+    console.error('DB Insert Error:', err);
+    return res.status(500).json({ error: 'Database error', details: err.message });
+  }
 }
 
 async function handleSend(req, res) {
@@ -105,6 +112,7 @@ async function handleSend(req, res) {
       id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       subscription JSONB NOT NULL,
+      endpoint TEXT UNIQUE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
