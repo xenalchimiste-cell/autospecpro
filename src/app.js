@@ -1,3 +1,4 @@
+console.log("AutoSpec Pro v1.5.0 Loaded");
 // ── GLOBALS ──
 const isLocal = window.location.protocol === 'file:';
 const API_BASE = isLocal ? 'https://autospecpro.vercel.app' : '';
