@@ -50,6 +50,10 @@ export async function initDb() {
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS account_tier VARCHAR(20) DEFAULT 'free'`);
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255)`);
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram VARCHAR(100)`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(100)`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS garage TEXT`);
       
       await client.query(`
         CREATE TABLE IF NOT EXISTS reviews (

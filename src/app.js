@@ -2439,9 +2439,21 @@ window.updateAccountPage = async function() {
 
   // Profile display
   document.getElementById('p-display-avatar').outerHTML = getUserAvatarHtml(currentUser, 'profile-main-avatar');
-  document.getElementById('p-display-firstname').innerText = currentUser.first_name || '---';
-  document.getElementById('p-display-lastname').innerText = currentUser.last_name || '---';
+  document.getElementById('p-display-fullname').innerText = (currentUser.first_name || '') + ' ' + (currentUser.last_name || '');
   document.getElementById('p-display-email').innerText = currentUser.email || '---';
+  
+  const bioEl = document.getElementById('p-display-bio');
+  if (currentUser.bio) {
+    bioEl.innerText = `"${currentUser.bio}"`;
+    bioEl.style.opacity = '1';
+  } else {
+    bioEl.innerText = "Aucune bio renseignée.";
+    bioEl.style.opacity = '0.5';
+  }
+
+  document.getElementById('p-display-location').innerText = currentUser.location || 'Localisation non définie';
+  document.getElementById('p-display-instagram').innerText = currentUser.instagram || 'Instagram non lié';
+  document.getElementById('p-display-garage').innerText = currentUser.garage || 'Garage vide';
 
   document.getElementById('account-referral-code').innerText = currentUser.referral_code || '---';
 
@@ -2871,6 +2883,10 @@ window.toggleEditProfile = function() {
     document.getElementById('p-edit-firstname').value = currentUser.first_name || '';
     document.getElementById('p-edit-lastname').value = currentUser.last_name || '';
     document.getElementById('p-edit-avatar').value = currentUser.avatar_url || '';
+    document.getElementById('p-edit-bio').value = currentUser.bio || '';
+    document.getElementById('p-edit-location').value = currentUser.location || '';
+    document.getElementById('p-edit-instagram').value = currentUser.instagram || '';
+    document.getElementById('p-edit-garage').value = currentUser.garage || '';
   } else {
     form.style.display = 'none';
     display.style.display = 'block';
@@ -2883,12 +2899,16 @@ window.handleSaveProfile = async function(e) {
   const firstName = document.getElementById('p-edit-firstname').value.trim();
   const lastName = document.getElementById('p-edit-lastname').value.trim();
   const avatarUrl = document.getElementById('p-edit-avatar').value.trim();
+  const bio = document.getElementById('p-edit-bio').value.trim();
+  const location = document.getElementById('p-edit-location').value.trim();
+  const instagram = document.getElementById('p-edit-instagram').value.trim();
+  const garage = document.getElementById('p-edit-garage').value.trim();
 
   try {
     const res = await fetch(API_BASE + '/api/auth/update-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-      body: JSON.stringify({ firstName, lastName, avatarUrl })
+      body: JSON.stringify({ firstName, lastName, avatarUrl, bio, location, instagram, garage })
     });
     const data = await res.json();
     if (res.ok) {

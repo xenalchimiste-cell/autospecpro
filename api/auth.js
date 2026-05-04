@@ -209,15 +209,16 @@ async function handleUpdateProfile(req, res) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const userId = decoded.userId;
-    const { firstName, lastName, avatarUrl } = req.body;
+    const { firstName, lastName, avatarUrl, bio, instagram, location, garage } = req.body;
 
     if (!firstName || !lastName) return res.status(400).json({ error: 'First name and last name are required' });
 
     const { rows } = await sql`
       UPDATE users 
-      SET first_name = ${firstName}, last_name = ${lastName}, avatar_url = ${avatarUrl || null} 
+      SET first_name = ${firstName}, last_name = ${lastName}, avatar_url = ${avatarUrl || null},
+          bio = ${bio || null}, instagram = ${instagram || null}, location = ${location || null}, garage = ${garage || null}
       WHERE id = ${userId} 
-      RETURNING id, email, first_name, last_name, user_type, referral_code, avatar_url
+      RETURNING id, email, first_name, last_name, user_type, referral_code, avatar_url, bio, instagram, location, garage
     `;
 
     return res.status(200).json({ message: 'Profile updated', user: rows[0] });
