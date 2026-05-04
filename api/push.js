@@ -77,7 +77,7 @@ async function handleSubscribe(req, res) {
 
 async function handleSend(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  if (!VAPID_PRIVATE_KEY) return res.status(500).json({ error: 'VAPID_PRIVATE_KEY non configurée' });
+  if (!VAPID_PRIVATE_KEY) return res.status(500).json({ error: 'VAPID_PRIVATE_KEY non configurée sur Vercel. Ajoutez-la dans Settings > Environment Variables.' });
 
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'Missing token' });
@@ -99,8 +99,18 @@ async function handleSend(req, res) {
   const { title, message, url } = req.body;
   if (!title || !message) return res.status(400).json({ error: 'Title and message required' });
 
+  // Create table if not exists before querying
+  await sql`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      subscription JSONB NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
   const { rows: subs } = await sql`SELECT subscription FROM push_subscriptions`;
-  if (subs.length === 0) return res.status(200).json({ message: 'Aucun utilisateur abonné.' });
+  if (subs.length === 0) return res.status(200).json({ message: 'Aucun utilisateur abonné aux notifications pour le moment.' });
 
   const payload = JSON.stringify({ title, body: message, url: url || '/' });
   let successCount = 0, failCount = 0;
