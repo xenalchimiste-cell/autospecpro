@@ -9,6 +9,10 @@
       "maxDuration": 15
     }
   },
+  "rewrites": [
+    { "source": "/api/auth/:action", "destination": "/api/auth.js?action=:action" },
+    { "source": "/api/push/:action", "destination": "/api/push.js?action=:action" }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
