@@ -125,7 +125,7 @@
         <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <span>Communauté</span>
       </div>
-      <div class="drawer-item" id="dtab-messages" onclick="showPage('messages', null, true)" style="display:none; position:relative;">
+      <div class="drawer-item" id="dtab-messages" onclick="showPage('messages', null, true)" style="position:relative;">
         <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <span>Messages</span>
         <span class="nav-dot" id="msg-dot-drawer" style="display:none;"></span>
@@ -661,6 +661,9 @@
       <!-- Fenêtre de Chat -->
       <div class="chat-window">
         <div id="chat-header" class="chat-header" style="display:none;">
+          <button class="chat-back-btn" onclick="closeChat()" aria-label="Retour">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
           <div id="chat-other-avatar" class="user-avatar-nav" style="width:36px; height:36px;"></div>
           <div style="flex:1;">
             <div id="chat-other-name" style="font-weight:700; font-size:15px; color:#fff;">---</div>
