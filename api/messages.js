@@ -37,7 +37,7 @@ export default async function handler(req, res) {
         let query = req.query.q || '';
         if (query.startsWith('@')) query = query.substring(1);
         
-        if (query.length < 2) return res.status(200).json([]);
+        if (query.length < 1) return res.status(200).json([]);
         const searchStr = `%${query}%`;
         const { rows: users } = await sql`
           SELECT id, first_name || ' ' || last_name as name, pseudo, avatar_url, user_type

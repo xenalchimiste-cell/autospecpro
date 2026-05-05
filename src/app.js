@@ -3119,10 +3119,13 @@ window.handleMsgUserSearch = function() {
   const q = document.getElementById('msg-user-search-input').value.trim();
   const resultsDiv = document.getElementById('msg-user-search-results');
   
-  if (q.length < 2) {
+  if (q.length < 1) {
     resultsDiv.style.display = 'none';
     return;
   }
+  
+  resultsDiv.innerHTML = '<div style="padding:20px; text-align:center;"><div class="loader-sm"></div></div>';
+  resultsDiv.style.display = 'block';
   
   clearTimeout(msgSearchTimeout);
   msgSearchTimeout = setTimeout(async () => {
