@@ -387,12 +387,14 @@ function completeAuth(token, user) {
   updateNav();
   updateUIForTier();
   closeAuthModal();
+  startMessagePolling();
 }
 
 function handleLogout() {
   authToken = null;
   currentUser = null;
   localStorage.removeItem('autospec_token');
+  stopMessagePolling();
   updateNav();
   updateUIForTier();
 }
@@ -631,6 +633,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
         updateNav();
         updateUIForTier();
+        startMessagePolling();
       } else {
         handleLogout();
       }
@@ -3214,3 +3217,87 @@ window.handleProfileMessage = function() {
   openChat(activeProfileId, name, avatar);
   showPage('messages');
 };
+
+// ════════════════════ DIRECT MESSAGES ACCESS ════════════════════
+
+window.goToMessages = function() {
+  if (!currentUser) {
+    openAuthModal();
+    showToast("Connectez-vous pour accéder à vos messages", "info");
+    return;
+  }
+  showPage('messages');
+};
+
+// Update all message badges (nav, bnav, drawer) with unread count
+function updateMsgBadges(count) {
+  const badges = ['msg-badge-nav', 'msg-badge-bnav'];
+  const dots   = ['msg-dot', 'msg-dot-drawer'];
+
+  badges.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (count > 0) {
+      el.textContent = count > 9 ? '9+' : count;
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+
+  dots.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = count > 0 ? 'block' : 'none';
+  });
+}
+
+// ── Background polling: checks for new messages every 15 s ──
+let _lastUnreadCount = 0;
+let _msgPollingInterval = null;
+
+async function pollNewMessages() {
+  if (!authToken || !currentUser) return;
+
+  // Don't notify if the user is already on the messages page
+  const messagesPageActive = document.getElementById('page-messages')?.classList.contains('active');
+
+  try {
+    const res = await fetch(API_BASE + '/api/messages?action=list', {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const unread = data.filter(c => !c.is_read && c.last_message).length;
+
+    // Show toast only when unread count increases and user is NOT on messages page
+    if (unread > _lastUnreadCount && !messagesPageActive) {
+      const newMsgs = unread - _lastUnreadCount;
+      const label = newMsgs === 1 ? 'nouveau message' : 'nouveaux messages';
+      showToast(`💬 ${newMsgs} ${label} non lu${newMsgs > 1 ? 's' : ''}`, 'info');
+    }
+
+    _lastUnreadCount = unread;
+    updateMsgBadges(unread);
+
+  } catch (err) {
+    // silent fail
+  }
+}
+
+function startMessagePolling() {
+  if (_msgPollingInterval) clearInterval(_msgPollingInterval);
+  _lastUnreadCount = 0;
+  _msgPollingInterval = setInterval(pollNewMessages, 15000);
+  // Run immediately on start
+  pollNewMessages();
+}
+
+function stopMessagePolling() {
+  if (_msgPollingInterval) {
+    clearInterval(_msgPollingInterval);
+    _msgPollingInterval = null;
+  }
+  _lastUnreadCount = 0;
+  updateMsgBadges(0);
+}
