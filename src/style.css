@@ -1802,8 +1802,7 @@ select.s-input {
   .nav-tabs { display: none; }
   .hamburger { display: flex; }
   #user-nav-area { display: none; }
-  /* Keep bottom-nav visible on mobile for quick access */
-  .bottom-nav { display: flex; }
+  .bottom-nav { display: none; }
 }
 
 /* ── AUTOCOMPLETE ── */
