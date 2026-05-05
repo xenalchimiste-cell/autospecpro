@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     if (action === 'profile' && userId) {
       // Fetch public profile info
       const { rows: users } = await sql`
-        SELECT id, first_name, last_name, avatar_url, bio, instagram, location, garage, user_rank, points,
+        SELECT id, first_name, last_name, pseudo, avatar_url, bio, instagram, location, garage, user_rank, points,
                (SELECT COUNT(*) FROM follows WHERE following_id = ${userId}) as followers_count,
                (SELECT COUNT(*) FROM follows WHERE follower_id = ${userId}) as following_count,
                EXISTS(SELECT 1 FROM follows WHERE follower_id = ${currentUserId} AND following_id = ${userId}) as is_following

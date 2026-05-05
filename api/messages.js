@@ -38,9 +38,9 @@ export default async function handler(req, res) {
         if (query.length < 2) return res.status(200).json([]);
         const searchStr = `%${query}%`;
         const { rows: users } = await sql`
-          SELECT id, first_name || ' ' || last_name as name, avatar_url, user_type
+          SELECT id, first_name || ' ' || last_name as name, pseudo, avatar_url, user_type
           FROM users 
-          WHERE (first_name ILIKE ${searchStr} OR last_name ILIKE ${searchStr})
+          WHERE (first_name ILIKE ${searchStr} OR last_name ILIKE ${searchStr} OR pseudo ILIKE ${searchStr})
             AND id != ${userId}
           LIMIT 10
         `;

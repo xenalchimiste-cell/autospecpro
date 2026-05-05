@@ -2474,6 +2474,7 @@ window.updateAccountPage = async function() {
   // Profile display
   document.getElementById('p-display-avatar').outerHTML = getUserAvatarHtml(currentUser, 'profile-main-avatar');
   document.getElementById('p-display-fullname').innerText = (currentUser.first_name || '') + ' ' + (currentUser.last_name || '');
+  document.getElementById('p-display-pseudo').innerText = currentUser.pseudo ? '@' + currentUser.pseudo : '';
   document.getElementById('p-display-email').innerText = currentUser.email || '---';
   
   const bioEl = document.getElementById('p-display-bio');
@@ -3138,7 +3139,11 @@ window.handleMsgUserSearch = function() {
           <div class="conv-item" style="border-bottom:1px solid rgba(255,255,255,0.05);" onclick="selectUserForChat(${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.avatar_url || ''}')">
             ${getUserAvatarHtml(u, 'user-avatar-nav')}
             <div class="conv-info">
-              <div class="conv-name">${u.name} ${u.user_type === 'admin' ? '🛡️' : ''}</div>
+              <div class="conv-name" style="display:flex; align-items:center; gap:5px;">
+                ${u.name} 
+                ${u.pseudo ? `<span style="font-size:11px; color:var(--accent); font-weight:400; opacity:0.8;">@${u.pseudo}</span>` : ''}
+                ${u.user_type === 'admin' ? '🛡️' : ''}
+              </div>
               <div class="conv-last" style="color:var(--accent);">Envoyer un message</div>
             </div>
           </div>
@@ -3182,6 +3187,7 @@ window.openUserProfile = async function(userId) {
     // Fill user info
     document.getElementById('up-avatar').outerHTML = getUserAvatarHtml(u, 'profile-main-avatar');
     document.getElementById('up-name').innerText = u.first_name + ' ' + (u.last_name || '');
+    document.getElementById('up-pseudo').innerText = u.pseudo ? '@' + u.pseudo : '';
     document.getElementById('up-badges').innerHTML = getUserBadge(u.user_type, u.user_rank);
     document.getElementById('up-count-followers').innerText = u.followers_count;
     document.getElementById('up-count-following').innerText = u.following_count;

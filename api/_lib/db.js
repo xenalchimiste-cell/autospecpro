@@ -43,6 +43,7 @@ export async function initDb() {
         );
       `);
       
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pseudo VARCHAR(50) UNIQUE`);
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS company_name VARCHAR(255)`);
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS siret VARCHAR(14)`);
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS proof_url TEXT`);

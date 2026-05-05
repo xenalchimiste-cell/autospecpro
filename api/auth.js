@@ -82,11 +82,17 @@ async function handleRegister(req, res) {
 
   const myReferralCode = Math.random().toString(36).substring(2, 9).toUpperCase();
   const cleanSiret = siret ? siret.replace(/\s/g, '') : null;
+  
+  // Generate base pseudo
+  let basePseudo = firstName ? firstName.toLowerCase().replace(/[^a-z0-9]/g, '') : 'user';
+  if (!basePseudo) basePseudo = 'user';
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  const newPseudo = `${basePseudo}_${randomSuffix}`;
 
   const { rows: newUser } = await sql`
-    INSERT INTO users (email, password_hash, first_name, last_name, user_type, referral_code, referred_by_id, company_name, siret, proof_url)
-    VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${finalUserType}, ${myReferralCode}, ${referredById}, ${officialCompanyName || null}, ${cleanSiret}, ${proofUrl || null})
-    RETURNING id, email, first_name, last_name, user_type, referral_code, referred_by_id, company_name, siret, proof_url
+    INSERT INTO users (email, password_hash, first_name, last_name, user_type, referral_code, referred_by_id, company_name, siret, proof_url, pseudo)
+    VALUES (${email}, ${passwordHash}, ${firstName}, ${lastName}, ${finalUserType}, ${myReferralCode}, ${referredById}, ${officialCompanyName || null}, ${cleanSiret}, ${proofUrl || null}, ${newPseudo})
+    RETURNING id, email, first_name, last_name, pseudo, user_type, referral_code, referred_by_id, company_name, siret, proof_url
   `;
 
   const user = newUser[0];
@@ -139,9 +145,15 @@ async function handleGoogle(req, res) {
       user = updated[0];
     }
   } else {
+    // Generate pseudo
+    let basePseudo = given_name ? given_name.toLowerCase().replace(/[^a-z0-9]/g, '') : 'user';
+    if (!basePseudo) basePseudo = 'user';
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const newPseudo = `${basePseudo}_${randomSuffix}`;
+
     const { rows: newUser } = await sql`
-      INSERT INTO users (email, first_name, last_name, user_type, referral_code)
-      VALUES (${email}, ${given_name}, ${family_name}, 'individual', ${referralCode || null})
+      INSERT INTO users (email, first_name, last_name, user_type, referral_code, pseudo)
+      VALUES (${email}, ${given_name}, ${family_name}, 'individual', ${referralCode || null}, ${newPseudo})
       RETURNING *
     `;
     user = newUser[0];
