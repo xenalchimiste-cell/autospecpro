@@ -388,6 +388,7 @@ function completeAuth(token, user) {
   updateUIForTier();
   closeAuthModal();
   startMessagePolling();
+  requestNotificationPermission();
 }
 
 function handleLogout() {
@@ -598,6 +599,70 @@ window.fetchReviews = async function() {
     console.error('Fetch reviews error:', err);
   }
 };
+
+// ════════════════════ PUSH NOTIFICATIONS ════════════════════
+const VAPID_PUBLIC_KEY = "BENk7CYgAuJCfCv3-H0EJNQEs3VfyYVS7TcEe1ZfZZPxiXlBEOnpIN-d4yYOIRI62Hgn8brRg_ZmVUMODDqiTJ0";
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    console.log('SW registered:', reg.scope);
+  } catch (err) {
+    console.warn('SW registration failed:', err);
+  }
+}
+
+async function subscribeUserToPush(registration) {
+  if (!authToken) return;
+  try {
+    const existing = await registration.pushManager.getSubscription();
+    const sub = existing || await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    await fetch(API_BASE + '/api/push/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + authToken
+      },
+      body: JSON.stringify(sub)
+    });
+    console.log('Push subscription saved.');
+  } catch (err) {
+    console.warn('Push subscription failed:', err);
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    // Already granted — just re-subscribe to keep DB updated
+    const reg = await navigator.serviceWorker.ready;
+    await subscribeUserToPush(reg);
+    return;
+  }
+  if (Notification.permission === 'denied') return;
+
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    showToast('🔔 Notifications activées !', 'success');
+    const reg = await navigator.serviceWorker.ready;
+    await subscribeUserToPush(reg);
+  }
+}
+
 
 // Session check on load
 window.addEventListener('DOMContentLoaded', async () => {
