@@ -34,7 +34,9 @@ export default async function handler(req, res) {
       const { action, otherId } = req.query;
 
       if (action === 'search_users') {
-        const query = req.query.q || '';
+        let query = req.query.q || '';
+        if (query.startsWith('@')) query = query.substring(1);
+        
         if (query.length < 2) return res.status(200).json([]);
         const searchStr = `%${query}%`;
         const { rows: users } = await sql`
