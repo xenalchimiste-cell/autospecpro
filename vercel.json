@@ -12,7 +12,9 @@
   "rewrites": [
     { "source": "/api/auth/:action", "destination": "/api/auth.js?action=:action" },
     { "source": "/api/push/:action", "destination": "/api/push.js?action=:action" },
-    { "source": "/api/reviews", "destination": "/api/reviews.js" }
+    { "source": "/api/reviews", "destination": "/api/social.js?action=reviews" },
+    { "source": "/api/verify-siret", "destination": "/api/auth.js?action=verify-siret" },
+    { "source": "/api/extract-ad", "destination": "/api/chat.js?action=extract-ad" }
   ],
   "headers": [
     {

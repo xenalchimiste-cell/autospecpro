@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     return res.status(200).end();
   }
@@ -45,6 +45,36 @@ export default async function handler(req, res) {
       
       return res.status(200).json({ user: users[0], posts });
     }
+
+    if (action === 'reviews') {
+      try {
+        const { rows } = await sql`SELECT id, author_name, rating, comment, created_at FROM reviews ORDER BY created_at DESC LIMIT 50`;
+        return res.status(200).json(rows);
+      } catch (error) {
+        console.error('Fetch reviews error:', error);
+        return res.status(500).json({ error: 'Failed to fetch reviews' });
+      }
+    }
+  }
+
+  if (req.method === 'DELETE') {
+    const { action } = req.query;
+    if (action === 'reviews') {
+      if (!currentUserId) return res.status(401).json({ error: 'Authentication required' });
+      
+      try {
+        const { rows: users } = await sql`SELECT user_type FROM users WHERE id = ${currentUserId}`;
+        if (users.length === 0 || users[0].user_type !== 'admin') {
+          return res.status(403).json({ error: 'Forbidden: Admins only' });
+        }
+  
+        const { id } = req.query;
+        await sql`DELETE FROM reviews WHERE id = ${id}`;
+        return res.status(200).json({ message: 'Review deleted' });
+      } catch (error) {
+        return res.status(500).json({ error: 'Server error' });
+      }
+    }
   }
 
   if (req.method === 'POST') {
@@ -62,6 +92,29 @@ export default async function handler(req, res) {
       } else {
         await sql`INSERT INTO follows (follower_id, following_id) VALUES (${currentUserId}, ${targetId})`;
         return res.status(200).json({ following: true });
+      }
+    }
+
+    if (action === 'reviews') {
+      const { rating, comment } = req.body;
+      if (!rating || !comment) return res.status(400).json({ error: 'Rating and comment are required' });
+  
+      try {
+        // Get user name
+        const { rows: users } = await sql`SELECT first_name, last_name FROM users WHERE id = ${currentUserId}`;
+        if (users.length === 0) return res.status(404).json({ error: 'User not found' });
+        
+        const author_name = `${users[0].first_name} ${users[0].last_name.charAt(0)}.`;
+  
+        await sql`
+          INSERT INTO reviews (user_id, author_name, rating, comment)
+          VALUES (${currentUserId}, ${author_name}, ${rating}, ${comment})
+        `;
+  
+        return res.status(201).json({ message: 'Review added successfully', author_name });
+      } catch (error) {
+        console.error('Post review error:', error);
+        return res.status(500).json({ error: 'Failed to save review' });
       }
     }
   }
