@@ -33,6 +33,20 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const { action, otherId } = req.query;
 
+      if (action === 'search_users') {
+        const query = req.query.q || '';
+        if (query.length < 2) return res.status(200).json([]);
+        const searchStr = `%${query}%`;
+        const { rows: users } = await sql`
+          SELECT id, first_name || ' ' || last_name as name, avatar_url, user_type
+          FROM users 
+          WHERE (first_name ILIKE ${searchStr} OR last_name ILIKE ${searchStr})
+            AND id != ${userId}
+          LIMIT 10
+        `;
+        return res.status(200).json(users);
+      }
+
       if (action === 'list') {
         const { rows: conversations } = await sql`
           SELECT DISTINCT ON (other_id)

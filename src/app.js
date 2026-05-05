@@ -3113,6 +3113,50 @@ window.closeChat = function() {
   fetchConversations();
 };
 
+let msgSearchTimeout = null;
+window.handleMsgUserSearch = function() {
+  const q = document.getElementById('msg-user-search-input').value.trim();
+  const resultsDiv = document.getElementById('msg-user-search-results');
+  
+  if (q.length < 2) {
+    resultsDiv.style.display = 'none';
+    return;
+  }
+  
+  clearTimeout(msgSearchTimeout);
+  msgSearchTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch(API_BASE + '/api/messages?action=search_users&q=' + encodeURIComponent(q), {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const users = await res.json();
+      
+      if (users.length === 0) {
+        resultsDiv.innerHTML = '<div style="padding:12px; color:var(--text3); font-size:12px; text-align:center;">Aucun membre trouvé</div>';
+      } else {
+        resultsDiv.innerHTML = users.map(u => `
+          <div class="conv-item" style="border-bottom:1px solid rgba(255,255,255,0.05);" onclick="selectUserForChat(${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.avatar_url || ''}')">
+            ${getUserAvatarHtml(u, 'user-avatar-nav')}
+            <div class="conv-info">
+              <div class="conv-name">${u.name} ${u.user_type === 'admin' ? '🛡️' : ''}</div>
+              <div class="conv-last" style="color:var(--accent);">Envoyer un message</div>
+            </div>
+          </div>
+        `).join('');
+      }
+      resultsDiv.style.display = 'block';
+    } catch (err) {
+      console.error('Search error:', err);
+    }
+  }, 300);
+};
+
+window.selectUserForChat = function(id, name, avatarUrl) {
+  document.getElementById('msg-user-search-input').value = '';
+  document.getElementById('msg-user-search-results').style.display = 'none';
+  openChat(id, name, avatarUrl);
+};
+
 // ════════════════════ GESTION PROFIL PUBLIC ════════════════════
 let activeProfileId = null;
 

@@ -652,6 +652,15 @@
     <div class="messages-layout">
       <!-- Liste des conversations -->
       <div class="conv-sidebar">
+        <div style="padding: 12px; border-bottom: 1px solid var(--border); position: relative; z-index: 20;">
+          <div style="display:flex; align-items:center; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s;" id="msg-search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5; margin-right:10px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="msg-user-search-input" placeholder="Chercher qqn (@pseudo)..." oninput="handleMsgUserSearch()" onfocus="document.getElementById('msg-search-box').style.borderColor='var(--accent)'" onblur="setTimeout(()=>document.getElementById('msg-search-box').style.borderColor='rgba(255,255,255,0.05)', 200)" style="background:transparent; border:none; outline:none; color:#fff; width:100%; font-size:14px;">
+          </div>
+          <div id="msg-user-search-results" style="display:none; position:absolute; top:calc(100% + 5px); left:12px; right:12px; background:#1a1a24; border:1px solid rgba(255,255,255,0.1); border-radius:12px; max-height:300px; overflow-y:auto; box-shadow: 0 15px 40px rgba(0,0,0,0.6);">
+          </div>
+        </div>
+        
         <div id="conv-list" class="conv-list">
           <!-- Injecté par JS -->
           <div class="conv-empty">Aucune conversation.</div>
