@@ -21,7 +21,10 @@ export const sql = async (strings, ...values) => {
   return { rows };
 };
 
+let isDbInitialized = false;
+
 export async function initDb() {
+  if (isDbInitialized) return;
   try {
     const client = await pool.connect();
     try {
@@ -124,7 +127,11 @@ export async function initDb() {
         );
       `);
       
+      await client.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS author_name VARCHAR(255)`);
+      await client.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS author_name VARCHAR(255)`);
+      
       console.log('Database connected and initialized with pg driver');
+      isDbInitialized = true;
     } finally {
       client.release();
     }

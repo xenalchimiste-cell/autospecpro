@@ -159,29 +159,32 @@ function closeAuthModal() { document.getElementById('auth-modal').style.display 
 function saveRememberedInfo(email, password, checked) {
   if (checked) {
     localStorage.setItem('as_rem_e', btoa(email));
-    localStorage.setItem('as_rem_p', btoa(password));
+    // Pour des raisons de sécurité, le mot de passe n'est plus stocké
   } else {
     localStorage.removeItem('as_rem_e');
-    localStorage.removeItem('as_rem_p');
+    localStorage.removeItem('as_rem_p'); // Nettoyer l'ancienne clé si présente
   }
 }
 
 function initRememberedInfo() {
   const remE = localStorage.getItem('as_rem_e');
-  const remP = localStorage.getItem('as_rem_p');
-  if (remE && remP) {
+  if (remE) {
     try {
       const e = atob(remE);
-      const p = atob(remP);
       // Login form
       const lForm = document.getElementById('login-form');
-      lForm.querySelector('[name="email"]').value = e;
-      lForm.querySelector('[name="password"]').value = p;
-      lForm.querySelector('[name="rememberMe"]').checked = true;
+      if (lForm.querySelector('[name="email"]')) {
+        lForm.querySelector('[name="email"]').value = e;
+      }
+      if (lForm.querySelector('[name="rememberMe"]')) {
+        lForm.querySelector('[name="rememberMe"]').checked = true;
+      }
       
-      // Register form: On garde la checkbox mais on laisse les champs vides
+      // Register form: On garde la checkbox
       const rForm = document.getElementById('register-form');
-      rForm.querySelector('[name="rememberMe"]').checked = true;
+      if (rForm.querySelector('[name="rememberMe"]')) {
+        rForm.querySelector('[name="rememberMe"]').checked = true;
+      }
     } catch(err) { console.error('RememberMe decode failed:', err); }
   }
 }
@@ -3139,7 +3142,7 @@ window.handleMsgUserSearch = function() {
         resultsDiv.innerHTML = '<div style="padding:12px; color:var(--text3); font-size:12px; text-align:center;">Aucun membre trouvé</div>';
       } else {
         resultsDiv.innerHTML = users.map(u => `
-          <div class="conv-item" style="border-bottom:1px solid rgba(255,255,255,0.05);" onclick="selectUserForChat(${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.avatar_url || ''}')">
+          <div class="conv-item" style="border-bottom:1px solid rgba(255,255,255,0.05);" onclick="selectUserForChat(${u.id}, '${(u.name || '').replace(/'/g, "\\'")}', '${u.avatar_url || ''}')">
             ${getUserAvatarHtml(u, 'user-avatar-nav')}
             <div class="conv-info">
               <div class="conv-name" style="display:flex; align-items:center; gap:5px;">

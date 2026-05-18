@@ -57,7 +57,7 @@ async function handleGetPosts(req, res) {
     // Fetch posts with likes, comments counts and author type
     const { rows: posts } = await sql`
       SELECT p.*, 
-             u.first_name || ' ' || u.last_name as author_name,
+             CONCAT_WS(' ', u.first_name, u.last_name) as author_name,
              u.user_type,
              u.avatar_url as author_avatar_url,
              EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = ${userId}) as is_liked,
@@ -96,26 +96,28 @@ async function handleCreatePost(req, res) {
       RETURNING *
     `;
 
-    // Send Notifications to all subscribers
+    // Send Notifications to all subscribers (non-blocking)
     if (VAPID_PRIVATE_KEY) {
-      try {
-        const { rows: subs } = await sql`SELECT subscription FROM push_subscriptions`;
-        const payload = JSON.stringify({
-          title: 'Nouveau bolide ! 🏎️',
-          body: `${authorName} a partagé sa voiture dans la communauté.`,
-          url: '/#page-community'
-        });
+      (async () => {
+        try {
+          const { rows: subs } = await sql`SELECT subscription FROM push_subscriptions`;
+          const payload = JSON.stringify({
+            title: 'Nouveau bolide ! 🏎️',
+            body: `${authorName} a partagé sa voiture dans la communauté.`,
+            url: '/#page-community'
+          });
 
-        await Promise.all(subs.map(async (row) => {
-          try {
-            await webpush.sendNotification(row.subscription, payload);
-          } catch (err) {
-            if (err.statusCode === 404 || err.statusCode === 410) {
-              await sql`DELETE FROM push_subscriptions WHERE endpoint = ${row.subscription.endpoint}`;
+          await Promise.all(subs.map(async (row) => {
+            try {
+              await webpush.sendNotification(row.subscription, payload);
+            } catch (err) {
+              if (err.statusCode === 404 || err.statusCode === 410) {
+                await sql`DELETE FROM push_subscriptions WHERE endpoint = ${row.subscription.endpoint}`;
+              }
             }
-          }
-        }));
-      } catch (err) { console.error("Push Error:", err); }
+          }));
+        } catch (err) { console.error("Push Error:", err); }
+      })();
     }
 
     // Award points for posting

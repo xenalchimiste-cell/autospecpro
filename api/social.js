@@ -104,7 +104,7 @@ export default async function handler(req, res) {
         const { rows: users } = await sql`SELECT first_name, last_name FROM users WHERE id = ${currentUserId}`;
         if (users.length === 0) return res.status(404).json({ error: 'User not found' });
         
-        const author_name = `${users[0].first_name} ${users[0].last_name.charAt(0)}.`;
+        const author_name = `${users[0].first_name}${users[0].last_name ? ' ' + users[0].last_name.charAt(0) + '.' : ''}`;
   
         await sql`
           INSERT INTO reviews (user_id, author_name, rating, comment)

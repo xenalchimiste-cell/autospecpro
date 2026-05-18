@@ -23,12 +23,17 @@ export default async function handler(req, res) {
 
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
-
   const token = authHeader.split(' ')[1];
+
+  let userId;
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.userId;
+    userId = decoded.userId;
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
 
+  try {
     // ─── GET ───────────────────────────────────────────────────
     if (req.method === 'GET') {
       const { action, otherId } = req.query;
@@ -40,7 +45,7 @@ export default async function handler(req, res) {
         if (query.length < 1) return res.status(200).json([]);
         const searchStr = `%${query}%`;
         const { rows: users } = await sql`
-          SELECT id, first_name || ' ' || last_name as name, pseudo, avatar_url, user_type
+          SELECT id, CONCAT_WS(' ', first_name, last_name) as name, pseudo, avatar_url, user_type
           FROM users 
           WHERE (first_name ILIKE ${searchStr} OR last_name ILIKE ${searchStr} OR pseudo ILIKE ${searchStr})
             AND id != ${userId}
@@ -53,7 +58,7 @@ export default async function handler(req, res) {
         const { rows: conversations } = await sql`
           SELECT DISTINCT ON (other_id)
             other_id,
-            u.first_name || ' ' || u.last_name as other_name,
+            CONCAT_WS(' ', u.first_name, u.last_name) as other_name,
             u.avatar_url as other_avatar,
             m.content as last_message,
             m.created_at as last_date,
@@ -133,9 +138,9 @@ export default async function handler(req, res) {
       return res.status(201).json(newMessage[0]);
     }
 
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid token' });
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (dbErr) {
+    console.error('Database Error:', dbErr);
+    return res.status(500).json({ error: 'Internal server error', details: dbErr.message });
   }
-
-  return res.status(405).json({ error: 'Method not allowed' });
 }
