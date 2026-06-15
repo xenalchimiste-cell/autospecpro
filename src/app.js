@@ -6,6 +6,8 @@ const API_BASE = isLocal ? 'https://autospecpro.vercel.app' : '';
 const TIERS = { FREE: 'free', PASSIONNE: 'passionne', PRO: 'pro' };
 let currentTier = localStorage.getItem('autospec_tier') || TIERS.FREE;
 let currentUser = null;
+let gamificationData = null;
+let activeRewardsTab = 'themes';
 let authToken = localStorage.getItem('autospec_token');
 
 let carA = null, carB = null;
@@ -627,6 +629,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       if (res.ok) {
         const result = await res.json();
         currentUser = result.user;
+        if (result.gamification) gamificationData = result.gamification;
         
         if (currentUser && currentUser.account_tier) {
           currentTier = currentUser.account_tier;
@@ -2474,7 +2477,8 @@ window.updateAccountPage = async function() {
     desc.innerText = "Accès complet illimité pour les experts.";
   }
 
-  // Profile display
+  // Profile display with customization
+  applyProfileCustomization('profile-display-header', currentUser);
   document.getElementById('p-display-avatar').outerHTML = getUserAvatarHtml(currentUser, 'profile-main-avatar');
   document.getElementById('p-display-fullname').innerText = (currentUser.first_name || '') + ' ' + (currentUser.last_name || '');
   document.getElementById('p-display-pseudo').innerText = currentUser.pseudo ? '@' + currentUser.pseudo : '';
@@ -2493,18 +2497,23 @@ window.updateAccountPage = async function() {
   document.getElementById('p-display-instagram').innerText = currentUser.instagram || 'Instagram non lié';
   document.getElementById('p-display-garage').innerText = currentUser.garage || 'Garage vide';
 
-  // Points & Rank
-  document.getElementById('p-display-points').innerText = (currentUser.points || 0) + ' pts';
+  // XP & Rank
+  await loadGamificationData();
+  const progress = gamificationData?.progress;
+  document.getElementById('p-display-points').innerText = (currentUser.points || 0) + ' XP';
   document.getElementById('p-display-rank').innerText = currentUser.user_rank || 'Novice';
   
-  // Progress bar calculation
-  let nextThreshold = 50;
-  if (currentUser.points >= 500) nextThreshold = 1000; // Legendary?
-  else if (currentUser.points >= 200) nextThreshold = 500;
-  else if (currentUser.points >= 50) nextThreshold = 200;
-  
-  const progress = Math.min(100, (currentUser.points / nextThreshold) * 100);
-  document.getElementById('p-points-fill').style.width = progress + '%';
+  if (progress) {
+    document.getElementById('p-points-fill').style.width = progress.percent + '%';
+    const nextEl = document.getElementById('p-next-rank');
+    if (progress.nextRank) {
+      nextEl.innerText = `${progress.pointsToNext} XP pour atteindre ${progress.nextRank}`;
+    } else {
+      nextEl.innerText = 'Rang maximum atteint — Légendaire !';
+    }
+  }
+
+  renderRewardsGrid();
 
   document.getElementById('account-referral-code').innerText = currentUser.referral_code || '---';
 
@@ -2924,9 +2933,108 @@ window.getUserBadge = function(userType, rank) {
     badges += `<span class="user-badge badge-verified"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zM10 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"/></svg></span>`;
   }
   if (rank && rank !== 'Novice') {
-    badges += `<span class="rank-badge">\${rank}</span>`;
+    const rankClass = 'rank-badge-' + rank.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    badges += `<span class="rank-badge ${rankClass}">${rank}</span>`;
   }
   return badges;
+};
+
+// ════════════════════ SYSTÈME XP & RÉCOMPENSES ════════════════════
+window.applyProfileCustomization = function(elementId, user) {
+  const el = document.getElementById(elementId);
+  if (!el || !user) return;
+  const theme = user.profile_theme || 'default';
+  const banner = user.profile_banner || 'none';
+  const frame = user.avatar_frame || 'none';
+
+  ['default','midnight','racing','gold','neon'].forEach(t => el.classList.remove('theme-' + t));
+  ['none','speed','sunset','carbon','aurora'].forEach(b => el.classList.remove('banner-' + b));
+  ['none','bronze','silver','gold','diamond'].forEach(f => el.classList.remove('frame-' + f));
+
+  el.classList.add(`theme-${theme}`, `banner-${banner}`, `frame-${frame}`);
+};
+
+window.loadGamificationData = async function() {
+  if (!authToken) return;
+  try {
+    const res = await fetch(API_BASE + '/api/auth/gamification', {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    if (res.ok) {
+      gamificationData = await res.json();
+    }
+  } catch (err) {
+    console.error('Gamification load error:', err);
+  }
+};
+
+window.switchRewardsTab = function(tab) {
+  activeRewardsTab = tab;
+  document.querySelectorAll('.rewards-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  renderRewardsGrid();
+};
+
+window.renderRewardsGrid = function() {
+  const grid = document.getElementById('rewards-grid');
+  if (!grid || !gamificationData) return;
+
+  const items = gamificationData.unlocked[activeRewardsTab] || [];
+  const equipped = gamificationData.equipped;
+  const equippedKey = activeRewardsTab === 'themes' ? 'theme' : activeRewardsTab === 'banners' ? 'banner' : 'frame';
+
+  const equippedItem = items.find(i => i.id === equipped[equippedKey]);
+  const badge = document.getElementById('rewards-equipped-badge');
+  if (badge && equippedItem) badge.innerText = equippedItem.name;
+
+  grid.innerHTML = items.map(item => {
+    const isEquipped = equipped[equippedKey] === item.id;
+    const previewClass = activeRewardsTab === 'themes' ? `theme-${item.id}` :
+                         activeRewardsTab === 'banners' ? `banner-${item.id}` : `frame-${item.id}`;
+    return `
+      <div class="reward-item ${item.unlocked ? 'unlocked' : 'locked'} ${isEquipped ? 'equipped' : ''}"
+           ${item.unlocked ? `onclick="equipReward('${activeRewardsTab}', '${item.id}')"` : ''}>
+        ${!item.unlocked ? '<span class="reward-item-lock">🔒</span>' : ''}
+        <div class="reward-preview ${previewClass}"></div>
+        <div class="reward-item-icon">${item.icon}</div>
+        <div class="reward-item-name">${item.name}</div>
+        <div class="reward-item-desc">${item.description}</div>
+        <div class="reward-item-req">${item.minPoints === 0 ? 'Débloqué' : item.minPoints + ' XP'}</div>
+        ${isEquipped ? '<div class="reward-item-equipped">Équipé</div>' : ''}
+      </div>
+    `;
+  }).join('');
+};
+
+window.equipReward = async function(category, itemId) {
+  if (!authToken) return;
+  const body = {};
+  if (category === 'themes') body.profileTheme = itemId;
+  else if (category === 'banners') body.profileBanner = itemId;
+  else if (category === 'frames') body.avatarFrame = itemId;
+
+  try {
+    const res = await fetch(API_BASE + '/api/auth/apply-customization', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      currentUser = data.user;
+      gamificationData = data.gamification;
+      localStorage.setItem('user', JSON.stringify(currentUser));
+      applyProfileCustomization('profile-display-header', currentUser);
+      document.getElementById('p-display-avatar').outerHTML = getUserAvatarHtml(currentUser, 'profile-main-avatar');
+      renderRewardsGrid();
+      showToast('Style appliqué !', 'success');
+    } else {
+      showToast(data.error || 'Récompense non débloquée', 'error');
+    }
+  } catch (err) {
+    showToast('Erreur réseau', 'error');
+  }
 };
 
 // ════════════════════ GESTION DU PROFIL ════════════════════
@@ -3191,6 +3299,7 @@ window.openUserProfile = async function(userId) {
     const u = data.user;
     
     // Fill user info
+    applyProfileCustomization('up-header', u);
     document.getElementById('up-avatar').outerHTML = getUserAvatarHtml(u, 'profile-main-avatar');
     document.getElementById('up-name').innerText = u.first_name + ' ' + (u.last_name || '');
     document.getElementById('up-pseudo').innerText = u.pseudo ? '@' + u.pseudo : '';

@@ -1,5 +1,6 @@
 import { sql, initDb } from './_lib/db.js';
 import jwt from 'jsonwebtoken';
+import { awardPoints, POINT_ACTIONS } from './_lib/gamification.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
@@ -29,7 +30,8 @@ export default async function handler(req, res) {
     if (action === 'profile' && userId) {
       // Fetch public profile info
       const { rows: users } = await sql`
-        SELECT id, first_name, last_name, pseudo, avatar_url, bio, instagram, location, garage, user_rank, points,
+        SELECT id, first_name, last_name, pseudo, avatar_url, bio, instagram, location, garage,
+               user_rank, user_type, points, profile_theme, profile_banner, avatar_frame,
                (SELECT COUNT(*) FROM follows WHERE following_id = ${userId}) as followers_count,
                (SELECT COUNT(*) FROM follows WHERE follower_id = ${userId}) as following_count,
                EXISTS(SELECT 1 FROM follows WHERE follower_id = ${currentUserId} AND following_id = ${userId}) as is_following
@@ -91,6 +93,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ following: false });
       } else {
         await sql`INSERT INTO follows (follower_id, following_id) VALUES (${currentUserId}, ${targetId})`;
+        await awardPoints(targetId, POINT_ACTIONS.FOLLOW_RECEIVED);
         return res.status(200).json({ following: true });
       }
     }

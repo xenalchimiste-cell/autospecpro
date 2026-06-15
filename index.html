@@ -591,22 +591,25 @@
 
   <!-- ══════════ PAGE PROFIL PUBLIC ══════════ -->
   <div id="page-user-profile" class="page">
-    <div class="profile-header-premium">
-      <div id="up-avatar" class="profile-main-avatar">?</div>
-      <div class="up-info">
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <h1 id="up-name" style="margin:0; font-size:28px;">---</h1>
-          <div id="up-badges"></div>
-        </div>
-        <div id="up-pseudo" style="font-size:16px; color:var(--accent); font-weight:500; opacity:0.8; margin-top:2px;">@---</div>
-        <div id="up-meta" style="font-size:13px; color:var(--text3); margin-top:5px; display:flex; gap:15px;">
-          <span><strong id="up-count-followers">0</strong> Abonnés</span>
-          <span><strong id="up-count-following">0</strong> Abonnements</span>
-          <span id="up-location-box" style="display:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span id="up-location">---</span></span>
-        </div>
-        <div style="margin-top:15px; display:flex; gap:10px;">
-          <button id="up-follow-btn" class="btn btn-primary" onclick="handleFollowUser()">Suivre</button>
-          <button id="up-msg-btn" class="btn btn-outline" onclick="handleProfileMessage()">Message</button>
+    <div id="up-header" class="profile-header-premium theme-default banner-none frame-none">
+      <div class="profile-banner-area"></div>
+      <div class="profile-header-body">
+        <div id="up-avatar" class="profile-main-avatar frame-none">?</div>
+        <div class="up-info">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <h1 id="up-name" style="margin:0; font-size:28px;">---</h1>
+            <div id="up-badges"></div>
+          </div>
+          <div id="up-pseudo" style="font-size:16px; color:var(--accent); font-weight:500; opacity:0.8; margin-top:2px;">@---</div>
+          <div id="up-meta" style="font-size:13px; color:var(--text3); margin-top:5px; display:flex; gap:15px;">
+            <span><strong id="up-count-followers">0</strong> Abonnés</span>
+            <span><strong id="up-count-following">0</strong> Abonnements</span>
+            <span id="up-location-box" style="display:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span id="up-location">---</span></span>
+          </div>
+          <div style="margin-top:15px; display:flex; gap:10px;">
+            <button id="up-follow-btn" class="btn btn-primary" onclick="handleFollowUser()">Suivre</button>
+            <button id="up-msg-btn" class="btn btn-outline" onclick="handleProfileMessage()">Message</button>
+          </div>
         </div>
       </div>
     </div>
@@ -710,8 +713,13 @@
         </div>
         
         <div id="profile-display">
-          <div style="text-align:center; margin-bottom:20px;">
-            <div id="p-display-avatar" class="profile-main-avatar">A</div>
+          <div id="profile-display-header" class="profile-custom-header theme-default banner-none frame-none">
+            <div class="profile-banner-area"></div>
+            <div class="profile-avatar-zone">
+              <div id="p-display-avatar" class="profile-main-avatar frame-none">A</div>
+            </div>
+          </div>
+          <div style="text-align:center; margin-bottom:20px; margin-top:12px;">
             <div style="margin-top:12px;">
               <span id="p-display-fullname" style="font-size:20px; font-weight:800; display:block;">---</span>
               <span id="p-display-pseudo" style="font-size:14px; color:var(--accent); font-weight:600; display:block; margin-top:2px;">@---</span>
@@ -797,16 +805,36 @@
         </div>
         <div class="points-bar-container">
           <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px;">
-            <span style="color:var(--text2);">Progression</span>
-            <span id="p-display-points" style="font-weight:700; color:var(--accent);">0 pts</span>
+            <span style="color:var(--text2);">Progression XP</span>
+            <span id="p-display-points" style="font-weight:700; color:var(--accent);">0 XP</span>
           </div>
           <div class="points-bar-bg" style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
             <div id="p-points-fill" class="points-bar-fill" style="width: 5%; height:100%; background:linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 1s ease;"></div>
           </div>
+          <div id="p-next-rank" style="font-size:11px; color:var(--text3); margin-top:8px;"></div>
         </div>
         <p style="font-size:11px; color:var(--text3); margin-top:15px; line-height:1.5;">
-          Gagnez des points en partageant vos voitures, en likant et en commentant les pépites de la communauté !
+          Gagnez de l'XP en partageant vos voitures, en likant, en commentant et en recevant des abonnés !
         </p>
+      </div>
+
+      <!-- Récompenses & Personnalisation -->
+      <div class="account-card rewards-card" style="grid-column: 1 / -1;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <div>
+            <h3 style="margin:0;">Récompenses & Style</h3>
+            <p style="font-size:12px; color:var(--text3); margin:5px 0 0;">Débloquez thèmes, bannières et cadres en gagnant de l'XP</p>
+          </div>
+          <div id="rewards-equipped-badge" class="rewards-equipped-badge">Classique</div>
+        </div>
+        <div class="rewards-tabs">
+          <button class="rewards-tab active" data-tab="themes" onclick="switchRewardsTab('themes')">Thèmes</button>
+          <button class="rewards-tab" data-tab="banners" onclick="switchRewardsTab('banners')">Bannières</button>
+          <button class="rewards-tab" data-tab="frames" onclick="switchRewardsTab('frames')">Cadres</button>
+        </div>
+        <div id="rewards-grid" class="rewards-grid">
+          <div style="color:var(--text3); padding:20px; text-align:center;">Chargement des récompenses...</div>
+        </div>
       </div>
 
       <!-- Abonnement -->

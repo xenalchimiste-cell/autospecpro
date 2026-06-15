@@ -2609,10 +2609,13 @@ select.s-input {
 /* PROFIL PUBLIC PREMIUM */
 .profile-header-premium {
   display: flex;
-  align-items: center;
-  gap: 30px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(135deg, rgba(212,168,67,0.1), rgba(0,0,0,0.2));
-  padding: 40px;
+  padding: 0;
   border-radius: 20px;
   border: 1px solid rgba(212,168,67,0.15);
   margin-bottom: 30px;
@@ -2626,7 +2629,7 @@ select.s-input {
 }
 
 @media (max-width: 768px) {
-  .profile-header-premium { flex-direction: column; text-align: center; padding: 30px 20px; gap: 20px; }
+  .profile-header-body { flex-direction: column; text-align: center; padding: 0 20px 30px; gap: 20px; }
   .up-content-grid { grid-template-columns: 1fr; }
   .up-meta { justify-content: center; }
 }
@@ -2638,4 +2641,217 @@ select.s-input {
 .clickable-author:hover {
   color: var(--accent);
   text-decoration: underline;
+}
+
+/* ════════════════════ SYSTÈME XP & RÉCOMPENSES ════════════════════ */
+
+.profile-custom-header {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+
+.profile-banner-area {
+  height: 90px;
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  position: relative;
+}
+
+.profile-avatar-zone {
+  display: flex;
+  justify-content: center;
+  margin-top: -50px;
+  padding-bottom: 10px;
+}
+
+.profile-header-body {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 0 40px 40px;
+  position: relative;
+}
+
+.profile-header-premium .profile-banner-area {
+  height: 140px;
+}
+
+.profile-header-premium .profile-main-avatar {
+  margin-top: -50px;
+  flex-shrink: 0;
+}
+
+/* Bannières */
+.banner-none .profile-banner-area { background: rgba(255,255,255,0.03); }
+.banner-speed .profile-banner-area {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background-size: 200% 200%;
+  animation: bannerShift 4s ease infinite;
+}
+.banner-speed .profile-banner-area::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 22px);
+}
+.banner-sunset .profile-banner-area {
+  background: linear-gradient(135deg, #ff6b35, #f7931e, #c850c0, #4158d0);
+}
+.banner-carbon .profile-banner-area {
+  background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 2px, #2a2a2a 2px, #2a2a2a 4px);
+}
+.banner-aurora .profile-banner-area {
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  animation: auroraPulse 6s ease infinite;
+}
+.banner-aurora .profile-banner-area::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(0,255,200,0.15), transparent 60%),
+              radial-gradient(ellipse at 70% 30%, rgba(180,0,255,0.15), transparent 60%);
+}
+
+@keyframes bannerShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes auroraPulse {
+  0%, 100% { filter: hue-rotate(0deg); }
+  50% { filter: hue-rotate(30deg); }
+}
+
+/* Thèmes profil */
+.theme-default { --profile-accent: var(--accent); }
+.theme-midnight {
+  --profile-accent: #7eb8ff;
+  background: linear-gradient(180deg, rgba(30,40,80,0.3), transparent);
+}
+.theme-midnight .profile-banner-area { background: linear-gradient(135deg, #0d1b2a, #1b263b); }
+.theme-racing {
+  --profile-accent: #ff4444;
+  background: linear-gradient(180deg, rgba(80,10,10,0.2), transparent);
+}
+.theme-racing .profile-banner-area { background: linear-gradient(135deg, #1a0000, #330000); }
+.theme-gold {
+  --profile-accent: #ffd700;
+  background: linear-gradient(180deg, rgba(80,60,10,0.2), transparent);
+}
+.theme-gold .profile-banner-area { background: linear-gradient(135deg, #2a2000, #4a3800); }
+.theme-neon {
+  --profile-accent: #00fff0;
+  background: linear-gradient(180deg, rgba(80,0,120,0.15), transparent);
+}
+.theme-neon .profile-banner-area { background: linear-gradient(135deg, #0a0020, #1a0040); }
+
+.theme-midnight #p-display-pseudo,
+.theme-midnight #up-pseudo { color: #7eb8ff !important; }
+.theme-racing #p-display-pseudo,
+.theme-racing #up-pseudo { color: #ff4444 !important; }
+.theme-gold #p-display-pseudo,
+.theme-gold #up-pseudo { color: #ffd700 !important; }
+.theme-neon #p-display-pseudo,
+.theme-neon #up-pseudo { color: #00fff0 !important; }
+
+/* Cadres avatar */
+.frame-none .profile-main-avatar { border-color: var(--border); }
+.frame-bronze .profile-main-avatar {
+  border: 3px solid #cd7f32;
+  box-shadow: 0 0 12px rgba(205,127,50,0.4);
+}
+.frame-silver .profile-main-avatar {
+  border: 3px solid #c0c0c0;
+  box-shadow: 0 0 15px rgba(192,192,192,0.5);
+}
+.frame-gold .profile-main-avatar {
+  border: 3px solid #ffd700;
+  box-shadow: 0 0 20px rgba(255,215,0,0.5);
+  animation: frameGlow 2s ease infinite;
+}
+.frame-diamond .profile-main-avatar {
+  border: 3px solid transparent;
+  background: linear-gradient(#1a1a24, #1a1a24) padding-box,
+              linear-gradient(135deg, #00fff0, #ff00ff, #ffd700) border-box;
+  box-shadow: 0 0 25px rgba(0,255,240,0.3);
+  animation: frameGlow 1.5s ease infinite;
+}
+
+@keyframes frameGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+  50% { box-shadow: 0 0 25px rgba(255,215,0,0.6); }
+}
+
+/* Badges de rang colorés */
+.rank-badge-amateur { color: #a0c4ff; border-color: #a0c4ff; background: rgba(160,196,255,0.1); }
+.rank-badge-passionné, .rank-badge-passionne { color: var(--green); border-color: var(--green); background: rgba(91,191,133,0.1); }
+.rank-badge-expert { color: var(--accent); border-color: var(--accent); background: rgba(212,168,67,0.1); }
+.rank-badge-légendaire, .rank-badge-legendaire { color: #ff6bff; border-color: #ff6bff; background: rgba(255,107,255,0.1); }
+
+/* Grille récompenses */
+.rewards-card { border-top: 3px solid var(--accent); }
+.rewards-equipped-badge {
+  font-size: 11px; font-weight: 700; padding: 6px 14px;
+  border-radius: 20px; background: rgba(212,168,67,0.15);
+  color: var(--accent); border: 1px solid rgba(212,168,67,0.3);
+}
+.rewards-tabs {
+  display: flex; gap: 8px; margin-bottom: 20px;
+}
+.rewards-tab {
+  flex: 1; padding: 10px; border-radius: 10px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  color: var(--text2); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; font-family: inherit;
+}
+.rewards-tab:hover { border-color: var(--accent); color: #fff; }
+.rewards-tab.active {
+  background: rgba(212,168,67,0.15); border-color: var(--accent); color: var(--accent);
+}
+.rewards-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;
+}
+.reward-item {
+  position: relative; border-radius: 14px; padding: 16px 12px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  text-align: center; transition: all 0.2s; cursor: default;
+}
+.reward-item.unlocked { cursor: pointer; }
+.reward-item.unlocked:hover { border-color: var(--accent); transform: translateY(-2px); }
+.reward-item.equipped { border-color: var(--accent); background: rgba(212,168,67,0.1); box-shadow: 0 0 20px rgba(212,168,67,0.1); }
+.reward-item.locked { opacity: 0.45; }
+.reward-item-icon { font-size: 28px; margin-bottom: 8px; }
+.reward-item-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.reward-item-desc { font-size: 10px; color: var(--text3); line-height: 1.4; margin-bottom: 8px; }
+.reward-item-req { font-size: 10px; font-weight: 700; color: var(--accent); }
+.reward-item-lock {
+  position: absolute; top: 8px; right: 8px;
+  font-size: 14px; opacity: 0.6;
+}
+.reward-item-equipped {
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  color: var(--accent); letter-spacing: 1px; margin-top: 6px;
+}
+.reward-preview {
+  height: 36px; border-radius: 8px; margin-bottom: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.reward-preview.theme-default { background: rgba(255,255,255,0.05); }
+.reward-preview.theme-midnight { background: linear-gradient(135deg, #0d1b2a, #1b263b); }
+.reward-preview.theme-racing { background: linear-gradient(135deg, #1a0000, #ff4444); }
+.reward-preview.theme-gold { background: linear-gradient(135deg, #2a2000, #ffd700); }
+.reward-preview.theme-neon { background: linear-gradient(135deg, #0a0020, #00fff0); }
+.reward-preview.banner-speed { background: linear-gradient(135deg, #1a1a2e, #0f3460); }
+.reward-preview.banner-sunset { background: linear-gradient(135deg, #ff6b35, #c850c0); }
+.reward-preview.banner-carbon { background: repeating-linear-gradient(45deg, #1a1a1a, #2a2a2a 3px); }
+.reward-preview.banner-aurora { background: linear-gradient(135deg, #0f0c29, #302b63); }
+.reward-preview.frame-bronze { background: radial-gradient(circle, transparent 40%, #cd7f32 41%, #cd7f32 50%, transparent 51%); }
+.reward-preview.frame-silver { background: radial-gradient(circle, transparent 40%, #c0c0c0 41%, #c0c0c0 50%, transparent 51%); }
+.reward-preview.frame-gold { background: radial-gradient(circle, transparent 40%, #ffd700 41%, #ffd700 50%, transparent 51%); }
+.reward-preview.frame-diamond { background: radial-gradient(circle, transparent 40%, #00fff0 41%, #ff00ff 50%, transparent 51%); }
+
+@media (max-width: 768px) {
+  .profile-header-body { flex-direction: column; text-align: center; padding: 0 20px 30px; gap: 20px; }
+  .profile-header-premium .profile-main-avatar { margin-top: -40px; }
+  .rewards-grid { grid-template-columns: repeat(2, 1fr); }
 }

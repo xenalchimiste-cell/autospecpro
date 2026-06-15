@@ -105,6 +105,9 @@ export async function initDb() {
       
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0`);
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS user_rank VARCHAR(50) DEFAULT 'Novice'`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_theme VARCHAR(50) DEFAULT 'default'`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_banner VARCHAR(50) DEFAULT 'none'`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_frame VARCHAR(50) DEFAULT 'none'`);
       
       await client.query(`
         CREATE TABLE IF NOT EXISTS messages (

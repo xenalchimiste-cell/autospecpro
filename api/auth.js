@@ -2,6 +2,11 @@ import { sql, initDb } from './_lib/db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
+import {
+  calculateRank,
+  getGamificationPayload,
+  validateCustomization,
+} from './_lib/gamification.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "548892582580-mh5isg91gtg86hjn7rb11vd5e8dton4f.apps.googleusercontent.com";
@@ -28,6 +33,8 @@ export default async function handler(req, res) {
     if (action === 'me') return await handleMe(req, res);
     if (action === 'referral-stats') return await handleReferralStats(req, res);
     if (action === 'update-profile') return await handleUpdateProfile(req, res);
+    if (action === 'gamification') return await handleGamification(req, res);
+    if (action === 'apply-customization') return await handleApplyCustomization(req, res);
     if (action === 'verify-siret') return await handleVerifySiret(req, res);
 
     return res.status(404).json({ error: 'Action not found' });
@@ -180,20 +187,15 @@ async function handleMe(req, res) {
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
     let user = rows[0];
-    
-    // Auto-update rank based on points
-    let newRank = 'Novice';
-    if (user.points >= 500) newRank = 'Expert';
-    else if (user.points >= 200) newRank = 'Passionné';
-    else if (user.points >= 50) newRank = 'Amateur';
 
+    const newRank = calculateRank(user.points || 0);
     if (user.user_rank !== newRank) {
       const { rows: updated } = await sql`UPDATE users SET user_rank = ${newRank} WHERE id = ${user.id} RETURNING *`;
       user = updated[0];
     }
 
     delete user.password_hash;
-    return res.status(200).json({ user });
+    return res.status(200).json({ user, gamification: getGamificationPayload(user) });
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
@@ -243,10 +245,68 @@ async function handleUpdateProfile(req, res) {
       SET first_name = ${firstName}, last_name = ${lastName}, avatar_url = ${avatarUrl || null},
           bio = ${bio || null}, instagram = ${instagram || null}, location = ${location || null}, garage = ${garage || null}
       WHERE id = ${userId} 
-      RETURNING id, email, first_name, last_name, user_type, referral_code, avatar_url, bio, instagram, location, garage, points, user_rank
+      RETURNING id, email, first_name, last_name, user_type, referral_code, avatar_url, bio, instagram, location, garage, points, user_rank, profile_theme, profile_banner, avatar_frame
     `;
 
     return res.status(200).json({ message: 'Profile updated', user: rows[0] });
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+async function handleGamification(req, res) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'No token provided' });
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { rows } = await sql`SELECT points, user_rank, profile_theme, profile_banner, avatar_frame FROM users WHERE id = ${decoded.userId}`;
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    return res.status(200).json(getGamificationPayload(rows[0]));
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+async function handleApplyCustomization(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'No token provided' });
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.userId;
+    const { profileTheme, profileBanner, avatarFrame } = req.body;
+
+    const { rows: users } = await sql`SELECT points, profile_theme, profile_banner, avatar_frame FROM users WHERE id = ${userId}`;
+    if (users.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const points = users[0].points || 0;
+    const theme = profileTheme ?? users[0].profile_theme ?? 'default';
+    const banner = profileBanner ?? users[0].profile_banner ?? 'none';
+    const frame = avatarFrame ?? users[0].avatar_frame ?? 'none';
+
+    const errors = validateCustomization(points, {
+      profileTheme: theme,
+      profileBanner: banner,
+      avatarFrame: frame,
+    });
+    if (errors.length > 0) return res.status(403).json({ error: errors.join(', ') });
+
+    const { rows } = await sql`
+      UPDATE users
+      SET profile_theme = ${theme}, profile_banner = ${banner}, avatar_frame = ${frame}
+      WHERE id = ${userId}
+      RETURNING id, email, first_name, last_name, user_type, referral_code, avatar_url, bio, instagram, location, garage, points, user_rank, profile_theme, profile_banner, avatar_frame
+    `;
+
+    return res.status(200).json({
+      message: 'Personnalisation appliquée',
+      user: rows[0],
+      gamification: getGamificationPayload(rows[0]),
+    });
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }

@@ -1,6 +1,7 @@
 import { sql, initDb } from './_lib/db.js';
 import jwt from 'jsonwebtoken';
 import webpush from 'web-push';
+import { awardPoints, POINT_ACTIONS } from './_lib/gamification.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BENk7CYgAuJCfCv3-H0EJNQEs3VfyYVS7TcEe1ZfZZPxiXlBEOnpIN-d4yYOIRI62Hgn8brRg_ZmVUMODDqiTJ0";
@@ -120,8 +121,8 @@ async function handleCreatePost(req, res) {
       })();
     }
 
-    // Award points for posting
-    await sql`UPDATE users SET points = points + 10 WHERE id = ${userId}`;
+    // Award XP for posting
+    await awardPoints(userId, POINT_ACTIONS.POST);
     
     return res.status(201).json(newPost[0]);
   } catch (err) {
@@ -146,13 +147,13 @@ async function handleLikePost(req, res) {
       await sql`DELETE FROM post_likes WHERE user_id = ${userId} AND post_id = ${postId}`;
       // Decrement points of post author
       const { rows: post } = await sql`SELECT user_id FROM posts WHERE id = ${postId}`;
-      if (post[0]) await sql`UPDATE users SET points = GREATEST(0, points - 2) WHERE id = ${post[0].user_id}`;
+      if (post[0]) await awardPoints(post[0].user_id, -POINT_ACTIONS.LIKE_RECEIVED);
       return res.status(200).json({ liked: false });
     } else {
       await sql`INSERT INTO post_likes (user_id, post_id) VALUES (${userId}, ${postId})`;
       // Increment points of post author
       const { rows: post } = await sql`SELECT user_id FROM posts WHERE id = ${postId}`;
-      if (post[0]) await sql`UPDATE users SET points = points + 2 WHERE id = ${post[0].user_id}`;
+      if (post[0]) await awardPoints(post[0].user_id, POINT_ACTIONS.LIKE_RECEIVED);
       return res.status(200).json({ liked: true });
     }
   } catch (err) {
@@ -228,8 +229,8 @@ async function handleAddComment(req, res) {
       VALUES (${postId}, ${userId}, ${authorName}, ${content})
       RETURNING *
     `;
-    // Award points for commenting
-    await sql`UPDATE users SET points = points + 5 WHERE id = ${userId}`;
+    // Award XP for commenting
+    await awardPoints(userId, POINT_ACTIONS.COMMENT);
 
     return res.status(201).json(newComment[0]);
   } catch (err) {
