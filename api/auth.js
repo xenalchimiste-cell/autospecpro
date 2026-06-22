@@ -261,7 +261,7 @@ async function handleGamification(req, res) {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const { rows } = await sql`SELECT points, user_rank, profile_theme, profile_banner, avatar_frame FROM users WHERE id = ${decoded.userId}`;
+    const { rows } = await sql`SELECT points, user_rank, user_type, profile_theme, profile_banner, avatar_frame FROM users WHERE id = ${decoded.userId}`;
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
     return res.status(200).json(getGamificationPayload(rows[0]));
   } catch (err) {
@@ -280,20 +280,24 @@ async function handleApplyCustomization(req, res) {
     const userId = decoded.userId;
     const { profileTheme, profileBanner, avatarFrame } = req.body;
 
-    const { rows: users } = await sql`SELECT points, profile_theme, profile_banner, avatar_frame FROM users WHERE id = ${userId}`;
+    const { rows: users } = await sql`SELECT points, user_type, profile_theme, profile_banner, avatar_frame FROM users WHERE id = ${userId}`;
     if (users.length === 0) return res.status(404).json({ error: 'User not found' });
 
     const points = users[0].points || 0;
+    const isAdmin = users[0].user_type === 'admin';
     const theme = profileTheme ?? users[0].profile_theme ?? 'default';
     const banner = profileBanner ?? users[0].profile_banner ?? 'none';
     const frame = avatarFrame ?? users[0].avatar_frame ?? 'none';
 
-    const errors = validateCustomization(points, {
-      profileTheme: theme,
-      profileBanner: banner,
-      avatarFrame: frame,
-    });
-    if (errors.length > 0) return res.status(403).json({ error: errors.join(', ') });
+    // Admins bypass XP requirements
+    if (!isAdmin) {
+      const errors = validateCustomization(points, {
+        profileTheme: theme,
+        profileBanner: banner,
+        avatarFrame: frame,
+      });
+      if (errors.length > 0) return res.status(403).json({ error: errors.join(', ') });
+    }
 
     const { rows } = await sql`
       UPDATE users

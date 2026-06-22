@@ -2980,6 +2980,7 @@ window.renderRewardsGrid = function() {
   const grid = document.getElementById('rewards-grid');
   if (!grid || !gamificationData) return;
 
+  const adminMode = isCurrentUserAdmin() || gamificationData.isAdmin === true;
   const items = gamificationData.unlocked[activeRewardsTab] || [];
   const equipped = gamificationData.equipped;
   const equippedKey = activeRewardsTab === 'themes' ? 'theme' : activeRewardsTab === 'banners' ? 'banner' : 'frame';
@@ -2989,18 +2990,23 @@ window.renderRewardsGrid = function() {
   if (badge && equippedItem) badge.innerText = equippedItem.name;
 
   grid.innerHTML = items.map(item => {
+    // Admins have access to every item regardless of XP
+    const unlocked = adminMode ? true : item.unlocked;
     const isEquipped = equipped[equippedKey] === item.id;
     const previewClass = activeRewardsTab === 'themes' ? `theme-${item.id}` :
                          activeRewardsTab === 'banners' ? `banner-${item.id}` : `frame-${item.id}`;
+    const reqLabel = item.minPoints === 0 ? 'Débloqué'
+                   : adminMode ? '👑 Admin'
+                   : item.minPoints + ' XP';
     return `
-      <div class="reward-item ${item.unlocked ? 'unlocked' : 'locked'} ${isEquipped ? 'equipped' : ''}"
-           ${item.unlocked ? `onclick="equipReward('${activeRewardsTab}', '${item.id}')"` : ''}>
-        ${!item.unlocked ? '<span class="reward-item-lock">🔒</span>' : ''}
+      <div class="reward-item ${unlocked ? 'unlocked' : 'locked'} ${isEquipped ? 'equipped' : ''}"
+           ${unlocked ? `onclick="equipReward('${activeRewardsTab}', '${item.id}')"` : ''}>
+        ${!unlocked ? '<span class="reward-item-lock">🔒</span>' : ''}
         <div class="reward-preview ${previewClass}"></div>
         <div class="reward-item-icon">${item.icon}</div>
         <div class="reward-item-name">${item.name}</div>
         <div class="reward-item-desc">${item.description}</div>
-        <div class="reward-item-req">${item.minPoints === 0 ? 'Débloqué' : item.minPoints + ' XP'}</div>
+        <div class="reward-item-req">${reqLabel}</div>
         ${isEquipped ? '<div class="reward-item-equipped">Équipé</div>' : ''}
       </div>
     `;

@@ -130,15 +130,18 @@ export async function syncUserRank(userId) {
 
 export function getGamificationPayload(user) {
   const points = user.points || 0;
+  // Admins get all rewards unlocked regardless of XP
+  const isAdmin = user.user_type === 'admin';
   return {
     progress: getProgress(points),
     catalog: REWARD_CATALOG,
-    unlocked: getUnlockedItems(points),
+    unlocked: getUnlockedItems(isAdmin ? Infinity : points),
     equipped: {
       theme: user.profile_theme || 'default',
       banner: user.profile_banner || 'none',
       frame: user.avatar_frame || 'none',
     },
+    isAdmin,
     pointActions: POINT_ACTIONS,
   };
 }
