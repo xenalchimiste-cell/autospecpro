@@ -2658,6 +2658,7 @@ select.s-input {
   width: 100%;
   background: rgba(255,255,255,0.03);
   position: relative;
+  z-index: 0;
 }
 
 .profile-avatar-zone {
@@ -2665,6 +2666,8 @@ select.s-input {
   justify-content: center;
   margin-top: -50px;
   padding-bottom: 10px;
+  position: relative;
+  z-index: 1;
 }
 
 .profile-header-body {

@@ -3020,6 +3020,13 @@ window.equipReward = async function(category, itemId) {
   else if (category === 'banners') body.profileBanner = itemId;
   else if (category === 'frames') body.avatarFrame = itemId;
 
+  // ── Mise à jour optimiste immédiate ──
+  const equippedKey = category === 'themes' ? 'theme' : category === 'banners' ? 'banner' : 'frame';
+  if (gamificationData?.equipped) {
+    gamificationData.equipped[equippedKey] = itemId;
+    renderRewardsGrid(); // affiche "Équipé" instantanément
+  }
+
   try {
     const res = await fetch(API_BASE + '/api/auth/apply-customization', {
       method: 'POST',
@@ -3031,11 +3038,29 @@ window.equipReward = async function(category, itemId) {
       currentUser = data.user;
       gamificationData = data.gamification;
       localStorage.setItem('user', JSON.stringify(currentUser));
+
+      // Applique les classes de thème/bannière/cadre sur le header
       applyProfileCustomization('profile-display-header', currentUser);
-      document.getElementById('p-display-avatar').outerHTML = getUserAvatarHtml(currentUser, 'profile-main-avatar');
-      renderRewardsGrid();
+
+      // Met à jour l'avatar sans perdre l'id de l'élément
+      const avatarEl = document.getElementById('p-display-avatar');
+      if (avatarEl) {
+        if (currentUser.avatar_url) {
+          avatarEl.innerHTML = `<img src="${currentUser.avatar_url}" onerror="this.parentElement.innerHTML='${currentUser.first_name?.[0] || 'U'}'">`;
+        } else {
+          const initials = ((currentUser.first_name?.[0] || '') + (currentUser.last_name?.[0] || '')).toUpperCase() || 'U';
+          avatarEl.innerHTML = initials;
+        }
+      }
+
+      renderRewardsGrid(); // confirme l'état serveur
       showToast('Style appliqué !', 'success');
     } else {
+      // Rollback si erreur serveur
+      if (gamificationData?.equipped) {
+        await loadGamificationData();
+        renderRewardsGrid();
+      }
       showToast(data.error || 'Récompense non débloquée', 'error');
     }
   } catch (err) {
