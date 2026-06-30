@@ -2853,6 +2853,88 @@ select.s-input {
 .reward-preview.frame-gold { background: radial-gradient(circle, transparent 40%, #ffd700 41%, #ffd700 50%, transparent 51%); }
 .reward-preview.frame-diamond { background: radial-gradient(circle, transparent 40%, #00fff0 41%, #ff00ff 50%, transparent 51%); }
 
+/* ══════════ TABS COMMUNAUTÉ & PLAYLISTS ══════════ */
+.comm-tab, .up-tab {
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s;
+}
+.comm-tab:hover, .up-tab:hover { color: var(--text2); }
+.comm-tab.active, .up-tab.active { color: var(--accent); }
+.comm-tab.active::after, .up-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -11px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* ══════════ CARTES PLAYLISTS ══════════ */
+.playlist-card {
+  background: linear-gradient(145deg, #101018, #0a0a10);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.playlist-card::before {
+  content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+  background: radial-gradient(circle at top right, var(--theme-color, rgba(255,255,255,0.05)), transparent 50%);
+  pointer-events: none;
+  opacity: 0.15;
+  transition: opacity 0.3s;
+}
+.playlist-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(255,255,255,0.15);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6), 0 0 20px var(--theme-color, transparent);
+}
+.playlist-card:hover::before { opacity: 0.3; }
+
+.pl-theme-night { --theme-color: #9b7fe8; }
+.pl-theme-rain { --theme-color: #3f88c5; }
+.pl-theme-sunset { --theme-color: #ff6b35; }
+.pl-theme-sport { --theme-color: #ff4757; }
+.pl-theme-highway { --theme-color: #ffd700; }
+.pl-theme-garage { --theme-color: #8c8c8c; }
+.pl-theme-chill { --theme-color: #00d2d3; }
+
+.pl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.pl-info h4 { margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: var(--text); }
+.pl-info span { font-size: 11px; color: var(--text3); display: inline-block; padding: 2px 8px; border-radius: 8px; background: rgba(255,255,255,0.05); }
+
+.pl-media {
+  width: 100%;
+  height: 80px;
+  background: #000;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.2s;
+}
+.pl-media:hover { border-color: var(--accent); background: #050505; }
+.pl-media svg { opacity: 0.5; transition: opacity 0.2s; }
+.pl-media:hover svg { opacity: 1; }
+
+.pl-author-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+
 @media (max-width: 768px) {
   .profile-header-body { flex-direction: column; text-align: center; padding: 0 20px 30px; gap: 20px; }
   .profile-header-premium .profile-main-avatar { margin-top: -40px; }

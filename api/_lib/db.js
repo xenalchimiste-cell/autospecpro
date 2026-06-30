@@ -133,6 +133,40 @@ export async function initDb() {
       await client.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS author_name VARCHAR(255)`);
       await client.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS author_name VARCHAR(255)`);
       
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS playlists (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id),
+          author_name VARCHAR(255) NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          theme VARCHAR(100) NOT NULL,
+          playlist_url TEXT NOT NULL,
+          description TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS playlist_likes (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id),
+          playlist_id INTEGER REFERENCES playlists(id) ON DELETE CASCADE,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, playlist_id)
+        );
+      `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS playlist_comments (
+          id SERIAL PRIMARY KEY,
+          playlist_id INTEGER REFERENCES playlists(id) ON DELETE CASCADE,
+          user_id INTEGER REFERENCES users(id),
+          author_name VARCHAR(255) NOT NULL,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      
       console.log('Database connected and initialized with pg driver');
       isDbInitialized = true;
     } finally {

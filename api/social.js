@@ -45,7 +45,12 @@ export default async function handler(req, res) {
         SELECT * FROM posts WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 20
       `;
       
-      return res.status(200).json({ user: users[0], posts });
+      // Fetch user playlists
+      const { rows: playlists } = await sql`
+        SELECT * FROM playlists WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 20
+      `;
+      
+      return res.status(200).json({ user: users[0], posts, playlists });
     }
 
     if (action === 'reviews') {

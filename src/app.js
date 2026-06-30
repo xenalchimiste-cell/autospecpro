@@ -2543,6 +2543,328 @@ window.copyReferralCode = function() {
   alert("Code copié ! Partagez-le avec vos amis.");
 };
 
+// ════════════════════ COMMUNAUTÉ & PLAYLISTS ════════════════════
+window.switchCommunityTab = function(tabName, btn) {
+  document.querySelectorAll('.comm-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  
+  if (tabName === 'bolides') {
+    document.getElementById('community-feed').style.display = 'grid';
+    document.getElementById('playlist-feed').style.display = 'none';
+    document.getElementById('btn-post-car').style.display = 'block';
+    document.getElementById('btn-post-playlist').style.display = 'none';
+    document.getElementById('community-subtext').innerText = 'Découvrez et partagez les plus belles pépites.';
+  } else {
+    document.getElementById('community-feed').style.display = 'none';
+    document.getElementById('playlist-feed').style.display = 'grid';
+    document.getElementById('btn-post-car').style.display = 'none';
+    document.getElementById('btn-post-playlist').style.display = 'block';
+    document.getElementById('community-subtext').innerText = 'Partagez votre musique de conduite idéale.';
+    if (!window.communityPlaylists) fetchCommunityPlaylists();
+  }
+};
+
+window.communityPlaylists = null;
+window.fetchCommunityPlaylists = async function() {
+  const feed = document.getElementById('playlist-feed');
+  try {
+    const res = await fetch(API_BASE + '/api/playlists', {
+      headers: authToken ? { 'Authorization': 'Bearer ' + authToken } : {}
+    });
+    const playlists = await res.json();
+    if (!res.ok) throw new Error(playlists.error);
+
+    if (playlists.length === 0) {
+      feed.innerHTML = '<div style="text-align:center; padding:50px; opacity:0.5;">Aucune playlist partagée. Soyez le premier !</div>';
+      return;
+    }
+
+    window.communityPlaylists = playlists;
+    
+    feed.innerHTML = playlists.map(p => `
+      <div class="playlist-card pl-theme-${p.theme || 'night'}">
+        <div class="pl-header">
+          <div class="pl-info">
+            <h4>${p.title}</h4>
+            <span>${getThemeLabel(p.theme)}</span>
+          </div>
+          ${(currentUser && currentUser.user_type === 'admin') ? `<button class="btn-delete-post" style="padding:4px; margin-top:-4px;" onclick="deletePlaylist(${p.id})" title="Supprimer (Admin)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}
+        </div>
+        <div class="pl-media" onclick="openPlaylistDetail(${p.id})">
+          ${getPlatformIcon(p.playlist_url)}
+        </div>
+        <div class="pl-author-bar">
+          ${getUserAvatarHtml({ first_name: p.author_name, avatar_url: p.author_avatar_url }, 'user-avatar-nav')}
+          <span class="post-author clickable-author" style="font-size:12px;" onclick="event.stopPropagation(); openUserProfile(${p.user_id})">${p.author_name}${getUserBadge(p.user_type, p.user_rank)}</span>
+        </div>
+        <div class="post-actions" style="margin-top:auto; padding-top:12px; border-top: 1px solid rgba(255,255,255,0.05);">
+          <button class="like-btn ${p.is_liked ? 'active' : ''}" onclick="toggleLikePlaylist(${p.id}, this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="${p.is_liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span class="like-count">${p.likes_count || 0}</span>
+          </button>
+          <button class="comment-trigger" onclick="openPlaylistDetail(${p.id})">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <span>${p.comments_count || 0}</span>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error("Fetch playlists error:", err);
+    feed.innerHTML = '<div style="color:var(--red); text-align:center; padding:20px;">Erreur de chargement.</div>';
+  }
+};
+
+window.openPlaylistModal = function() {
+  if (!authToken) { openAuthModal(); return; }
+  document.getElementById('playlistModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+};
+
+window.closePlaylistModal = function() {
+  document.getElementById('playlistModal').style.display = 'none';
+  document.body.style.overflow = 'auto';
+};
+
+window.submitPlaylist = async function() {
+  if (!authToken) return;
+  const title = document.getElementById('pl-title').value.trim();
+  const theme = document.getElementById('pl-theme').value;
+  const url = document.getElementById('pl-url').value.trim();
+  const desc = document.getElementById('pl-description').value.trim();
+
+  if (!title || !theme || !url) {
+    alert("Veuillez remplir le titre, le thème et l'URL.");
+    return;
+  }
+
+  const btn = document.querySelector('#playlistModal .auth-submit-btn');
+  const ogText = btn.innerHTML;
+  btn.innerText = "Publication...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(API_BASE + '/api/playlists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ title, theme, playlist_url: url, description: desc })
+    });
+    
+    if (res.ok) {
+      document.getElementById('pl-title').value = '';
+      document.getElementById('pl-theme').value = '';
+      document.getElementById('pl-url').value = '';
+      document.getElementById('pl-description').value = '';
+      closePlaylistModal();
+      showToast('Playlist partagée ! +10 points 🎉', 'success');
+      fetchCommunityPlaylists();
+      checkLevelUp();
+    } else {
+      const data = await res.json();
+      alert("Erreur: " + data.error);
+    }
+  } catch (err) {
+    alert("Erreur réseau");
+  } finally {
+    btn.innerHTML = ogText;
+    btn.disabled = false;
+  }
+};
+
+window.toggleLikePlaylist = async function(playlistId, btn, isModal = false) {
+  if (!authToken) { openAuthModal(); return; }
+  try {
+    const res = await fetch(API_BASE + '/api/playlists?action=like', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ playlistId })
+    });
+    const result = await res.json();
+    if (res.ok) {
+      const countSpan = isModal ? document.getElementById('pld-likes-count') : btn.querySelector('.like-count');
+      let count = parseInt(countSpan.innerText);
+      if (result.liked) {
+        btn.classList.add('active');
+        btn.querySelector('svg').setAttribute('fill', 'currentColor');
+        if (countSpan) countSpan.innerText = count + 1;
+      } else {
+        btn.classList.remove('active');
+        btn.querySelector('svg').setAttribute('fill', 'none');
+        if (countSpan) countSpan.innerText = count - 1;
+      }
+    }
+  } catch (err) {}
+};
+
+window.deletePlaylist = async function(playlistId) {
+  if (!confirm("Voulez-vous vraiment supprimer cette playlist ?")) return;
+  try {
+    const res = await fetch(API_BASE + '/api/playlists', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ playlistId })
+    });
+    if (res.ok) {
+      alert("Playlist supprimée.");
+      fetchCommunityPlaylists();
+      if (document.getElementById('playlistDetailModal').style.display === 'flex') closePlaylistDetail();
+    }
+  } catch (err) {
+    alert("Erreur lors de la suppression.");
+  }
+};
+
+window.openPlaylistDetail = async function(playlistId) {
+  const playlist = (window.communityPlaylists || []).find(p => p.id === playlistId);
+  if (!playlist) return;
+
+  const modal = document.getElementById('playlistDetailModal');
+  const embedContainer = document.getElementById('pld-embed-container');
+  const author = document.getElementById('pld-author');
+  const avatar = document.getElementById('pld-avatar');
+  const date = document.getElementById('pld-date');
+  const desc = document.getElementById('pld-description');
+  const likes = document.getElementById('pld-likes-count');
+  const likeBtn = document.getElementById('pld-like-btn');
+  const submitBtn = document.getElementById('pld-submit-comment');
+  const input = document.getElementById('pld-comment-input');
+  
+  document.getElementById('pld-title').innerText = playlist.title;
+  document.getElementById('pld-theme-badge').innerText = getThemeLabel(playlist.theme);
+  
+  embedContainer.innerHTML = getEmbedHtml(playlist.playlist_url);
+
+  avatar.outerHTML = getUserAvatarHtml({ first_name: playlist.author_name, avatar_url: playlist.author_avatar_url }, 'pld-avatar');
+  author.innerHTML = `${playlist.author_name}${getUserBadge(playlist.user_type, playlist.user_rank)}`;
+  author.className = 'pd-username clickable-author';
+  author.onclick = () => { closePlaylistDetail(); openUserProfile(playlist.user_id); };
+  
+  const header = document.querySelector('#playlistDetailModal .pd-header-info');
+  header.innerHTML = '';
+  if (currentUser && playlist.user_id !== currentUser.id) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-contact-mini';
+    btn.innerText = 'Contacter';
+    btn.onclick = () => { closePlaylistDetail(); openChat(playlist.user_id, playlist.author_name, playlist.author_avatar_url); showPage('messages'); };
+    header.appendChild(btn);
+  }
+  if (currentUser && currentUser.user_type === 'admin') {
+    const dBtn = document.createElement('button');
+    dBtn.className = 'btn-delete-post';
+    dBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    dBtn.onclick = () => deletePlaylist(playlist.id);
+    header.appendChild(dBtn);
+  }
+
+  date.innerText = new Date(playlist.created_at).toLocaleDateString();
+  desc.innerText = playlist.description || '';
+  likes.innerText = playlist.likes_count || 0;
+  
+  if (playlist.is_liked) {
+    likeBtn.classList.add('active');
+    likeBtn.querySelector('svg').setAttribute('fill', 'currentColor');
+  } else {
+    likeBtn.classList.remove('active');
+    likeBtn.querySelector('svg').setAttribute('fill', 'none');
+  }
+
+  likeBtn.onclick = () => toggleLikePlaylist(playlistId, likeBtn, true);
+  submitBtn.onclick = () => submitPlaylistComment(playlistId);
+  input.onkeyup = (e) => { if (e.key === 'Enter') submitPlaylistComment(playlistId); };
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  loadPlaylistComments(playlistId);
+};
+
+window.closePlaylistDetail = function() {
+  document.getElementById('playlistDetailModal').style.display = 'none';
+  document.getElementById('pld-embed-container').innerHTML = '';
+  document.body.style.overflow = 'auto';
+};
+
+window.loadPlaylistComments = async function(playlistId) {
+  const list = document.getElementById('pld-comments-list');
+  list.innerHTML = '<div style="color:var(--text3); font-size:12px;">Chargement des commentaires...</div>';
+  try {
+    const res = await fetch(`${API_BASE}/api/playlists?action=comments&playlistId=${playlistId}`);
+    const comments = await res.json();
+    if (comments.length === 0) {
+      list.innerHTML = '<div style="color:var(--text3); font-size:12px; margin-top:10px;">Soyez le premier à commenter !</div>';
+      return;
+    }
+    list.innerHTML = comments.map(c => `
+      <div class="pd-comment">
+        <div style="font-weight:700; color:var(--text); font-size:13px;">${c.author_name}${getUserBadge(c.user_type, c.user_rank)}</div>
+        <div style="color:var(--text2); font-size:13px; margin:2px 0;">${c.content}</div>
+        <div style="color:var(--text3); font-size:10px;">${new Date(c.created_at).toLocaleDateString()}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    list.innerHTML = '<div style="color:var(--red); font-size:12px;">Erreur</div>';
+  }
+};
+
+window.submitPlaylistComment = async function(playlistId) {
+  if (!authToken) { openAuthModal(); return; }
+  const input = document.getElementById('pld-comment-input');
+  const content = input.value.trim();
+  if (!content) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/playlists?action=comment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ playlistId, content })
+    });
+    if (res.ok) {
+      input.value = '';
+      loadPlaylistComments(playlistId);
+      
+      const playlist = (window.communityPlaylists || []).find(p => p.id === playlistId);
+      if (playlist) playlist.comments_count = (playlist.comments_count || 0) + 1;
+      fetchCommunityPlaylists();
+      showToast('Commentaire ajouté ! +5 points', 'success');
+      checkLevelUp();
+    }
+  } catch (err) {}
+};
+
+function getThemeLabel(theme) {
+  const t = { 'night':'Rap de nuit 🌙', 'rain':'Pluie & Ambiance 🌧️', 'sunset':'Balade Sunset 🌅', 'sport':'Arsouille Sportive 🏁', 'highway':'Roadtrip Autoroute 🛣️', 'garage':'Garage / Méca 🔧', 'chill':'Chill ☕' };
+  return t[theme] || 'Musique 🎵';
+}
+
+function getPlatformIcon(url) {
+  if(url.includes('spotify.com')) return '<svg width="28" height="28" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.24 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.24 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.56.3z"/></svg>';
+  if(url.includes('youtube.com') || url.includes('youtu.be')) return '<svg width="28" height="28" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>';
+  if(url.includes('deezer.com')) return '<svg width="28" height="28" viewBox="0 0 24 24" fill="#FEAA2D"><path d="M2 13h4v8H2v-8zm5-5h4v13H7V8zm5-5h4v18h-4V3zm5 9h4v9h-4v-9z"/></svg>';
+  if(url.includes('apple.com')) return '<svg width="28" height="28" viewBox="0 0 24 24" fill="#fa243c"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14H9v-2h4v2zm0-4H9V8h4v4z"/></svg>';
+  return '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-7.5c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
+}
+
+function getEmbedHtml(url) {
+  if(url.includes('open.spotify.com')) {
+    const embedUrl = url.replace('open.spotify.com', 'open.spotify.com/embed');
+    return `<iframe style="border-radius:12px" src="${embedUrl}" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+  }
+  if(url.includes('youtube.com') || url.includes('youtu.be')) {
+    let videoId = url.split('v=')[1];
+    if(url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1];
+    if(videoId) {
+      const ampersandPosition = videoId.indexOf('&');
+      if(ampersandPosition !== -1) videoId = videoId.substring(0, ampersandPosition);
+      return `<iframe width="100%" height="250" src="https://www.youtube.com/embed/${videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="border-radius:12px;"></iframe>`;
+    }
+  }
+  if(url.includes('deezer.com/')) {
+    const trackId = url.split('/').pop().split('?')[0];
+    return `<iframe scrolling="no" frameborder="0" allowTransparency="true" src="https://widget.deezer.com/widget/dark/playlist/${trackId}" width="100%" height="300"></iframe>`;
+  }
+  return `<div style="padding:40px; text-align:center; color:var(--text);"><a href="${url}" target="_blank" style="background:var(--accent); color:#000; padding:10px 20px; border-radius:20px; font-weight:700; text-decoration:none;">Ouvrir la playlist ↗</a></div>`;
+}
+
 // ════════════════════ COMMUNAUTÉ ════════════════════
 window.fetchCommunityPosts = async function() {
   const feed = document.getElementById('community-feed');
@@ -3381,8 +3703,41 @@ window.openUserProfile = async function(userId) {
       `).join('');
     }
     
+    // Fill playlists
+    const upPlaylists = document.getElementById('up-playlists-grid');
+    if (data.playlists && data.playlists.length > 0) {
+      upPlaylists.innerHTML = data.playlists.map(p => `
+        <div class="playlist-card pl-theme-${p.theme || 'night'}">
+          <div class="pl-header">
+            <div class="pl-info">
+              <h4>${p.title}</h4>
+              <span>${getThemeLabel(p.theme)}</span>
+            </div>
+          </div>
+          <div class="pl-media" onclick="openPlaylistDetail(${p.id})">
+            ${getPlatformIcon(p.playlist_url)}
+          </div>
+        </div>
+      `).join('');
+    } else {
+      upPlaylists.innerHTML = '<div style="color:var(--text3); grid-column:1/-1; text-align:center; padding:40px;">Aucune playlist partagée.</div>';
+    }
+    
   } catch (err) {
     showToast("Erreur lors du chargement du profil", "error");
+  }
+};
+
+window.switchUpTab = function(tabName, btn) {
+  document.querySelectorAll('.up-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  
+  if (tabName === 'posts') {
+    document.getElementById('up-posts-grid').style.display = 'grid';
+    document.getElementById('up-playlists-grid').style.display = 'none';
+  } else {
+    document.getElementById('up-posts-grid').style.display = 'none';
+    document.getElementById('up-playlists-grid').style.display = 'grid';
   }
 };
 
