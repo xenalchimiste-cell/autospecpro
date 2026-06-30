@@ -2551,17 +2551,30 @@ window.switchCommunityTab = function(tabName, btn) {
   if (tabName === 'bolides') {
     document.getElementById('community-feed').style.display = 'grid';
     document.getElementById('playlist-feed').style.display = 'none';
+    document.getElementById('chat-feed').style.display = 'none';
     document.getElementById('btn-post-car').style.display = 'block';
     document.getElementById('btn-post-playlist').style.display = 'none';
     document.getElementById('community-subtext').innerText = 'Découvrez et partagez les plus belles pépites.';
-  } else {
+  } else if (tabName === 'playlists') {
     document.getElementById('community-feed').style.display = 'none';
     document.getElementById('playlist-feed').style.display = 'grid';
+    document.getElementById('chat-feed').style.display = 'none';
     document.getElementById('btn-post-car').style.display = 'none';
     document.getElementById('btn-post-playlist').style.display = 'block';
     document.getElementById('community-subtext').innerText = 'Partagez votre musique de conduite idéale.';
     if (!window.communityPlaylists) fetchCommunityPlaylists();
+  } else if (tabName === 'entraide') {
+    document.getElementById('community-feed').style.display = 'none';
+    document.getElementById('playlist-feed').style.display = 'none';
+    document.getElementById('chat-feed').style.display = 'flex';
+    document.getElementById('btn-post-car').style.display = 'none';
+    document.getElementById('btn-post-playlist').style.display = 'none';
+    document.getElementById('community-subtext').innerText = 'Posez vos questions et discutez avec les autres passionnés.';
+    loadChatMessages();
+    startChatPolling();
   }
+  
+  if (tabName !== 'entraide') stopChatPolling();
 };
 
 window.communityPlaylists = null;
@@ -2582,15 +2595,15 @@ window.fetchCommunityPlaylists = async function() {
     window.communityPlaylists = playlists;
     
     feed.innerHTML = playlists.map(p => `
-      <div class="playlist-card pl-theme-${p.theme || 'night'}">
+      <div class="playlist-card pl-theme-${p.theme || 'night'}" onclick="openPlaylistDetail(${p.id})">
         <div class="pl-header">
           <div class="pl-info">
             <h4>${p.title}</h4>
             <span>${getThemeLabel(p.theme)}</span>
           </div>
-          ${(currentUser && currentUser.user_type === 'admin') ? `<button class="btn-delete-post" style="padding:4px; margin-top:-4px;" onclick="deletePlaylist(${p.id})" title="Supprimer (Admin)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}
+          ${(currentUser && currentUser.user_type === 'admin') ? `<button class="btn-delete-post" style="padding:4px; margin-top:-4px;" onclick="event.stopPropagation(); deletePlaylist(${p.id})" title="Supprimer (Admin)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}
         </div>
-        <div class="pl-media" onclick="openPlaylistDetail(${p.id})">
+        <div class="pl-media">
           ${getPlatformIcon(p.playlist_url)}
         </div>
         <div class="pl-author-bar">
@@ -2598,7 +2611,7 @@ window.fetchCommunityPlaylists = async function() {
           <span class="post-author clickable-author" style="font-size:12px;" onclick="event.stopPropagation(); openUserProfile(${p.user_id})">${p.author_name}${getUserBadge(p.user_type, p.user_rank)}</span>
         </div>
         <div class="post-actions" style="margin-top:auto; padding-top:12px; border-top: 1px solid rgba(255,255,255,0.05);">
-          <button class="like-btn ${p.is_liked ? 'active' : ''}" onclick="toggleLikePlaylist(${p.id}, this)">
+          <button class="like-btn ${p.is_liked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLikePlaylist(${p.id}, this)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="${p.is_liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             <span class="like-count">${p.likes_count || 0}</span>
           </button>
@@ -3853,3 +3866,89 @@ function stopMessagePolling() {
   _lastUnreadCount = 0;
   updateMsgBadges(0);
 }
+
+// ════════════════════ CHAT ENTRAIDE ════════════════════
+let chatPollInterval = null;
+
+window.loadChatMessages = async function() {
+  const container = document.getElementById('chat-messages');
+  if (!container) return;
+  try {
+    const res = await fetch(API_BASE + '/api/chat');
+    const messages = await res.json();
+    if (!res.ok) throw new Error(messages.error);
+    
+    if (messages.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:50px; opacity:0.5;">Aucun message. Soyez le premier !</div>';
+      return;
+    }
+    
+    // Check if scrolled to bottom before updating
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+    
+    container.innerHTML = messages.map(m => {
+      const isMe = currentUser && m.user_id === currentUser.id;
+      return `
+        <div class="chat-bubble ${isMe ? 'me' : 'other'}">
+          <div class="chat-meta">
+            ${!isMe ? `<span class="post-author clickable-author" onclick="openUserProfile(${m.user_id})">${m.author_name}${getUserBadge(m.user_type, m.user_rank)}</span>` : ''}
+            <span>${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          </div>
+          <div class="chat-text">${m.content}</div>
+        </div>
+      `;
+    }).join('');
+    
+    // Auto-scroll to bottom if we were already there
+    if (isAtBottom) container.scrollTop = container.scrollHeight;
+  } catch (err) {
+    console.error("Chat error:", err);
+  }
+};
+
+window.sendChatMessage = async function() {
+  if (!authToken) { openAuthModal(); return; }
+  
+  const input = document.getElementById('chat-input');
+  const content = input.value.trim();
+  if (!content) return;
+  
+  input.value = '';
+  
+  try {
+    const res = await fetch(API_BASE + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ content })
+    });
+    
+    if (res.ok) {
+      loadChatMessages();
+      setTimeout(() => {
+        const container = document.getElementById('chat-messages');
+        container.scrollTop = container.scrollHeight;
+      }, 100);
+    } else {
+      const data = await res.json();
+      showToast(data.error, 'error');
+    }
+  } catch (err) {
+    showToast("Erreur réseau", 'error');
+  }
+};
+
+window.startChatPolling = function() {
+  if (chatPollInterval) clearInterval(chatPollInterval);
+  chatPollInterval = setInterval(loadChatMessages, 5000);
+};
+
+window.stopChatPolling = function() {
+  if (chatPollInterval) {
+    clearInterval(chatPollInterval);
+    chatPollInterval = null;
+  }
+};
+
+document.getElementById('chat-input')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') sendChatMessage();
+});

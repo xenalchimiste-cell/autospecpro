@@ -592,6 +592,7 @@
     <div class="community-tabs" style="display:flex; gap:20px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
       <button class="comm-tab active" onclick="switchCommunityTab('bolides', this)">Bolides 🏎️</button>
       <button class="comm-tab" onclick="switchCommunityTab('playlists', this)">Playlists 🎵</button>
+      <button class="comm-tab" onclick="switchCommunityTab('entraide', this)">Entraide 🔧</button>
     </div>
 
     <div id="community-feed" class="community-grid">
@@ -599,6 +600,18 @@
     </div>
     <div id="playlist-feed" class="community-grid" style="display:none;">
       <div style="text-align:center; padding:50px; opacity:0.5;">Chargement des playlists...</div>
+    </div>
+    
+    <div id="chat-feed" class="chat-container" style="display:none;">
+      <div id="chat-messages" class="chat-messages-area">
+        <div style="text-align:center; padding:50px; opacity:0.5;">Chargement du chat...</div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Posez une question ou discutez avec la communauté..." autocomplete="off">
+        <button id="btn-send-chat" onclick="sendChatMessage()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 

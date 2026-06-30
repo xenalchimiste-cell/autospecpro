@@ -2889,6 +2889,7 @@ select.s-input {
   padding: 16px;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
 }
 .playlist-card::before {
   content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
@@ -2940,3 +2941,103 @@ select.s-input {
   .profile-header-premium .profile-main-avatar { margin-top: -40px; }
   .rewards-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ══════════ CHAT ENTRAIDE ══════════ */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 60vh;
+  min-height: 400px;
+  max-height: 700px;
+  background: var(--bg2);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.chat-messages-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+  position: relative;
+}
+
+.chat-bubble.other {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.05);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-bubble.me {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #000;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-meta {
+  font-size: 11px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-bubble.other .chat-meta { color: var(--text3); }
+.chat-bubble.me .chat-meta { color: rgba(0,0,0,0.6); justify-content: flex-end; }
+.chat-bubble.me .chat-meta span.post-author { color: #000 !important; font-weight: 700; }
+
+.chat-text { word-break: break-word; }
+
+.chat-input-area {
+  display: flex;
+  gap: 10px;
+  padding: 15px;
+  background: rgba(0,0,0,0.2);
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.chat-input-area input {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 30px;
+  outline: none;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.chat-input-area input:focus {
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.1);
+}
+
+.chat-input-area button {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.chat-input-area button:hover { transform: scale(1.05); }
+.chat-input-area button:active { transform: scale(0.95); }
