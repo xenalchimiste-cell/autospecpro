@@ -125,7 +125,8 @@ async function handleCreatePlaylist(req, res) {
     
     return res.status(201).json(newPlaylist[0]);
   } catch (err) {
-    return res.status(401).json({ error: 'Invalid token' });
+    console.error("Playlist creation error:", err);
+    return res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 }
 
