@@ -12,7 +12,7 @@ let authToken = localStorage.getItem('autospec_token');
 
 let carA = null, carB = null;
 window.carCache = window.carCache || {};
-const GROQ_URL = API_BASE + '/api/chat';
+const GROQ_URL = API_BASE + '/api/chat?action=ai';
 const MODEL = 'llama-3.3-70b-versatile';
 
 // ── PREMIUM UI UTILS ──
@@ -1871,7 +1871,7 @@ async function askExpert() {
   box.scrollTop = box.scrollHeight;
 
   try {
-    const res = await fetch(API_BASE + '/api/chat', {
+    const res = await fetch(API_BASE + '/api/chat?action=ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
