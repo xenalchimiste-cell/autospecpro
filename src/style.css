@@ -93,7 +93,18 @@ nav::after {
   border: 1px solid var(--border2);
 }
 
-.nav-tabs { display: flex; gap: 0; height: 100%; }
+.nav-tabs {
+  display: flex; gap: 0; height: 100%;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  min-width: 0;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+/* Empeche le logo et le bloc compte/profil de se faire ecraser quand
+   les onglets ne tiennent plus : ce sont eux qui doivent rester fixes,
+   .nav-tabs devient defilable horizontalement a la place. */
+.nav-logo { flex-shrink: 0; }
+#user-nav-area { flex-shrink: 0; }
 .nav-tab {
   height: 100%; padding: 0 16px;
   display: flex; align-items: center; gap: 6px;
