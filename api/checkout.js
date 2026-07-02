@@ -3,7 +3,7 @@ import { sql, initDb } from './_lib/db.js';
 import jwt from 'jsonwebtoken';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+import { JWT_SECRET } from './_lib/auth.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();

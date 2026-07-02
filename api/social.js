@@ -2,7 +2,7 @@ import { sql, initDb } from './_lib/db.js';
 import jwt from 'jsonwebtoken';
 import { awardPoints, POINT_ACTIONS } from './_lib/gamification.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+import { JWT_SECRET, isAdminUser } from './_lib/auth.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -70,8 +70,8 @@ export default async function handler(req, res) {
       if (!currentUserId) return res.status(401).json({ error: 'Authentication required' });
       
       try {
-        const { rows: users } = await sql`SELECT user_type FROM users WHERE id = ${currentUserId}`;
-        if (users.length === 0 || users[0].user_type !== 'admin') {
+        const { rows: users } = await sql`SELECT user_type, email FROM users WHERE id = ${currentUserId}`;
+        if (!isAdminUser(users[0])) {
           return res.status(403).json({ error: 'Forbidden: Admins only' });
         }
   

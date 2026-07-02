@@ -2,7 +2,7 @@ import webpush from 'web-push';
 import { sql } from './_lib/db.js';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+import { JWT_SECRET, isAdminUser } from './_lib/auth.js';
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BENk7CYgAuJCfCv3-H0EJNQEs3VfyYVS7TcEe1ZfZZPxiXlBEOnpIN-d4yYOIRI62Hgn8brRg_ZmVUMODDqiTJ0";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 
@@ -106,8 +106,8 @@ async function handleSend(req, res) {
     return res.status(401).json({ error: 'Invalid token' });
   }
 
-  const { rows: users } = await sql`SELECT user_type FROM users WHERE id = ${userId}`;
-  if (users.length === 0 || users[0].user_type !== 'admin') {
+  const { rows: users } = await sql`SELECT user_type, email FROM users WHERE id = ${userId}`;
+  if (!isAdminUser(users[0])) {
     return res.status(403).json({ error: 'Forbidden: Admins only' });
   }
 

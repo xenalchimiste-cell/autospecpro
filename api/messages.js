@@ -2,7 +2,7 @@ import { sql, initDb } from './_lib/db.js';
 import jwt from 'jsonwebtoken';
 import webpush from 'web-push';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+import { JWT_SECRET } from './_lib/auth.js';
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BENk7CYgAuJCfCv3-H0EJNQEs3VfyYVS7TcEe1ZfZZPxiXlBEOnpIN-d4yYOIRI62Hgn8brRg_ZmVUMODDqiTJ0";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 

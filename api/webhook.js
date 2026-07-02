@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { sql } from './_lib/db.js';
+import { awardPoints, POINT_ACTIONS } from './_lib/gamification.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
 
   const sig = req.headers['stripe-signature'];
   const buf = await buffer(req);
-  
+
   let event;
 
   try {
@@ -44,16 +45,27 @@ export default async function handler(req, res) {
         const tier = session.metadata.tier;
 
         if (userId && tier) {
+          // On regarde l'état AVANT la mise à jour pour savoir si c'est une
+          // première conversion (et éviter de récompenser le parrain à chaque renouvellement).
+          const { rows: beforeRows } = await sql`SELECT account_tier, referred_by_id FROM users WHERE id = ${userId}`;
+          const wasFree = !beforeRows[0] || !beforeRows[0].account_tier || beforeRows[0].account_tier === 'free';
+
           await sql`UPDATE users SET account_tier = ${tier}, stripe_customer_id = ${customerId} WHERE id = ${userId}`;
           console.log(`[Stripe Webhook] User ${userId} upgraded to ${tier}`);
+
+          // Récompense en XP le parrain lors de la première conversion payante du filleul
+          if (wasFree && beforeRows[0]?.referred_by_id) {
+            await awardPoints(beforeRows[0].referred_by_id, POINT_ACTIONS.REFERRAL_CONVERTED);
+            console.log(`[Stripe Webhook] Referrer ${beforeRows[0].referred_by_id} awarded ${POINT_ACTIONS.REFERRAL_CONVERTED} XP for referral conversion`);
+          }
         }
         break;
       }
-      
+
       case 'customer.subscription.deleted': {
         const subscription = event.data.object;
         const customerId = subscription.customer;
-        
+
         await sql`UPDATE users SET account_tier = 'free' WHERE stripe_customer_id = ${customerId}`;
         console.log(`[Stripe Webhook] Customer ${customerId} subscription cancelled, reverted to free.`);
         break;

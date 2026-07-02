@@ -8,7 +8,7 @@ import {
   validateCustomization,
 } from './_lib/gamification.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+import { JWT_SECRET, ADMIN_EMAIL } from './_lib/auth.js';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "548892582580-mh5isg91gtg86hjn7rb11vd5e8dton4f.apps.googleusercontent.com";
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -116,7 +116,7 @@ async function handleLogin(req, res) {
   if (rows.length === 0) return res.status(401).json({ error: 'Invalid email or password' });
 
   const user = rows[0];
-  if (user.email.toLowerCase() === 'andreasgiacomello23@gmail.com' && user.user_type !== 'admin') {
+  if (user.email.toLowerCase() === ADMIN_EMAIL && user.user_type !== 'admin') {
     await sql`UPDATE users SET user_type = 'admin' WHERE id = ${user.id}`;
     user.user_type = 'admin';
   }
@@ -166,7 +166,7 @@ async function handleGoogle(req, res) {
     user = newUser[0];
   }
 
-  if (user.email.toLowerCase() === 'andreasgiacomello23@gmail.com' && user.user_type !== 'admin') {
+  if (user.email.toLowerCase() === ADMIN_EMAIL && user.user_type !== 'admin') {
     await sql`UPDATE users SET user_type = 'admin' WHERE id = ${user.id}`;
     user.user_type = 'admin';
   }

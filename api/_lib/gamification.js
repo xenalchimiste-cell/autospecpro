@@ -13,6 +13,7 @@ export const POINT_ACTIONS = {
   COMMENT: 5,
   LIKE_RECEIVED: 2,
   FOLLOW_RECEIVED: 3,
+  REFERRAL_CONVERTED: 25,
 };
 
 export const REWARD_CATALOG = {

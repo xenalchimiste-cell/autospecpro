@@ -187,4 +187,35 @@ export async function initDb() {
   }
 }
 
+
+// Supprime un utilisateur ainsi que toutes les données qui le référencent.
+// Nécessaire car la plupart des FK vers users(id) n'ont pas de ON DELETE CASCADE :
+// un DELETE direct sur `users` échoue dès que l'utilisateur a une seule
+// interaction (post, like, commentaire, message, follow, avis...).
+export async function deleteUserCascade(userId) {
+  // Détache les utilisateurs qu'il a parrainés (self-FK) au lieu de les supprimer.
+  await sql`UPDATE users SET referred_by_id = NULL WHERE referred_by_id = ${userId}`;
+
+  await sql`DELETE FROM post_likes WHERE user_id = ${userId} OR post_id IN (SELECT id FROM posts WHERE user_id = ${userId})`;
+  await sql`DELETE FROM post_comments WHERE user_id = ${userId} OR post_id IN (SELECT id FROM posts WHERE user_id = ${userId})`;
+  await sql`DELETE FROM posts WHERE user_id = ${userId}`;
+
+  await sql`DELETE FROM playlist_likes WHERE user_id = ${userId}`;
+  await sql`DELETE FROM playlist_comments WHERE user_id = ${userId}`;
+  await sql`DELETE FROM playlists WHERE user_id = ${userId}`;
+
+  await sql`DELETE FROM chat_messages WHERE user_id = ${userId}`;
+  await sql`DELETE FROM messages WHERE sender_id = ${userId} OR receiver_id = ${userId}`;
+  await sql`DELETE FROM follows WHERE follower_id = ${userId} OR following_id = ${userId}`;
+  await sql`DELETE FROM reviews WHERE user_id = ${userId}`;
+
+  try {
+    await sql`DELETE FROM push_subscriptions WHERE user_id = ${userId}`;
+  } catch (e) {
+    // La table push_subscriptions est créée à la demande (api/push.js) ;
+    // elle peut ne pas exister encore si la fonctionnalité n'a jamais été utilisée.
+  }
+
+  await sql`DELETE FROM users WHERE id = ${userId}`;
+}
 export default sql;
