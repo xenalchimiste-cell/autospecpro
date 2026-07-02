@@ -1901,6 +1901,20 @@ async function askExpert() {
 updateSim();
 updateEntretien();
 
+// ── RESPONSIVE REDRAW ──
+// Les graphiques canvas (radar comparateur, courbe simulateur) calculent leur
+// taille au moment du dessin (offsetWidth) : sans ce listener, ils restent
+// figés à l'ancienne taille tant qu'on ne relance pas un rendu manuellement.
+// On réécoute donc le resize de la fenêtre pour les redessiner automatiquement.
+let _resizeRedrawTimeout = null;
+window.addEventListener('resize', function() {
+  clearTimeout(_resizeRedrawTimeout);
+  _resizeRedrawTimeout = setTimeout(function() {
+    if (carA && carB) drawRadar(carA, carB);
+    if (document.getElementById('simChart')) updateSim();
+  }, 150);
+});
+
 // ── FICHE CLIENT PDF ──
 let currentCertCardId = null;
 
