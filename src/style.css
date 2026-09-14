@@ -146,6 +146,62 @@ nav::after {
 /* opacité seule : un transform casserait les éléments position:fixed de la page pendant l'anim */
 @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* ── HERO + SHOWROOM 3D ── */
+.hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  align-items: center; gap: 1.5rem; margin-bottom: 1.25rem;
+}
+.hero .page-sub { margin-bottom: 0; }
+.hero-3d { position: relative; height: 360px; isolation: isolate; }
+/* Lueur de chargement tant que la première image 3D n'est pas prête */
+.hero-3d::before {
+  content: ''; position: absolute; left: 50%; top: 62%; width: 55%; height: 18%;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(212,168,67,0.35), transparent);
+  animation: heroGlow 1.6s ease-in-out infinite alternate;
+  transition: opacity .6s; pointer-events: none; z-index: 0;
+}
+.hero-3d.ready::before, .hero-3d.failed::before { opacity: 0; animation: none; }
+@keyframes heroGlow { from { opacity: .35; } to { opacity: .9; } }
+.hero-3d-canvas {
+  position: absolute; inset: 0; width: 100% !important; height: 100% !important;
+  /* Pas de cadre : les bords du rendu se fondent dans la page au lieu d'être coupés net. */
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 72%, transparent 100%);
+  display: block; opacity: 0; transition: opacity .9s ease; cursor: grab; z-index: 1;
+}
+.hero-3d-canvas:active { cursor: grabbing; }
+.hero-3d.ready .hero-3d-canvas { opacity: 1; }
+.hero-3d-ui {
+  position: absolute; left: 14px; right: 14px; bottom: 12px; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  pointer-events: none; opacity: 0; transition: opacity .6s .4s;
+}
+.hero-3d.ready .hero-3d-ui { opacity: 1; }
+.hero-3d.failed .hero-3d-ui { display: none; }
+.paint-swatches { display: flex; gap: 8px; pointer-events: auto; }
+.paint-swatch {
+  width: 22px; height: 22px; border-radius: 50%; cursor: pointer; padding: 0;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.55), transparent 45%), var(--c);
+  border: 1px solid rgba(255,255,255,0.25);
+  transition: transform .2s, box-shadow .2s; touch-action: manipulation;
+}
+.paint-swatch:hover { transform: scale(1.12); }
+.paint-swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent2); }
+.hero-3d-hint {
+  font-size: 11px; color: var(--text2); letter-spacing: .04em;
+  transition: opacity .5s;
+}
+.hero-3d-hint.hidden { opacity: 0; }
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: 1rem; }
+  .hero-3d { height: 250px; }
+}
+@media (max-width: 480px) {
+  .hero-3d { height: 220px; }
+  .hero-3d-hint { display: none; }
+}
+
 /* ── SECTION TITLES ── */
 .page-title {
   font-family: 'DM Serif Display', serif;

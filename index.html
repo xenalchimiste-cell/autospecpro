@@ -13,6 +13,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="src/style.css">
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+    } }
+  </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -298,8 +304,24 @@
       </div>
     </div>
 
-    <div class="page-title">Toutes les specs,<br/><em>une seule recherche.</em></div>
-    <div class="page-sub">Affinez votre recherche avec les filtres, puis entrez un modèle ou une plaque.</div>
+    <div class="hero">
+      <div class="hero-text">
+        <div class="page-title">Toutes les specs,<br/><em>une seule recherche.</em></div>
+        <div class="page-sub">Affinez votre recherche avec les filtres, puis entrez un modèle ou une plaque.</div>
+      </div>
+      <div class="hero-3d" id="hero-3d" aria-label="Voiture en 3D, glissez pour la faire tourner">
+        <div class="hero-3d-ui">
+          <div class="paint-swatches" role="group" aria-label="Couleur de la carrosserie">
+            <button type="button" class="paint-swatch" data-paint="#c9a043" style="--c:#d4a843" aria-label="Or" aria-pressed="true"></button>
+            <button type="button" class="paint-swatch" data-paint="#111118" style="--c:#22222c" aria-label="Noir" aria-pressed="false"></button>
+            <button type="button" class="paint-swatch" data-paint="#a8101f" style="--c:#c01a2a" aria-label="Rouge" aria-pressed="false"></button>
+            <button type="button" class="paint-swatch" data-paint="#1d4aa0" style="--c:#2b5bb8" aria-label="Bleu" aria-pressed="false"></button>
+            <button type="button" class="paint-swatch" data-paint="#e6e4de" style="--c:#eeece6" aria-label="Blanc" aria-pressed="false"></button>
+          </div>
+          <span class="hero-3d-hint">↔ Glissez pour tourner</span>
+        </div>
+      </div>
+    </div>
 
     <div class="filter-row">
       <div class="filter-group">
@@ -1341,6 +1363,20 @@
   </div>
 
   <script src="src/app.js"></script>
+  <script type="module">
+    // Showroom 3D : Three.js (~170 Ko gzip) n'est téléchargé que lorsque la zone approche de l'écran.
+    const el = document.getElementById('hero-3d');
+    if (el) {
+      const io = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        import('./src/hero3d.js')
+          .then((m) => m.mountHero3D(el))
+          .catch((err) => { console.error('Showroom 3D indisponible :', err); el.classList.add('failed'); });
+      }, { rootMargin: '200px' });
+      io.observe(el);
+    }
+  </script>
 </body>
 </html>
   <!-- ══════════ MODALE DETAIL POST (STYLE INSTA) ══════════ -->
