@@ -1,4 +1,4 @@
-const CACHE_NAME = 'autospec-pro-v4';
+const CACHE_NAME = 'autospec-pro-v5';
 const ASSETS = [
   '/',
   '/index.html',

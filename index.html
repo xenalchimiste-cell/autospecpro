@@ -9,10 +9,10 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icons/icon.png">
   <title>AutoSpec Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
   <link rel="stylesheet" href="src/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -379,6 +379,9 @@
       <span class="chip" onclick="qf('Toyota GR86 2022')">Toyota GR86</span>
       <span class="chip" onclick="qf('Honda Civic Type R 2023')">Honda Civic Type R</span>
     </div>
+    <div class="chips recent-searches" id="recent-searches" hidden></div>
+
+    <div id="out-fiche"><div class="empty"><div class="empty-icon">🏎</div>Entrez un modèle pour afficher sa fiche.</div></div>
 
     <!-- AVIS UTILISATEURS -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:40px; margin-bottom:15px; padding:0 20px;">
@@ -391,8 +394,6 @@
         <div class="review-card"><div class="review-stars">★★★★★</div><p class="review-text">Chargement des avis...</p></div>
       </div>
     </div>
-
-    <div id="out-fiche"><div class="empty"><div class="empty-icon">🏎</div>Entrez un modèle pour afficher sa fiche.</div></div>
   </div>
 
   <!-- ══════════ COMPARATEUR ══════════ -->
@@ -718,12 +719,12 @@
           <button class="btn-close-chat" onclick="closeChat()">&times;</button>
         </div>
         
-        <div id="chat-messages" class="chat-messages-area">
+        <div id="dm-messages" class="chat-messages-area">
           <div class="chat-welcome">Sélectionnez une conversation pour commencer à discuter.</div>
         </div>
         
         <div id="chat-input-area" class="chat-input-box" style="display:none;">
-          <input type="text" id="chat-input" placeholder="Écrivez votre message..." onkeyup="if(event.key==='Enter') sendMessage()">
+          <input type="text" id="dm-input" placeholder="Écrivez votre message..." onkeyup="if(event.key==='Enter') sendMessage()">
           <button class="chat-send-btn" onclick="sendMessage()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>

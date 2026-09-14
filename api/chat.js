@@ -3,6 +3,14 @@ import jwt from "jsonwebtoken";
 
 import { JWT_SECRET } from "./_lib/auth.js";
 
+// llama-3.3-70b-versatile a été retiré par Groq (model_not_found).
+// Le modèle est imposé côté serveur : le client ne peut plus le choisir.
+const AI_MODEL = "openai/gpt-oss-120b";
+const AI_FALLBACK_MODEL = "openai/gpt-oss-20b";
+// gpt-oss raisonne avant de répondre : les tokens de raisonnement comptent
+// dans la limite, d'où une marge large pour ne pas tronquer le JSON.
+const AI_MAX_TOKENS = 3000;
+
 export default async function handler(req, res) {
   // CORS Headers
   if (req.method === "OPTIONS") {
@@ -163,23 +171,44 @@ async function handleAiProxy(req, res) {
     );
   }
 
+  // Bascule sur le modèle de secours si le principal est indisponible/saturé.
+  async function requestWithFallback(payload) {
+    let attempt = await requestGroq(payload);
+    const msg = String(attempt.data?.error?.message || "");
+    if (attempt.status === 400 && /reasoning/i.test(msg)) {
+      const { reasoning_effort, include_reasoning, ...rest } = payload;
+      payload = rest;
+      attempt = await requestGroq(payload);
+    }
+    const code = String(attempt.data?.error?.code || "");
+    if (
+      !attempt.ok &&
+      (attempt.status === 429 || attempt.status >= 500 || code === "model_not_found")
+    ) {
+      return requestGroq({ ...payload, model: AI_FALLBACK_MODEL });
+    }
+    return attempt;
+  }
+
   try {
     const useJson = body.json !== false;
 
     const basePayload = {
-      model: body.model || "llama-3.3-70b-versatile",
-      max_tokens: body.max_tokens || 1000,
+      model: AI_MODEL,
+      max_completion_tokens: AI_MAX_TOKENS,
       messages: body.messages,
       temperature: 0.2,
       top_p: 0.1,
+      reasoning_effort: "low",
+      include_reasoning: false,
     };
 
     if (!useJson) {
-      const attempt = await requestGroq(basePayload);
+      const attempt = await requestWithFallback(basePayload);
       return res.status(attempt.status).json(attempt.data);
     }
 
-    const firstAttempt = await requestGroq({
+    const firstAttempt = await requestWithFallback({
       ...basePayload,
       response_format: { type: "json_object" },
     });
@@ -193,7 +222,7 @@ async function handleAiProxy(req, res) {
 
     if (shouldRetryWithoutJsonFormat) {
       // Fallback: certains prompts/modèles échouent avec response_format strict.
-      const retryAttempt = await requestGroq(basePayload);
+      const retryAttempt = await requestWithFallback(basePayload);
       if (retryAttempt.ok) {
         return res.status(200).json(retryAttempt.data);
       }
@@ -211,7 +240,7 @@ async function handleAiProxy(req, res) {
         ];
         const finalAttempt = await requestGroq({
           ...basePayload,
-          model: "llama-3.3-70b-versatile",
+          model: AI_FALLBACK_MODEL,
           messages: fallbackMessages,
         });
         if (finalAttempt.ok) {
@@ -268,7 +297,10 @@ async function handleExtractAd(req, res) {
           Authorization: `Bearer ${GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: AI_MODEL,
+          max_completion_tokens: 1000,
+          reasoning_effort: "low",
+          include_reasoning: false,
           temperature: 0,
           messages: [
             {
