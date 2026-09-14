@@ -255,6 +255,19 @@ nav::after {
 }
 .chip-recent { border-style: dashed; }
 
+/* ── QUOTA GRATUIT ── */
+.quota-info { font-size: 12px; color: var(--text3); margin: -.25rem 0 1rem; }
+.quota-info[hidden] { display: none; }
+.quota-info strong { color: var(--text); }
+.quota-info a { color: var(--accent2); text-decoration: none; margin-left: 2px; }
+.quota-info a:hover { text-decoration: underline; }
+.quota-info.quota-low strong { color: var(--accent); }
+.quota-card { text-align: center; padding: 2.25rem 1.5rem; }
+.quota-card-icon { font-size: 40px; margin-bottom: .75rem; }
+.quota-card-title { font-weight: 700; font-size: 17px; color: var(--text); margin-bottom: .5rem; }
+.quota-card-text { color: var(--text2); font-size: 13px; line-height: 1.6; max-width: 440px; margin: 0 auto 1.5rem; }
+.quota-card-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
 /* ── SKELETON (chargement fiche) ── */
 .skeleton-card { padding: 1.75rem 2rem; }
 .skeleton-status {
