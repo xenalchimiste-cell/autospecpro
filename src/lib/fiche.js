@@ -115,7 +115,9 @@ function toNum(val) {
   if (!val) return null;
   const s = String(val)
     .replace(/ /g, ' ')
-    .replace(/(\d)[  ](?=\d{3}\b)/g, '$1')  // "1 495 kg" → "1495 kg"
+    // Les milliers peuvent arriver séparés par une espace ordinaire, une
+    // insécable ou l'insécable étroite que produit toLocaleString('fr-FR').
+    .replace(/(\d)[\s\u202f\u00a0](?=\d{3}\b)/g, '$1')
     .replace(/(\d),(\d)/g, '$1.$2');
   const m = s.match(/\d+(?:\.\d+)?/);
   return m ? parseFloat(m[0]) : null;

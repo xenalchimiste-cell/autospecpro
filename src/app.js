@@ -942,14 +942,15 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── API ──
-// v6 : prompt renforcé + requêtes normalisées → nouvelles clés de cache.
-const CACHE_PREFIX = 'autospec_v6_';
+// v7 : le prompt impose désormais le français aux valeurs → les fiches
+// mises en cache par la version précédente ne doivent plus être servies.
+const CACHE_PREFIX = 'autospec_v7_';
 const memCache = new Map();
 const inflight = new Map();
 
 try {
   Object.keys(localStorage)
-    .filter(k => /^autospec_v[345]_/.test(k))
+    .filter(k => /^autospec_v[3456]_/.test(k))
     .forEach(k => localStorage.removeItem(k));
 } catch (e) {}
 
@@ -1098,6 +1099,23 @@ function badge(e){
 // Échappe le HTML des données IA (évite qu'une réponse casse la mise en page ou injecte du code).
 function esc(x){return String(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function v(x){return (x===0||x)?esc(x):'—';}
+// Affichage à la française : virgule décimale, espace insécable pour les
+// milliers. Réservé aux grandeurs mesurées — une année ne se groupe pas,
+// « 2 021 » serait une faute.
+function vnum(x) {
+  if (!hasVal(x)) return '—';
+  const brut = String(x).trim();
+  // Seule une valeur purement numérique est reformatée. Sinon « 50-70 »,
+  // une fourchette de gain, serait tronquée à « 50 », et « 6 cylindres en
+  // ligne » réduit à « 6 » : toNum lit le premier nombre et jette le reste.
+  if (!/^-?\d+(?:[.,]\d+)?$/.test(brut)) return esc(x);
+  return toNum(brut).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+}
+function vnu(x, unit) {
+  if (!hasVal(x)) return '—';
+  return vnum(x) + (unit ? ' ' + unit : '');
+}
+
 // Valeur + unité : l'unité n'est accolée que si la donnée existe (les champs
 // numériques sont désormais renvoyés bruts, sans unité, par l'IA).
 function vu(x, unit){ return hasVal(x) ? esc(x) + (unit ? ' ' + unit : '') : '—'; }
@@ -1131,19 +1149,19 @@ function renderCard(c){
   const consoUnit = /kwh/i.test(String(co.mixte || '')) ? 'kWh/100 km' : 'L/100 km';
   const co2N = toNum(hasVal(co.co2) ? co.co2 : null);
   const consoHero = {
-    val: consoN !== null ? consoN : '—',
-    unit: (consoN !== null ? consoUnit : '') + (co2N !== null ? (consoN !== null ? ' · ' : '') + 'CO₂ ' + co2N + ' g/km' : ''),
+    val: consoN !== null ? consoN.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : '—',
+    unit: (consoN !== null ? consoUnit : '') + (co2N !== null ? (consoN !== null ? ' · ' : '') + 'CO₂ ' + co2N.toLocaleString('fr-FR') + ' g/km' : ''),
   };
 
   // ── PANEL SPECS ──
   const panelSpecs = `
   <div class="hero-grid">
-    <div class="hero-item"><div class="h-label">Puissance</div><div class="h-val">${v(m.puissance_ch)}</div><div class="h-unit">ch · ${v(m.puissance_kw)} kW</div></div>
-    <div class="hero-item"><div class="h-label">Couple</div><div class="h-val">${v(m.couple_nm)}</div><div class="h-unit">N·m</div></div>
-    <div class="hero-item"><div class="h-label">0–100 km/h</div><div class="h-val">${v(p.zero_cent)}</div><div class="h-unit">secondes</div></div>
-    <div class="hero-item"><div class="h-label">Vitesse max</div><div class="h-val">${v(p.vitesse_max)}</div><div class="h-unit">km/h</div></div>
+    <div class="hero-item"><div class="h-label">Puissance</div><div class="h-val">${vnum(m.puissance_ch)}</div><div class="h-unit">ch · ${vnum(m.puissance_kw)} kW</div></div>
+    <div class="hero-item"><div class="h-label">Couple</div><div class="h-val">${vnum(m.couple_nm)}</div><div class="h-unit">N·m</div></div>
+    <div class="hero-item"><div class="h-label">0–100 km/h</div><div class="h-val">${vnum(p.zero_cent)}</div><div class="h-unit">secondes</div></div>
+    <div class="hero-item"><div class="h-label">Vitesse max</div><div class="h-val">${vnum(p.vitesse_max)}</div><div class="h-unit">km/h</div></div>
     <div class="hero-item"><div class="h-label">Conso. mixte</div><div class="h-val">${consoHero.val}</div><div class="h-unit">${consoHero.unit}</div></div>
-    <div class="hero-item"><div class="h-label">Masse</div><div class="h-val">${v(dim.masse)}</div><div class="h-unit">kg</div></div>
+    <div class="hero-item"><div class="h-label">Masse</div><div class="h-val">${vnum(dim.masse)}</div><div class="h-unit">kg</div></div>
   </div>
   <div class="section"><div class="sec-title">Motorisation</div><div class="kv">
     <div class="kv-row"><span class="kv-k">Type</span><span class="kv-v">${v(m.type)}</span></div>
@@ -1151,7 +1169,7 @@ function renderCard(c){
     <div class="kv-row"><span class="kv-k">Régime puissance</span><span class="kv-v">${v(m.regime_puissance)}</span></div>
     <div class="kv-row"><span class="kv-k">Régime couple</span><span class="kv-v">${v(m.regime_couple)}</span></div>
     <div class="kv-row"><span class="kv-k">Alimentation</span><span class="kv-v">${v(m.alimentation)}</span></div>
-    <div class="kv-row"><span class="kv-k">0–200 km/h</span><span class="kv-v">${v(p.zero_deux_cent)}</span></div>
+    <div class="kv-row"><span class="kv-k">0–200 km/h</span><span class="kv-v">${vnum(p.zero_deux_cent)}</span></div>
   </div></div>
   <div class="section"><div class="sec-title">Transmission & châssis</div><div class="kv">
     <div class="kv-row"><span class="kv-k">Boîte</span><span class="kv-v">${v(tr.boite)}</span></div>
@@ -1164,7 +1182,7 @@ function renderCard(c){
   <div class="section"><div class="sec-title">Dimensions & pneus</div><div class="kv">
     <div class="kv-row"><span class="kv-k">L × l × h</span><span class="kv-v">${v(dim.longueur)} × ${v(dim.largeur)} × ${v(dim.hauteur)}</span></div>
     <div class="kv-row"><span class="kv-k">Empattement</span><span class="kv-v">${v(dim.empattement)}</span></div>
-    <div class="kv-row"><span class="kv-k">Coffre</span><span class="kv-v">${v(dim.coffre)}</span></div>
+    <div class="kv-row"><span class="kv-k">Coffre</span><span class="kv-v">${vnu(dim.coffre, 'L')}</span></div>
     <div class="kv-row"><span class="kv-k">Pneus AV/AR</span><span class="kv-v">${v(pn.avant)} / ${v(pn.arriere)}</span></div>
   </div></div>
   <div class="section"><div class="sec-title">Consommation</div><div class="kv">
@@ -1187,11 +1205,11 @@ function renderCard(c){
     return `<div class="stage-card">
       <div class="stage-card-head ${sc}">
         <span class="stage-label ${sc}">${s.label}</span>
-        <span class="stage-gain ${sc}">${vu(st.gain_ch,'ch')} / ${vu(st.gain_nm,'N·m')}</span>
+        <span class="stage-gain ${sc}">${vnu(st.gain_ch,'ch')} / ${vnu(st.gain_nm,'N·m')}</span>
       </div>
       <div class="stage-card-body">
-        <div class="stage-stat-row"><span class="stage-stat-k">Puissance</span><span class="stage-stat-v">${vu(st.puissance_ch,'ch')}</span></div>
-        <div class="stage-stat-row"><span class="stage-stat-k">Couple</span><span class="stage-stat-v">${vu(st.couple_nm,'N·m')}</span></div>
+        <div class="stage-stat-row"><span class="stage-stat-k">Puissance</span><span class="stage-stat-v">${vnu(st.puissance_ch,'ch')}</span></div>
+        <div class="stage-stat-row"><span class="stage-stat-k">Couple</span><span class="stage-stat-v">${vnu(st.couple_nm,'N·m')}</span></div>
         <div class="stage-stat-row"><span class="stage-stat-k">Prix estimé</span><span class="stage-stat-v">${v(st.prix_estime)}</span></div>
       </div>
       <div class="stage-fiabilite">${fiabiliteIcon(st.fiabilite)} <span style="color:var(--text2)">${v(st.fiabilite)}</span></div>
@@ -1207,9 +1225,9 @@ function renderCard(c){
   const panelFuel = `
   <div class="fuel-hero">
     <div class="fuel-item"><div class="fuel-icon">⛽</div><div class="fuel-label">Type</div><div class="fuel-val">${v(fuel.type)}</div></div>
-    <div class="fuel-item"><div class="fuel-icon">🔢</div><div class="fuel-label">Indice d'octane</div><div class="fuel-val">${v(fuel.indice_octane)}</div></div>
-    <div class="fuel-item"><div class="fuel-icon">🪣</div><div class="fuel-label">Réservoir</div><div class="fuel-val">${v(fuel.reservoir)}</div><div class="fuel-sub">litres</div></div>
-    <div class="fuel-item"><div class="fuel-icon">🛣</div><div class="fuel-label">Autonomie est.</div><div class="fuel-val">${v(fuel.autonomie_estimee)}</div><div class="fuel-sub">km</div></div>
+    <div class="fuel-item"><div class="fuel-icon">🔢</div><div class="fuel-label">Indice d'octane</div><div class="fuel-val">${vnum(fuel.indice_octane)}</div></div>
+    <div class="fuel-item"><div class="fuel-icon">🪣</div><div class="fuel-label">Réservoir</div><div class="fuel-val">${vnum(fuel.reservoir)}</div><div class="fuel-sub">litres</div></div>
+    <div class="fuel-item"><div class="fuel-icon">🛣</div><div class="fuel-label">Autonomie est.</div><div class="fuel-val">${vnum(fuel.autonomie_estimee)}</div><div class="fuel-sub">km</div></div>
   </div>
   <div class="section"><div class="sec-title">Consommation détaillée</div><div class="kv">
     <div class="kv-row"><span class="kv-k">Mixte</span><span class="kv-v">${v(co.mixte)}</span></div>
@@ -1282,7 +1300,7 @@ function renderCard(c){
   <div class="fiche-tabs">
     <button class="fiche-tab active" data-tab="specs" onclick="ficheTab('${cardId}','specs')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-      Specs
+      Caractéristiques
     </button>
     <button class="fiche-tab" data-tab="stage" onclick="ficheTab('${cardId}','stage')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>

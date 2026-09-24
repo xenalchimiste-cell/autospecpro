@@ -133,3 +133,10 @@ test('une marque inconnue laisse la requête entière comme modèle', () => {
   assert.equal(s.brand, '');
   assert.equal(s.model, 'quelque chose 2020');
 });
+
+test('les milliers séparés par une insécable étroite sont compris', () => {
+  assert.equal(toNum('1 495 kg'), 1495);                  // espace ordinaire
+  assert.equal(toNum('1 495 kg'), 1495);             // insécable étroite (fr-FR)
+  assert.equal(toNum('1 495 kg'), 1495);             // insécable classique
+  assert.equal(toNum((1730).toLocaleString('fr-FR')), 1730);
+});

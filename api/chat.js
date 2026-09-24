@@ -14,7 +14,7 @@ const AI_FALLBACK_MODEL = "openai/gpt-oss-20b";
 const AI_MAX_TOKENS = 4000;
 // Incrémenter ce numéro dès que le prompt ou le gabarit JSON change : les
 // fiches mises en cache par l'ancienne version cessent alors d'être servies.
-const FICHE_PROMPT_VERSION = 1;
+const FICHE_PROMPT_VERSION = 2;
 
 export default async function handler(req, res) {
   // CORS Headers
@@ -123,14 +123,26 @@ const FICHE_SYSTEM_PROMPT = [
   "confiance vaut \"haute\" UNIQUEMENT si l'entrée désigne une seule motorisation sans ambiguïté et que tu connais ses chiffres officiels.",
   "variantes_proches : 2 à 4 requêtes complètes et distinctes (format \"Marque Modèle Finition Année\") correspondant aux autres versions plausibles de cette entrée. Tableau vide si l'entrée est déjà parfaitement précise.",
   "",
-  "=== RÈGLE N°3 : FORMAT DES VALEURS ===",
+  "=== RÈGLE N°3 : LANGUE ===",
+  "TOUTES les valeurs textuelles sont en français, sans exception. Les termes techniques anglais sont traduits, jamais recopiés. Vocabulaire imposé :",
+  "propulsion (et non rear-wheel drive), traction (front-wheel drive), intégrale (all-wheel drive/AWD/4WD) ;",
+  "6 cylindres en ligne (inline-6/I6), V6, V8, flat-6 devient 6 cylindres à plat, 4 cylindres en ligne ;",
+  "biturbo (twin-turbo), turbocompressé (turbocharged), atmosphérique (naturally aspirated), compresseur (supercharged) ;",
+  "boîte automatique à 8 rapports (8-speed automatic), boîte manuelle à 6 rapports, double embrayage (dual-clutch/DSG/PDK) ;",
+  "jambes McPherson (MacPherson strut), multibras (multi-link), disques ventilés (ventilated discs), étriers (calipers) ;",
+  "chaîne de distribution (timing chain), courroie de distribution (timing belt), vidange (oil change) ;",
+  "essence (petrol/gasoline), diesel, hybride rechargeable (plug-in hybrid), électrique ;",
+  "berline (sedan/saloon), break (estate/wagon), compacte (hatchback), coupé, cabriolet, SUV.",
+  "Les noms propres ne se traduisent pas : xDrive, quattro, S tronic, M xDrive, 4MOTION gardent leur forme officielle.",
+  "",
+  "=== RÈGLE N°4 : FORMAT DES VALEURS ===",
   "Les champs numériques contiennent UNIQUEMENT un nombre, sans unité ni texte (séparateur décimal = point) : puissance_ch, puissance_kw, couple_nm, zero_cent, zero_deux_cent, vitesse_max, masse, coffre, reservoir, autonomie_estimee, indice_octane, ainsi que puissance_ch/couple_nm/gain_ch/gain_nm des stages.",
   "cylindree en cm3 (ex: \"1998 cm3\"), longueur/largeur/hauteur/empattement en mm (ex: \"4694 mm\"), consommations en \"6.8 L/100 km (WLTP)\", co2 en \"154 g/km (WLTP)\", prix = prix neuf catalogue France au lancement en euros (ex: \"38 900 €\") ou cote occasion si le modèle n'est plus vendu, en le précisant.",
   "",
-  "=== RÈGLE N°4 : COHÉRENCE ===",
+  "=== RÈGLE N°5 : COHÉRENCE ===",
   "puissance_kw = puissance_ch x 0.7355 arrondi à l'entier. Les performances doivent être cohérentes avec le rapport poids/puissance et la transmission. Ne mélange jamais les chiffres d'une autre finition (ex: ne donne pas la puissance de la version Competition pour la version de base).",
   "",
-  "=== RÈGLE N°5 : TUNING ===",
+  "=== RÈGLE N°6 : TUNING ===",
   "Les stages 1/2/3 sont des ESTIMATIONS de préparateur : donne des fourchettes réalistes pour CE moteur précis (un atmo gagne peu, un turbo beaucoup), et N/A sur tout le bloc tuning pour un véhicule 100 % électrique. fiabilite = une phrase courte sur le risque mécanique."
 ].join("\n");
 
