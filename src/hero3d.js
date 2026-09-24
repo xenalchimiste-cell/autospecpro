@@ -483,11 +483,27 @@ function buildCar(paint, envMap) {
 function buildStage() {
   const stage = new THREE.Group();
 
+  // Le showroom lit les mêmes jetons que la feuille de style : --stage-light
+  // dit si la scène est posée sur du clair, --accent donne la couleur de
+  // l'anneau. Sans cela, l'ombre noire à 95 %, le sol brun et le halo doré —
+  // pensés pour un fond nocturne — faisaient une tache sur du papier.
+  const css = getComputedStyle(document.documentElement);
+  const clair = css.getPropertyValue('--stage-light').trim() === '1';
+  const accent = css.getPropertyValue('--accent').trim() || '#d4a843';
+  const rgb = (hex) => {
+    const h = hex.replace('#', '').trim();
+    const n = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    return [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16) || 0).join(',');
+  };
+  const accentRgb = rgb(accent);
+
   const floor = new THREE.Mesh(
     new THREE.CircleGeometry(4.2, 96),
     // Sol non éclairé : un matériau PBR renvoyait l'éclairage studio en reflet gris à angle rasant.
     new THREE.MeshBasicMaterial({
-      map: radialTexture([[0, '#5a4520'], [0.35, '#2e2413'], [0.7, '#0c0b0e'], [1, '#08080d']]),
+      map: radialTexture(clair
+        ? [[0, '#e9e9e3'], [0.35, '#efefe9'], [0.7, '#f6f6f2'], [1, '#fbfbf8']]
+        : [[0, '#5a4520'], [0.35, '#2e2413'], [0.7, '#0c0b0e'], [1, '#08080d']]),
       transparent: true,
       alphaMap: radialTexture([[0, '#ffffff'], [0.62, '#ffffff'], [1, '#000000']]),
     })
@@ -498,7 +514,10 @@ function buildStage() {
   const shadow = new THREE.Mesh(
     new THREE.PlaneGeometry(5.9, 2.7),
     new THREE.MeshBasicMaterial({
-      map: radialTexture([[0, 'rgba(0,0,0,0.95)'], [0.5, 'rgba(0,0,0,0.75)'], [1, 'rgba(0,0,0,0)']]),
+      // Sur du papier, une ombre portée reste discrète : 26 % au lieu de 95 %.
+      map: radialTexture(clair
+        ? [[0, 'rgba(0,0,0,0.26)'], [0.5, 'rgba(0,0,0,0.15)'], [1, 'rgba(0,0,0,0)']]
+        : [[0, 'rgba(0,0,0,0.95)'], [0.5, 'rgba(0,0,0,0.75)'], [1, 'rgba(0,0,0,0)']]),
       transparent: true, depthWrite: false,
     })
   );
@@ -508,22 +527,26 @@ function buildStage() {
 
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(3.02, 3.06, 160),
-    new THREE.MeshBasicMaterial({ color: 0xf0c96a, transparent: true, opacity: 0.85, toneMapped: false })
+    new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: clair ? 0.55 : 0.85, toneMapped: false })
   );
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.005;
   stage.add(ring);
 
-  const halo = new THREE.Mesh(
-    new THREE.CircleGeometry(3.6, 160),
-    new THREE.MeshBasicMaterial({
-      map: radialTexture([[0, 'rgba(0,0,0,0)'], [0.72, 'rgba(0,0,0,0)'], [0.84, 'rgba(212,168,67,0.16)'], [1, 'rgba(0,0,0,0)']]),
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
-    })
-  );
-  halo.rotation.x = -Math.PI / 2;
-  halo.position.y = 0.004;
-  stage.add(halo);
+  // Le halo additif n'a de sens que sur fond sombre : additionner de la
+  // lumière à du blanc ne produit rien de visible.
+  if (!clair) {
+    const halo = new THREE.Mesh(
+      new THREE.CircleGeometry(3.6, 160),
+      new THREE.MeshBasicMaterial({
+        map: radialTexture([[0, 'rgba(0,0,0,0)'], [0.72, 'rgba(0,0,0,0)'], [0.84, `rgba(${accentRgb},0.16)`], [1, 'rgba(0,0,0,0)']]),
+        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+      })
+    );
+    halo.rotation.x = -Math.PI / 2;
+    halo.position.y = 0.004;
+    stage.add(halo);
+  }
 
   return { stage, ring };
 }
@@ -549,7 +572,10 @@ export function mountHero3D(container) {
   const key = new THREE.DirectionalLight(0xffffff, 1.6);
   key.position.set(4, 7, 3);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xf0c96a, 2.2);
+  const cssRoot = getComputedStyle(document.documentElement);
+  const scLight = cssRoot.getPropertyValue('--stage-light').trim() === '1';
+  const rimColor = new THREE.Color(cssRoot.getPropertyValue('--accent2').trim() || '#f0c96a');
+  const rim = new THREE.DirectionalLight(rimColor, scLight ? 1.1 : 2.2);
   rim.position.set(-5, 3, -4);
   scene.add(rim);
 

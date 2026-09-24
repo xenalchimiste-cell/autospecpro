@@ -3,6 +3,63 @@
    Ultra-Premium Dark Interface
 ═══════════════════════════════════════════ */
 :root {
+  /* ── Thème par défaut : clair ──
+     Les valeurs sont celles de la direction « Presse » du canevas de design.
+     L'ancien thème sombre n'a pas disparu : il vit plus bas sous
+     [data-theme="sombre"] et reste atteignable par ?theme=sombre. */
+  --bg:      #FBFBF8;
+  --bg2:     #F3F3EE;
+  --bg3:     #EAEAE4;
+  --bg4:     #E0E0D9;
+  --bg5:     #D4D4CB;
+  --border:  rgba(14,14,14,0.10);
+  --border2: rgba(14,14,14,0.17);
+  --border3: rgba(14,14,14,0.26);
+  --text:    #0E0E0E;
+  --text2:   #45453F;
+  --text3:   #85857E;
+  --accent:  #C20E24;
+  --accent2: #8E0A1A;
+  --accent3: rgba(194,14,36,0.09);
+  --red:     #C20E24;
+  --green:   #167A3C;
+  --blue:    #1F4FA8;
+  --purple:  #6B3FA0;
+  --glow-gold: none;
+  --shadow:    0 1px 0 rgba(14,14,14,0.08);
+  --shadow-lg: 0 6px 24px rgba(14,14,14,0.12);
+
+  --bg-rgb:     251, 251, 248;
+  --text-rgb:   14, 14, 14;
+  --accent-rgb: 194, 14, 36;
+  /* Le relief s'inverse : sur du papier, on creuse avec du noir. */
+  --tint-rgb:   14, 14, 14;
+  --shadow-rgb: 14, 14, 14;
+
+  --text-strong: #0E0E0E;
+  --on-accent:   #FFFFFF;
+  --on-solid:    #FFFFFF;
+
+  --font-body:    'Archivo', sans-serif;
+  --font-display: 'Big Shoulders Display', sans-serif;
+  --font-mono:    'Archivo', sans-serif;
+
+  /* Les filets remplacent les cartes arrondies. */
+  --r-4: 0; --r-6: 0; --r-8: 0; --r-10: 0; --r-12: 0; --r-14: 0;
+  --r-16: 0; --r-18: 0; --r-20: 0; --r-24: 0; --r-28: 0;
+  --radius: 0; --radius-lg: 0; --radius-xl: 0;
+
+  /* Le showroom 3D lit ce drapeau pour savoir sur quoi il est posé. */
+  --stage-light: 1;
+
+  --glow-gold: none;
+  --radius:  0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+}
+
+/* ── Thème sombre, conservé ── */
+:root[data-theme="sombre"] {
   --bg:      #080810;
   --bg2:     #0f0f1a;
   --bg3:     #161625;
@@ -59,6 +116,8 @@
   --r-4: 4px;   --r-6: 6px;   --r-8: 8px;   --r-10: 10px;
   --r-12: 12px; --r-14: 14px; --r-16: 16px; --r-18: 18px;
   --r-20: 20px; --r-24: 24px; --r-28: 28px;
+
+  --stage-light: 0;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -3372,79 +3431,61 @@ body.show-fab .fab-post { display: flex; }
    Rien d'autre dans la feuille ne connaît ce thème : tout passe par
    les variables de :root.
 ═══════════════════════════════════════════ */
-:root[data-theme="presse"] {
-  --bg:      #FBFBF8;
-  --bg2:     #F3F3EE;
-  --bg3:     #EAEAE4;
-  --bg4:     #E0E0D9;
-  --bg5:     #D4D4CB;
-  --border:  rgba(14,14,14,0.10);
-  --border2: rgba(14,14,14,0.17);
-  --border3: rgba(14,14,14,0.26);
-  --text:    #0E0E0E;
-  --text2:   #45453F;
-  --text3:   #85857E;
-  --accent:  #C20E24;
-  --accent2: #8E0A1A;
-  --accent3: rgba(194,14,36,0.09);
-  --red:     #C20E24;
-  --green:   #167A3C;
-  --blue:    #1F4FA8;
-  --purple:  #6B3FA0;
-  --glow-gold: none;
-  --shadow:    0 1px 0 rgba(14,14,14,0.08);
-  --shadow-lg: 0 6px 24px rgba(14,14,14,0.12);
 
-  --bg-rgb:     251, 251, 248;
-  --text-rgb:   14, 14, 14;
-  --accent-rgb: 194, 14, 36;
-  /* Le relief s'inverse : sur du papier, on creuse avec du noir. */
-  --tint-rgb:   14, 14, 14;
-  --shadow-rgb: 14, 14, 14;
-
-  --text-strong: #0E0E0E;
-  --on-accent:   #FFFFFF;
-  --on-solid:    #FFFFFF;
-
-  --font-body:    'Archivo', sans-serif;
-  --font-display: 'Big Shoulders Display', sans-serif;
-  --font-mono:    'Archivo', sans-serif;
-
-  /* Les filets remplacent les cartes arrondies. */
-  --r-4: 0; --r-6: 0; --r-8: 0; --r-10: 0; --r-12: 0; --r-14: 0;
-  --r-16: 0; --r-18: 0; --r-20: 0; --r-24: 0; --r-28: 0;
-  --radius: 0; --radius-lg: 0; --radius-xl: 0;
-}
 
 /* Les quelques traits propres à la direction, que les variables seules
    ne peuvent pas porter : la graisse et les capitales du display. */
-:root[data-theme="presse"] .page-title,
-:root[data-theme="presse"] .car-name {
+.page-title,
+.car-name {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.005em;
   line-height: 0.88;
 }
-:root[data-theme="presse"] .page-title em {
+.page-title em {
   background: none;
   -webkit-text-fill-color: var(--accent);
   color: var(--accent);
 }
-:root[data-theme="presse"] body::before { background-image: none; }
-:root[data-theme="presse"] .hero-3d-canvas {
-  mix-blend-mode: multiply;
-  opacity: .92;
+/* Le halo de fond et la lueur de chargement n'existent que sur fond sombre.
+   Le rendu 3D, lui, est fusionné en « multiply » sur le clair : son ombre au
+   sol assombrit le papier au lieu de s'y poser comme une tache. */
+body::before { background-image: none; }
+.hero-3d-canvas { mix-blend-mode: multiply; opacity: .92; }
+.hero-3d::before { display: none; }
+
+:root[data-theme="sombre"] body::before {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(var(--accent-rgb),0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(155,127,232,0.04) 0%, transparent 60%);
 }
-:root[data-theme="presse"] .hero-3d::before { display: none; }
-:root[data-theme="presse"] .h-val,
-:root[data-theme="presse"] .sim-stat-val {
+:root[data-theme="sombre"] .hero-3d-canvas { mix-blend-mode: normal; opacity: 1; }
+:root[data-theme="sombre"] .hero-3d::before { display: block; }
+:root[data-theme="sombre"] .page-title,
+:root[data-theme="sombre"] .car-name {
+  font-weight: 400; text-transform: none; letter-spacing: -1px; line-height: 1.1;
+}
+:root[data-theme="sombre"] .page-title em {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+:root[data-theme="sombre"] .h-val,
+:root[data-theme="sombre"] .sim-stat-val {
+  font-family: var(--font-body); font-weight: 500; color: var(--accent2);
+}
+:root[data-theme="sombre"] .nav-tab.active::after { box-shadow: 0 0 10px 1px rgba(var(--accent-rgb),.55); }
+:root[data-theme="sombre"] .bnav-item.active::before,
+:root[data-theme="sombre"] .subnav-item.active::after { box-shadow: 0 0 9px 1px rgba(var(--accent-rgb),.5); }
+.h-val,
+.sim-stat-val {
   font-family: var(--font-display);
   font-weight: 800;
   color: var(--accent);
 }
-:root[data-theme="presse"] .nav-tab.active::after,
-:root[data-theme="presse"] .bnav-item.active::before,
-:root[data-theme="presse"] .subnav-item.active::after { box-shadow: none; }
+.nav-tab.active::after,
+.bnav-item.active::before,
+.subnav-item.active::after { box-shadow: none; }
 
 /* Bandeau discret tant que l'aperçu est actif. */
 .theme-flag {
@@ -3458,7 +3499,7 @@ body.show-fab .fab-post { display: flex; }
   box-shadow: var(--shadow-lg);
   max-width: calc(100vw - 32px);
 }
-:root[data-theme="presse"] .theme-flag { display: flex; }
+:root[data-theme="sombre"] .theme-flag { display: flex; }
 .theme-flag a { color: var(--accent); font-weight: 600; white-space: nowrap; }
 @media (min-width: 769px) { .theme-flag { bottom: 20px; right: 20px; } }
 
