@@ -1058,8 +1058,11 @@ select.s-input {
    AUTHENTICATION
 ═══════════════════════════════════════════ */
 .auth-overlay {
-  position: fixed; inset: 0; z-index: 1000;
-  background: rgba(var(--shadow-rgb), 0.82); backdrop-filter: blur(14px);
+  /* Au-dessus de la barre du bas (9999), qui passait sinon par-dessus la
+     modale et masquait le bouton d'action. Les modales empilées gardent
+     leurs z-index en ligne, 10001 et 10002, donc au-dessus de celle-ci. */
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(var(--shadow-rgb), 0.55); backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(14px);
   display: flex; align-items: flex-start; justify-content: center;
   overflow-y: auto; padding: 2rem 1rem;
@@ -1098,7 +1101,7 @@ select.s-input {
 
 .auth-panel {
   position: relative; width: 100%; max-width: 440px;
-  background: linear-gradient(145deg, #13131f, var(--bg2));
+  background: linear-gradient(145deg, var(--bg3), var(--bg2));
   border: 1px solid rgba(var(--tint-rgb), 0.1);
   border-radius: var(--radius-xl);
   padding: 1.5rem; /* Reduced padding */
@@ -1138,20 +1141,31 @@ select.s-input {
 .auth-title em { color: var(--accent); font-style: normal; }
 .auth-subtitle { font-size: 13px; color: var(--text3); }
 
+/* Mêmes codes que le sélecteur de section du site : bloc creusé, segment
+   actif soulevé, témoin allumé. Un seul motif appris une fois. */
 .auth-tabs {
-  display: flex; gap: 4px;
-  background: rgba(var(--tint-rgb), 0.04); border: 1px solid rgba(var(--tint-rgb), 0.07);
-  border-radius: var(--r-12); padding: 4px; margin-bottom: 1.5rem;
+  display: flex; gap: 2px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r-10); padding: 3px; margin-bottom: 1.5rem;
+  box-shadow: inset 0 2px 5px rgba(var(--shadow-rgb), .07);
 }
 .auth-tab {
-  flex: 1; height: 36px; border-radius: var(--r-8);
+  position: relative;
+  flex: 1; height: 38px; border-radius: var(--r-8);
   border: none; background: transparent;
-  font-size: 13px; font-weight: 600; font-family: var(--font-body);
-  color: var(--text3); cursor: pointer; transition: all .2s;
+  font-size: 13.5px; font-weight: 500; font-family: var(--font-body);
+  color: var(--text2); cursor: pointer;
+  transition: color .18s, background .18s;
 }
+.auth-tab:hover { color: var(--text); }
+.auth-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .auth-tab.active {
-  background: rgba(var(--tint-rgb), 0.09); color: var(--text);
-  box-shadow: 0 1px 4px rgba(var(--shadow-rgb), 0.3);
+  background: var(--bg4); color: var(--text); font-weight: 600;
+  box-shadow: 0 1px 0 rgba(var(--tint-rgb), .04) inset, 0 3px 10px rgba(var(--shadow-rgb), .08);
+}
+.auth-tab.active::after {
+  content: ''; position: absolute; top: 0; left: 16px; right: 16px;
+  height: 2px; background: var(--accent);
 }
 
 .auth-form { display: flex; flex-direction: column; gap: 14px; }
@@ -2451,7 +2465,7 @@ body.show-fab .fab-post { display: flex; }
 }
 .frame-diamond .profile-main-avatar {
   border: 3px solid transparent;
-  background: linear-gradient(#1a1a24, #1a1a24) padding-box,
+  background: linear-gradient(var(--bg3), var(--bg3)) padding-box,
               linear-gradient(135deg, #00fff0, #ff00ff, #ffd700) border-box;
   box-shadow: 0 0 25px rgba(0,255,240,0.3);
   animation: frameGlow 1.5s ease infinite;
@@ -2557,7 +2571,7 @@ body.show-fab .fab-post { display: flex; }
 
 /* ══════════ CARTES PLAYLISTS ══════════ */
 .playlist-card {
-  background: linear-gradient(145deg, #101018, #0a0a10);
+  background: linear-gradient(145deg, var(--bg2), var(--bg3));
   border: 1px solid rgba(var(--tint-rgb), 0.05);
   border-radius: var(--r-16);
   overflow: hidden;
@@ -2607,7 +2621,7 @@ body.show-fab .fab-post { display: flex; }
   border: 1px solid rgba(var(--tint-rgb), 0.1);
   transition: all 0.2s;
 }
-.pl-media:hover { border-color: var(--accent); background: #050505; }
+.pl-media:hover { border-color: var(--accent); background: var(--bg4); }
 .pl-media svg { opacity: 0.5; transition: opacity 0.2s; }
 .pl-media:hover svg { opacity: 1; }
 
@@ -2790,7 +2804,7 @@ body.show-fab .fab-post { display: flex; }
   cursor: pointer; white-space: nowrap;
   transition: background .18s, color .18s;
 }
-.btn-upgrade:hover { background: var(--accent); color: #12100a; }
+.btn-upgrade:hover { background: var(--accent); color: var(--on-accent); }
 
 /* ── Menu compte ── */
 .acct-wrap { position: relative; }
@@ -3081,15 +3095,24 @@ body.show-fab .fab-post { display: flex; }
   .pricing-card { padding: 2rem 1.5rem; }
   .p-price { font-size: 42px; }
 
-  .auth-panel { 
-    max-width: 98vw; 
-    max-height: none; 
-    padding: 1rem .875rem 2rem; 
-    border-radius: var(--r-16); 
-    margin: 10px auto; 
+  .auth-panel {
+    max-width: 100%;
+    max-height: none;
+    padding: 1.25rem 1rem 1.5rem;
+    border-radius: var(--r-16);
+    margin: 0 auto;
     overflow: visible;
   }
-  .auth-overlay { align-items: flex-start; padding: 10px; }
+  .auth-overlay {
+    align-items: flex-start;
+    /* La barre du bas mesure environ 67 px : sans cette réserve, le dernier
+       bouton de la modale se retrouvait dessous, hors d'atteinte. */
+    padding: 14px 12px calc(84px + env(safe-area-inset-bottom));
+  }
+  /* Le bouton Google est rendu dans un iframe de largeur fixe : il doit
+     pouvoir rétrécir, sinon il déborde de l'écran. */
+  #google-signin-btn { display: flex; justify-content: center; max-width: 100%; overflow: hidden; }
+  #google-signin-btn > div { max-width: 100% !important; }
   .auth-field { height: 44px; margin-bottom: 8px; }
   .auth-row-2 { gap: 6px; }
   .auth-type-group { gap: 6px; margin: 10px 0; }

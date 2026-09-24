@@ -4,8 +4,8 @@
   "description": "Base de données automobile, specs et simulateur d'entretien.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#080810",
-  "theme_color": "#080810",
+  "background_color": "#FBFBF8",
+  "theme_color": "#FBFBF8",
   "orientation": "portrait",
   "icons": [
     {

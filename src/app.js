@@ -154,10 +154,13 @@ async function handleAdScan() {
 }
 
 // ── AUTH UI FUNCTIONS ──
-function openAuthModal() { 
+function openAuthModal() {
   initRememberedInfo();
   setAuthMode('login'); // Forcer le mode connexion par défaut
-  document.getElementById('auth-modal').style.display = 'flex'; 
+  document.getElementById('auth-modal').style.display = 'flex';
+  // Le bouton Google ne peut être dimensionné qu'une fois la modale visible :
+  // tant qu'elle est masquée, son conteneur mesure zéro.
+  dessinerBoutonGoogle();
 }
 function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
 
@@ -466,6 +469,24 @@ function updateNav() {
   }
 }
 
+// Google rend son bouton dans un iframe de largeur fixe : à 380 px il
+// débordait d'un écran de 390 px une fois les marges retirées. On mesure le
+// conteneur au moment du rendu, dans les bornes acceptées par l'API.
+let _largeurGoogleRendue = 0;
+function dessinerBoutonGoogle() {
+  const conteneur = document.getElementById('google-signin-btn');
+  if (!conteneur || typeof google === 'undefined' || !google.accounts) return;
+  const dispo = conteneur.clientWidth || (window.innerWidth - 56);
+  const largeur = Math.round(Math.min(380, Math.max(200, dispo)));
+  if (largeur === _largeurGoogleRendue) return;   // rien à refaire
+  _largeurGoogleRendue = largeur;
+  conteneur.innerHTML = '';
+  google.accounts.id.renderButton(conteneur, {
+    theme: 'outline', size: 'large', width: String(largeur),
+    text: 'continue_with', shape: 'pill',
+  });
+}
+
 function initializeGoogleAuth() {
   if (typeof google === 'undefined') {
     setTimeout(initializeGoogleAuth, 100);
@@ -475,10 +496,7 @@ function initializeGoogleAuth() {
     client_id: "548892582580-mh5isg91gtg86hjn7rb11vd5e8dton4f.apps.googleusercontent.com",
     callback: handleGoogleCredential
   });
-  google.accounts.id.renderButton(
-    document.getElementById("google-signin-btn"),
-    { theme: "outline", size: "large", width: "380", text: "continue_with", shape: "pill" }
-  );
+  dessinerBoutonGoogle();
 }
 
 async function handleGoogleCredential(response) {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#080810">
+  <meta name="theme-color" content="#FBFBF8">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icons/icon.png">
   <title>AutoSpec Pro</title>
@@ -159,7 +159,7 @@
     </div>
 
     <!-- ONGLET PUSH -->
-    <div id="admin-sub-push" style="display:none; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-top: 20px; border: 1px solid var(--border);">
+    <div id="admin-sub-push" style="display:none; padding: 20px; background: rgba(var(--tint-rgb),0.03); border-radius: 12px; margin-top: 20px; border: 1px solid var(--border);">
       <h3 style="margin-bottom:15px; color:var(--text); font-family: 'DM Serif Display', serif;">Envoyer une Notification</h3>
       <input type="text" id="push-title" class="p-input" placeholder="Titre de la notification" style="margin-bottom:10px;" value="AutoSpec">
       <textarea id="push-body" class="p-input" placeholder="Message..." style="margin-bottom:10px; height:80px;">Découvrez nos dernières fonctionnalités !</textarea>
@@ -566,7 +566,7 @@
       </div>
     </div>
 
-    <div class="community-tabs" style="display:flex; gap:20px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+    <div class="community-tabs" style="display:flex; gap:20px; margin-bottom: 20px; border-bottom: 1px solid rgba(var(--tint-rgb),0.1); padding-bottom: 10px;">
       <button class="comm-tab active" onclick="switchCommunityTab('bolides', this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17h14"/><path d="M3 17v-4l2-5h14l2 5v4"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/></svg> Bolides</button>
       <button class="comm-tab" onclick="switchCommunityTab('playlists', this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Playlists</button>
       <button class="comm-tab" onclick="switchCommunityTab('entraide', this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/></svg> Entraide</button>
@@ -637,7 +637,7 @@
         </div>
       </div>
       <div class="up-main">
-        <div class="up-tabs" style="display:flex; gap:20px; margin-bottom:20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+        <div class="up-tabs" style="display:flex; gap:20px; margin-bottom:20px; border-bottom: 1px solid rgba(var(--tint-rgb),0.1); padding-bottom: 10px;">
           <button class="up-tab active" onclick="switchUpTab('posts', this)">Publications</button>
           <button class="up-tab" onclick="switchUpTab('playlists', this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Playlists</button>
         </div>
@@ -671,11 +671,11 @@
       <!-- Liste des conversations -->
       <div class="conv-sidebar">
         <div style="padding: 12px; border-bottom: 1px solid var(--border); position: relative; z-index: 20;">
-          <div style="display:flex; align-items:center; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s;" id="msg-search-box">
+          <div style="display:flex; align-items:center; background: rgba(var(--shadow-rgb),0.2); border-radius: 12px; padding: 8px 14px; border: 1px solid rgba(var(--tint-rgb),0.05); transition: all 0.2s;" id="msg-search-box">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5; margin-right:10px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="msg-user-search-input" placeholder="Chercher un @pseudo ou un nom..." oninput="handleMsgUserSearch()" onfocus="document.getElementById('msg-search-box').style.borderColor='var(--accent)'" onblur="setTimeout(()=>document.getElementById('msg-search-box').style.borderColor='rgba(255,255,255,0.05)', 200)" style="background:transparent; border:none; outline:none; color:#fff; width:100%; font-size:14px;">
+            <input type="text" id="msg-user-search-input" placeholder="Chercher un @pseudo ou un nom..." oninput="handleMsgUserSearch()" onfocus="document.getElementById('msg-search-box').style.borderColor='var(--accent)'" onblur="setTimeout(()=>document.getElementById('msg-search-box').style.borderColor='rgba(var(--tint-rgb),0.05)', 200)" style="background:transparent; border:none; outline:none; color:#fff; width:100%; font-size:14px;">
           </div>
-          <div id="msg-user-search-results" style="display:none; position:absolute; top:calc(100% + 5px); left:12px; right:12px; background:#1a1a24; border:1px solid rgba(255,255,255,0.1); border-radius:12px; max-height:300px; overflow-y:auto; box-shadow: 0 15px 40px rgba(0,0,0,0.6);">
+          <div id="msg-user-search-results" style="display:none; position:absolute; top:calc(100% + 5px); left:12px; right:12px; background:var(--bg2); border:1px solid var(--border2); border-radius:var(--r-12); max-height:300px; overflow-y:auto; box-shadow:var(--shadow-lg);">
           </div>
         </div>
         
@@ -746,7 +746,7 @@
             </div>
           </div>
 
-          <div id="p-display-bio" style="font-size:14px; color:var(--text2); text-align:center; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px; margin-bottom:20px; font-style:italic;">
+          <div id="p-display-bio" style="font-size:14px; color:var(--text2); text-align:center; padding:15px; background:rgba(var(--tint-rgb),0.03); border-radius:12px; margin-bottom:20px; font-style:italic;">
             Aucune bio renseignée.
           </div>
 
@@ -827,7 +827,7 @@
             <span style="color:var(--text2);">Progression XP</span>
             <span id="p-display-points" style="font-weight:700; color:var(--accent);">0 XP</span>
           </div>
-          <div class="points-bar-bg" style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
+          <div class="points-bar-bg" style="width:100%; height:6px; background:rgba(var(--tint-rgb),0.05); border-radius:3px; overflow:hidden;">
             <div id="p-points-fill" class="points-bar-fill" style="width: 5%; height:100%; background:linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 1s ease;"></div>
           </div>
           <div id="p-next-rank" style="font-size:11px; color:var(--text3); margin-top:8px;"></div>
@@ -1087,7 +1087,7 @@
         <!-- Colonne formulaire -->
         <div class="payment-content">
           <h3 style="font-size:18px;font-weight:500;margin-bottom:20px;color:var(--text);">Paiement Sécurisé</h3>
-          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; text-align:center; margin-bottom:24px;">
+          <div style="background:rgba(var(--tint-rgb),0.03); border:1px solid var(--border2); border-radius:12px; padding:20px; text-align:center; margin-bottom:24px;">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-bottom:12px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <p style="font-size:13px; color:var(--text2); line-height:1.5;">
               Pour une sécurité maximale, les transactions sont traitées par le portail bancaire <strong>Stripe</strong>. Vos informations ne transitent pas sur nos serveurs.
@@ -1262,8 +1262,8 @@
         </div>
 
         <!-- Left: Embed Widget -->
-        <div class="post-detail-media" style="background:#080810; display:flex; align-items:center; justify-content:center; padding: 20px;">
-          <div id="pld-embed-container" style="width:100%; max-width:100%; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+        <div class="post-detail-media" style="background:var(--bg); display:flex; align-items:center; justify-content:center; padding: 20px;">
+          <div id="pld-embed-container" style="width:100%; max-width:100%; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(var(--shadow-rgb),0.5);">
             <!-- Iframe injected dynamically -->
           </div>
         </div>
@@ -1285,7 +1285,7 @@
 
           <div class="pd-content">
             <h3 id="pld-title" style="margin-bottom: 5px; color:var(--text); font-size:20px;">Titre de la playlist</h3>
-            <span id="pld-theme-badge" style="display:inline-block; padding: 4px 10px; border-radius: 12px; font-size:12px; background:rgba(255,255,255,0.1); margin-bottom: 12px;">Thème</span>
+            <span id="pld-theme-badge" style="display:inline-block; padding: 4px 10px; border-radius: 12px; font-size:12px; background:rgba(var(--tint-rgb),0.1); margin-bottom: 12px;">Thème</span>
             <div class="pd-description" id="pld-description" style="margin-bottom:15px;"></div>
             <div class="pd-divider"></div>
             <div class="pd-comments" id="pld-comments-list">
