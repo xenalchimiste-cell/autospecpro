@@ -10,20 +10,51 @@
     }
   },
   "rewrites": [
-    { "source": "/api/auth/:action", "destination": "/api/auth.js?action=:action" },
-    { "source": "/api/push/:action", "destination": "/api/push.js?action=:action" },
-    { "source": "/api/reviews", "destination": "/api/social.js?action=reviews" },
-    { "source": "/api/verify-siret", "destination": "/api/auth.js?action=verify-siret" },
-    { "source": "/api/extract-ad", "destination": "/api/chat.js?action=extract-ad" }
+    {
+      "source": "/api/auth/:action",
+      "destination": "/api/auth.js?action=:action"
+    },
+    {
+      "source": "/api/push/:action",
+      "destination": "/api/push.js?action=:action"
+    },
+    {
+      "source": "/api/reviews",
+      "destination": "/api/social.js?action=reviews"
+    },
+    {
+      "source": "/api/verify-siret",
+      "destination": "/api/auth.js?action=verify-siret"
+    },
+    {
+      "source": "/api/extract-ad",
+      "destination": "/api/chat.js?action=extract-ad"
+    },
+    {
+      "source": "/api/report",
+      "destination": "/api/chat.js?action=report"
+    }
   ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
-        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
+        }
       ]
     }
   ]
