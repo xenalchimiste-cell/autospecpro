@@ -3308,3 +3308,26 @@ body.show-fab .fab-post { display: flex; }
   .acct-menu.open { animation: none; }
 }
 
+
+/* ── Panneau admin : fiches signalées ── */
+.admin-reports-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+}
+.admin-reports-toggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; color: var(--text2); cursor: pointer;
+}
+.admin-reports-toggle input { accent-color: var(--accent); cursor: pointer; }
+.admin-tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px;
+  border-radius: 99px; background: var(--red); color: #fff;
+  font-size: 10.5px; font-weight: 600;
+}
+.report-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; padding: 3px 8px; border-radius: 99px;
+  background: var(--accent3); color: var(--accent2);
+  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+}

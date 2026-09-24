@@ -1,5 +1,5 @@
 import { sql } from './_lib/db.js';
-import { getUserIdFromRequest } from './_lib/auth.js';
+import { getUserIdFromRequest, requireAdmin } from './_lib/auth.js';
 import { isAllowedOrigin } from './_lib/ai-guard.js';
 
 // ── SIGNALEMENTS D'ERREUR SUR UNE FICHE ──
@@ -28,6 +28,7 @@ async function ensureTable() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     )
   `;
+  await sql`ALTER TABLE fiche_reports ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMP WITH TIME ZONE`;
   await sql`CREATE INDEX IF NOT EXISTS fiche_reports_query_idx ON fiche_reports (query)`;
   tableReady = true;
 }
@@ -47,7 +48,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Vary', 'Origin');
 
+  // ── Lecture et traitement : réservés aux administrateurs ──
+  if (req.method === 'GET') return await listReports(req, res);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
+  if ((req.body || {}).action === 'resolve') return await resolveReports(req, res);
 
   const body = req.body || {};
   const query = String(body.query || '').replace(/\s+/g, ' ').trim().slice(0, 160);
@@ -83,5 +87,68 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('[report] échec :', err.message);
     return res.status(500).json({ error: 'Signalement non enregistré. Réessayez plus tard.' });
+  }
+}
+
+// ── Vue administrateur ──
+// Les signalements ne valent que si on peut les lire : cette vue regroupe par
+// véhicule, classe par nombre de remontées, et met de côté ce qui est traité.
+async function listReports(req, res) {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  try {
+    await ensureTable();
+    const resolved = req.query.resolved === '1';
+    const { rows } = resolved
+      ? await sql`
+          SELECT query, COUNT(*)::int AS total,
+                 string_agg(DISTINCT field, ', ') AS fields,
+                 MAX(created_at) AS last_at,
+                 MAX(resolved_at) AS resolved_at
+          FROM fiche_reports WHERE resolved_at IS NOT NULL
+          GROUP BY query ORDER BY MAX(resolved_at) DESC LIMIT 100`
+      : await sql`
+          SELECT query, COUNT(*)::int AS total,
+                 string_agg(DISTINCT field, ', ') AS fields,
+                 string_agg(expected_value, ' · ') AS suggestions,
+                 MAX(created_at) AS last_at,
+                 NULL::timestamptz AS resolved_at
+          FROM fiche_reports WHERE resolved_at IS NULL
+          GROUP BY query ORDER BY COUNT(*) DESC, MAX(created_at) DESC LIMIT 100`;
+
+    const { rows: [totaux] } = await sql`
+      SELECT COUNT(*) FILTER (WHERE resolved_at IS NULL)::int AS ouverts,
+             COUNT(DISTINCT query) FILTER (WHERE resolved_at IS NULL)::int AS vehicules
+      FROM fiche_reports`;
+
+    return res.status(200).json({
+      reports: rows.map(r => ({ ...r, suggestions: (r.suggestions || '').slice(0, 300) })),
+      totals: totaux,
+    });
+  } catch (err) {
+    console.error('[report] lecture impossible :', err.message);
+    return res.status(500).json({ error: 'Lecture des signalements impossible.' });
+  }
+}
+
+// Marquer traité : la fiche a été corrigée, ou le signalement était infondé.
+async function resolveReports(req, res) {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const query = String((req.body || {}).query || '').trim().slice(0, 160);
+  if (!query) return res.status(400).json({ error: 'Véhicule manquant.' });
+
+  try {
+    await ensureTable();
+    const { rows } = await sql`
+      UPDATE fiche_reports SET resolved_at = CURRENT_TIMESTAMP
+      WHERE query = ${query} AND resolved_at IS NULL
+      RETURNING id`;
+    return res.status(200).json({ ok: true, traites: rows.length });
+  } catch (err) {
+    console.error('[report] traitement impossible :', err.message);
+    return res.status(500).json({ error: 'Mise à jour impossible.' });
   }
 }

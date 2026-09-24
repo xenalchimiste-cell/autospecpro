@@ -2363,6 +2363,85 @@ function finalizeProDossier() {
 }
 
 // ── ADMIN DASHBOARD LOGIC ──
+// ── FICHES SIGNALÉES (ADMIN) ──
+// Les signalements arrivaient en base sans que personne puisse les lire.
+// Cette vue les regroupe par véhicule : les plus remontés en premier.
+const REPORT_FIELD_LABELS = {
+  identification: 'Mauvais véhicule', puissance: 'Puissance', couple: 'Couple',
+  performances: 'Performances', consommation: 'Consommation', masse: 'Masse',
+  dimensions: 'Dimensions', transmission: 'Transmission', entretien: 'Entretien',
+  tuning: 'Préparations', autre: 'Autre',
+};
+
+window.loadReports = async function() {
+  const tbody = document.getElementById('admin-reports-list');
+  const resume = document.getElementById('admin-reports-summary');
+  if (!tbody || !authToken) return;
+
+  const traites = document.getElementById('admin-reports-resolved')?.checked;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text3);">Chargement…</td></tr>';
+
+  try {
+    const res = await fetch(API_BASE + '/api/report' + (traites ? '?resolved=1' : ''), {
+      headers: { 'Authorization': 'Bearer ' + authToken },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Lecture impossible.');
+
+    const n = data.totals?.ouverts || 0;
+    const badge = document.getElementById('admin-reports-count');
+    if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+    if (resume) {
+      resume.textContent = n === 0
+        ? 'Aucun signalement en attente.'
+        : `${n} signalement${n > 1 ? 's' : ''} en attente sur ${data.totals.vehicules} véhicule${data.totals.vehicules > 1 ? 's' : ''}.`;
+    }
+
+    if (!data.reports.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text3); padding:2rem;">${traites ? 'Rien de traité pour l\'instant.' : 'Aucune fiche signalée — bon signe.'}</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.reports.map(r => {
+      const champs = String(r.fields || '').split(', ')
+        .map(f => REPORT_FIELD_LABELS[f] || f).join(', ');
+      return `<tr>
+        <td><strong>${esc(r.query)}</strong></td>
+        <td><span class="report-count">${r.total}</span></td>
+        <td style="font-size:12px; color:var(--text2);">${esc(champs)}</td>
+        <td style="font-size:12px; color:var(--text2); max-width:260px;">${esc(r.suggestions || '—')}</td>
+        <td style="font-size:12px; color:var(--text3);">${new Date(r.last_at).toLocaleDateString('fr-FR')}</td>
+        <td>
+          <button class="admin-action-btn btn-verify" onclick="qf('${esc(r.query).replace(/'/g, "\\'")}')">Voir la fiche</button>
+          ${traites ? '' : `<button class="admin-action-btn" onclick="resolveReport(this, '${esc(r.query).replace(/'/g, "\\'")}')">Traité</button>`}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--red);">${esc(err.message)}</td></tr>`;
+  }
+};
+
+window.resolveReport = async function(btn, query) {
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    const res = await fetch(API_BASE + '/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ action: 'resolve', query }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Mise à jour impossible.');
+    showToast(`${data.traites} signalement${data.traites > 1 ? 's' : ''} marqué${data.traites > 1 ? 's' : ''} traité${data.traites > 1 ? 's' : ''}.`, 'success');
+    loadReports();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'Traité';
+    showToast(err.message, 'error');
+  }
+};
+
 function switchAdminSubTab(tabId, btn) {
   document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.admin-sub-page').forEach(p => p.classList.remove('active'));
@@ -2378,6 +2457,8 @@ function switchAdminSubTab(tabId, btn) {
     const target = document.getElementById('admin-sub-' + tabId);
     if (target) target.classList.add('active');
   }
+
+  if (tabId === 'reports') loadReports();
 }
 
 async function sendAdminPush() {
@@ -2418,6 +2499,16 @@ async function loadAdminData() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
+
+    // Pastille des fiches signalées : visible dès l'arrivée sur le panneau.
+    fetch(API_BASE + '/api/report', { headers: { 'Authorization': 'Bearer ' + authToken } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const badge = document.getElementById('admin-reports-count');
+        const n = d?.totals?.ouverts || 0;
+        if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+      })
+      .catch(() => {});
 
     // Stats
     document.getElementById('admin-stat-users').innerText = data.stats.totalUsers;

@@ -105,6 +105,37 @@
       <button class="admin-tab-btn" onclick="switchAdminSubTab('stats', this)">Parrainages</button>
       <button class="admin-tab-btn" onclick="switchAdminSubTab('push', this)">Notifications</button>
       <button class="admin-tab-btn" onclick="switchAdminSubTab('reviews', this)">Avis</button>
+      <button class="admin-tab-btn" onclick="switchAdminSubTab('reports', this)">Fiches signalées <span class="admin-tab-count" id="admin-reports-count" hidden></span></button>
+    </div>
+
+    <!-- ONGLET FICHES SIGNALÉES -->
+    <!-- Ce que les utilisateurs disent de faux dans les fiches, groupé par
+         véhicule et classé par nombre de remontées. -->
+    <div id="admin-sub-reports" class="admin-sub-page">
+      <div class="admin-reports-head">
+        <p class="page-sub" id="admin-reports-summary" style="margin:0;">Chargement des signalements…</p>
+        <label class="admin-reports-toggle">
+          <input type="checkbox" id="admin-reports-resolved" onchange="loadReports()"/>
+          Voir les signalements traités
+        </label>
+      </div>
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Véhicule</th>
+              <th>Remontées</th>
+              <th>Données concernées</th>
+              <th>Corrections proposées</th>
+              <th>Dernière</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-reports-list">
+            <!-- Rempli par loadReports() -->
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ONGLET REVIEWS (ADMIN) -->
