@@ -1,25 +1,27 @@
 // ── SHOWROOM 3D (page d'accueil) ──
-// Voiture de sport stylisée entièrement générée en code (aucun modèle externe) :
-// la carrosserie et l'habitacle sont des surfaces « lissées » faites de sections
-// superellipses le long de l'axe de la voiture. Chargé à la demande par index.html.
+// Berline premium stylisée (inspirée d'une grande berline allemande, sans logo),
+// entièrement générée en code : la carrosserie et l'habitacle sont des surfaces
+// « lissées » faites de sections superellipses le long de l'axe de la voiture ;
+// calandre, optiques, vitrages et chromes sont des panneaux et tubes plaqués dessus.
+// Chargé à la demande par index.html.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-const HALF_L = 2.25;          // demi-longueur de la voiture (m)
-const AXLE_X = 1.35;          // position des essieux
-const WHEEL_Y = 0.35;         // hauteur du centre des roues
-const WHEEL_Z = 0.8;          // voie (demi)
+const HALF_L = 2.47;          // demi-longueur (m)
+const AXLE_X = 1.48;          // position des essieux (empattement ~2,96 m)
+const WHEEL_Y = 0.35;         // rayon / hauteur du centre des roues
+const WHEEL_Z = 0.8;          // demi-voie
+const CAR_SCALE = 0.9;        // mise à l'échelle dans le showroom
 
-export const PAINTS = [
-  { name: 'Or', color: '#c9a043' },
-  { name: 'Noir', color: '#111118' },
-  { name: 'Rouge', color: '#a8101f' },
-  { name: 'Bleu', color: '#1d4aa0' },
-  { name: 'Blanc', color: '#e6e4de' },
-];
+// Finitions de peinture sélectionnables (data-finish sur les pastilles).
+const FINISHES = {
+  matte: { metalness: 0.45, roughness: 0.52, clearcoat: 0.12, clearcoatRoughness: 0.5 },
+  gloss: { metalness: 0.3, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.03 },
+  metal: { metalness: 0.85, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.03 },
+};
 
-// ── Géométrie ──
+// ── Outils géométriques ──
 
 // Interpolation Catmull-Rom 1D sur des points [x, y] triés par x.
 function spline(points, x) {
@@ -90,15 +92,13 @@ function insideSection(cfg, x, y, z) {
   return Math.pow(Math.abs(nz), n) + Math.pow(Math.abs(ny), n) <= 1;
 }
 
-// Point de la surface avant (dir = 1) ou arrière (dir = -1) à la hauteur y / largeur z.
+// Abscisse de la surface avant (dir = 1) ou arrière (dir = -1) à la hauteur y / largeur z.
 function endSurfaceX(cfg, y, z, dir) {
-  // On avance depuis le bout de la voiture jusqu'à entrer dans la carrosserie…
   const end = dir > 0 ? cfg.x1 : cfg.x0;
   let lo = end - dir * 1.2, hi = end;
   for (let x = end; Math.abs(x - end) < 1.2; x -= dir * 0.01) {
     if (insideSection(cfg, x, y, z)) { lo = x; hi = x + dir * 0.01; break; }
   }
-  // …puis on affine la frontière par dichotomie.
   for (let i = 0; i < 20; i++) {
     const mid = (lo + hi) / 2;
     if (insideSection(cfg, mid, y, z)) lo = mid; else hi = mid;
@@ -106,7 +106,7 @@ function endSurfaceX(cfg, y, z, dir) {
   return lo;
 }
 
-// Point de la surface latérale à l'abscisse x et la hauteur y.
+// Largeur de la surface latérale à l'abscisse x et la hauteur y.
 function sideSurfaceZ(cfg, x, y) {
   let lo = 0, hi = cfg.halfWidth(x) + 0.1;
   for (let i = 0; i < 24; i++) {
@@ -116,87 +116,93 @@ function sideSurfaceZ(cfg, x, y) {
   return lo;
 }
 
-// Bande lumineuse (tube) plaquée sur l'avant ou l'arrière de la carrosserie.
-function endStrip(cfg, dir, samples, radius, material) {
-  const pts = samples.map(([y, z]) => new THREE.Vector3(endSurfaceX(cfg, y, z, dir) + dir * radius * 0.6, y, z));
-  const curve = new THREE.CatmullRomCurve3(pts);
-  return new THREE.Mesh(new THREE.TubeGeometry(curve, 48, radius, 10, false), material);
+// Hauteur de la surface supérieure à l'abscisse x et la largeur z.
+function topSurfaceY(cfg, x, z) {
+  const { yc, hy } = section(cfg, x);
+  let lo = yc, hi = yc + hy + 0.05;
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    if (insideSection(cfg, x, mid, z)) lo = mid; else hi = mid;
+  }
+  return lo;
 }
 
+// Panneau plaqué sur la carrosserie : pointAt(u, v) avec u, v ∈ [0, 1].
+function surfacePanel(pointAt, cols, rows, material) {
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= rows; i++) {
+    for (let j = 0; j <= cols; j++) {
+      const p = pointAt(j / cols, i / rows);
+      pos.push(p.x, p.y, p.z);
+      uv.push(j / cols, i / rows);
+    }
+  }
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const a = i * (cols + 1) + j, b = a + 1, c = a + cols + 1, d = c + 1;
+      idx.push(a, b, c, b, d, c);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, material);
+}
+
+// Contour d'un panneau (pour les cadres chromés).
+function panelOutline(pointAt, steps = 16) {
+  const pts = [];
+  for (let i = 0; i < steps; i++) pts.push(pointAt(i / steps, 1));
+  for (let i = 0; i < steps; i++) pts.push(pointAt(1, 1 - i / steps));
+  for (let i = 0; i < steps; i++) pts.push(pointAt(1 - i / steps, 0));
+  for (let i = 0; i < steps; i++) pts.push(pointAt(0, i / steps));
+  return pts;
+}
+
+function tube(points, radius, material, closed = false) {
+  const curve = new THREE.CatmullRomCurve3(points, closed, 'centripetal');
+  return new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(24, points.length * 3), radius, 8, closed), material);
+}
+
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// ── Formes ──
+
 const BODY = {
-  x0: -HALF_L, x1: HALF_L, slices: 200, ring: 72,
-  boxiness: 3.6, tumble: 0.16, endY: 9, endZ: 3.4,
+  x0: -HALF_L, x1: HALF_L, slices: 220, ring: 72,
+  boxiness: 3.8, tumble: 0.14, endY: 12, endZ: 3.2,
   top: (x) => {
-    let y = spline([[-2.25, 0.6], [-2.05, 0.8], [-1.7, 0.84], [-1.0, 0.8], [0, 0.77], [0.8, 0.73], [1.4, 0.68], [1.95, 0.58], [2.25, 0.46]], x);
-    for (const cx of [-AXLE_X, AXLE_X]) y += 0.09 * Math.exp(-Math.pow((x - cx) / 0.5, 2)); // ailes musclées
+    let y = spline([[-2.47, 0.68], [-2.3, 0.9], [-2.0, 0.98], [-1.5, 1.0], [-0.8, 0.975], [0, 0.96], [0.9, 0.94], [1.5, 0.885], [2.0, 0.82], [2.3, 0.76], [2.47, 0.66]], x);
+    for (const cx of [-AXLE_X, AXLE_X]) y += 0.035 * Math.exp(-Math.pow((x - cx) / 0.5, 2));
     return y;
   },
   bottom: (x) => {
     // Passages de roue : la caisse remonte en arc au-dessus de chaque roue.
-    let y = 0.21;
+    let y = 0.17;
     for (const cx of [-AXLE_X, AXLE_X]) {
-      const dx = x - cx, r = 0.5;
-      if (Math.abs(dx) < r) y = Math.max(y, 0.21 + Math.sqrt(r * r - dx * dx));
+      const dx = x - cx, r = 0.56;
+      if (Math.abs(dx) < r) y = Math.max(y, 0.17 + Math.sqrt(r * r - dx * dx));
     }
     return y;
   },
   halfWidth: (x) => {
-    let w = 0.9 - 0.05 * Math.pow(Math.max(0, x / HALF_L), 2);
-    for (const cx of [-AXLE_X, AXLE_X]) w += 0.05 * Math.exp(-Math.pow((x - cx) / 0.55, 2)); // ailes galbées
+    let w = 0.93 - 0.04 * Math.pow(Math.max(0, x / HALF_L), 2) - 0.03 * Math.pow(Math.max(0, -x / HALF_L), 2);
+    for (const cx of [-AXLE_X, AXLE_X]) w += 0.025 * Math.exp(-Math.pow((x - cx) / 0.55, 2));
     return w;
   },
 };
 
 const CABIN = {
-  x0: -1.85, x1: 1.0, slices: 140, ring: 56,
-  boxiness: 3.4, tumble: 0.42, endY: 10, endZ: 2.6,
-  top: (x) => spline([[-1.85, 0.8], [-1.35, 0.93], [-0.8, 1.1], [-0.3, 1.17], [0.1, 1.15], [0.55, 0.98], [1.0, 0.76]], x),
-  bottom: () => 0.68,
-  halfWidth: () => 0.66,
+  x0: -1.9, x1: 1.15, slices: 160, ring: 64,
+  boxiness: 3.6, tumble: 0.3, endY: 12, endZ: 4,
+  top: (x) => spline([[-1.9, 0.99], [-1.6, 1.12], [-1.2, 1.35], [-0.7, 1.44], [-0.1, 1.46], [0.35, 1.41], [0.75, 1.2], [1.15, 0.95]], x),
+  bottom: () => 0.86,
+  halfWidth: () => 0.8,
 };
 
-function makeWheel(mats) {
-  const wheel = new THREE.Group();
-  const spin = new THREE.Group();
-  wheel.add(spin);
-
-  const tire = new THREE.Mesh(new THREE.TorusGeometry(0.262, 0.09, 20, 56), mats.tire);
-  tire.scale.z = 1.35;
-  spin.add(tire);
-
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.2, 48, 1, true), mats.rimInner);
-  barrel.rotation.x = Math.PI / 2;
-  spin.add(barrel);
-
-  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.205, 0.012, 8, 56), mats.rim);
-  lip.position.z = 0.1;
-  spin.add(lip);
-
-  for (let i = 0; i < 5; i++) {
-    const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.036, 0.025), mats.rim);
-    const a = (i / 5) * Math.PI * 2;
-    spoke.position.set(Math.cos(a) * 0.105, Math.sin(a) * 0.105, 0.085);
-    spoke.rotation.z = a;
-    spin.add(spoke);
-  }
-  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 24), mats.rim);
-  cap.rotation.x = Math.PI / 2;
-  cap.position.z = 0.09;
-  spin.add(cap);
-
-  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.02, 40), mats.disc);
-  disc.rotation.x = Math.PI / 2;
-  disc.position.z = 0.02;
-  spin.add(disc);
-
-  // L'étrier ne tourne pas avec la roue.
-  const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.15, 0.06), mats.caliper);
-  caliper.position.set(-0.14, 0.06, 0.045);
-  caliper.rotation.z = 0.4;
-  wheel.add(caliper);
-
-  return { wheel, spin };
-}
+// ── Textures ──
 
 function radialTexture(stops) {
   const c = document.createElement('canvas');
@@ -211,64 +217,252 @@ function radialTexture(stops) {
   return tex;
 }
 
-function buildCar(paint) {
+// Calandre « à pois » chromés.
+function grilleTexture() {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 400;
+  const g = c.getContext('2d');
+  g.fillStyle = '#050507';
+  g.fillRect(0, 0, c.width, c.height);
+  const step = 30;
+  for (let row = 0, y = step / 2; y < c.height; row++, y += step * 0.87) {
+    for (let x = (row % 2 ? step : step / 2); x < c.width; x += step) {
+      const grad = g.createRadialGradient(x - 3, y - 3, 1, x, y, 9);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.5, '#9a9aa2');
+      grad.addColorStop(1, '#2a2a30');
+      g.fillStyle = grad;
+      g.beginPath();
+      g.arc(x, y, 8, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+// ── Roues ──
+
+function makeWheel(mats) {
+  const wheel = new THREE.Group();
+  const spin = new THREE.Group();
+  wheel.add(spin);
+
+  const tire = new THREE.Mesh(new THREE.TorusGeometry(0.285, 0.066, 20, 64), mats.tire);
+  tire.scale.z = 1.6;
+  spin.add(tire);
+
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.226, 0.226, 0.2, 56, 1, true), mats.rimDark);
+  barrel.rotation.x = Math.PI / 2;
+  spin.add(barrel);
+
+  const face = new THREE.Mesh(new THREE.CircleGeometry(0.226, 56), mats.rimDark);
+  face.position.z = 0.02;
+  spin.add(face);
+
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.226, 0.011, 8, 64), mats.chrome);
+  lip.position.z = 0.1;
+  spin.add(lip);
+
+  // Jante multi-branches bicolore (faces usinées).
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.024, 0.022), mats.machined);
+    spoke.position.set(Math.cos(a) * 0.118, Math.sin(a) * 0.118, 0.085);
+    spoke.rotation.z = a + 0.08;
+    spin.add(spoke);
+  }
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.055, 0.04, 32), mats.machined);
+  hub.rotation.x = Math.PI / 2;
+  hub.position.z = 0.09;
+  spin.add(hub);
+
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.02, 40), mats.disc);
+  disc.rotation.x = Math.PI / 2;
+  spin.add(disc);
+
+  // L'étrier ne tourne pas avec la roue.
+  const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.17, 0.06), mats.caliper);
+  caliper.position.set(-0.16, 0.06, 0.03);
+  caliper.rotation.z = 0.4;
+  wheel.add(caliper);
+
+  return { wheel, spin };
+}
+
+// ── Voiture ──
+
+function buildCar(paint, envMap) {
   const car = new THREE.Group();
 
   const mats = {
     paint,
-    glass: new THREE.MeshPhysicalMaterial({ color: 0x07070c, metalness: 0.2, roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1.6 }),
-    black: new THREE.MeshPhysicalMaterial({ color: 0x0b0b10, metalness: 0.3, roughness: 0.45, clearcoat: 0.6 }),
-    tire: new THREE.MeshStandardMaterial({ color: 0x121214, roughness: 0.85, metalness: 0 }),
-    rim: new THREE.MeshStandardMaterial({ color: 0x2a2a30, metalness: 1, roughness: 0.22 }),
-    rimInner: new THREE.MeshStandardMaterial({ color: 0x0c0c10, metalness: 0.8, roughness: 0.5, side: THREE.DoubleSide }),
+    // Environnement explicite atténué : sinon le studio se reflète trop et les vitres paraissent grises.
+    glass: new THREE.MeshPhysicalMaterial({ color: 0x020204, metalness: 0, roughness: 0.06, envMap, envMapIntensity: 0.35 }),
+    black: new THREE.MeshPhysicalMaterial({ color: 0x08080b, metalness: 0.3, roughness: 0.35, clearcoat: 0.8, side: THREE.DoubleSide }),
+    chrome: new THREE.MeshStandardMaterial({ color: 0xe8e8ee, metalness: 1, roughness: 0.12 }),
+    grille: new THREE.MeshStandardMaterial({ map: grilleTexture(), metalness: 0.7, roughness: 0.3, side: THREE.DoubleSide }),
+    tire: new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.88, metalness: 0 }),
+    rimDark: new THREE.MeshStandardMaterial({ color: 0x1c1c22, metalness: 0.8, roughness: 0.4, side: THREE.DoubleSide }),
+    machined: new THREE.MeshStandardMaterial({ color: 0xcfd0d6, metalness: 1, roughness: 0.2 }),
     disc: new THREE.MeshStandardMaterial({ color: 0x55555c, metalness: 0.9, roughness: 0.35 }),
-    caliper: new THREE.MeshStandardMaterial({ color: 0xd4a843, metalness: 0.4, roughness: 0.35 }),
-    headlight: new THREE.MeshBasicMaterial({ color: 0xeaf4ff, toneMapped: false }),
-    taillight: new THREE.MeshBasicMaterial({ color: 0xff2a3a, toneMapped: false }),
+    caliper: new THREE.MeshStandardMaterial({ color: 0x6c6d74, metalness: 0.7, roughness: 0.35 }),
+    led: new THREE.MeshBasicMaterial({ color: 0xf2f7ff, toneMapped: false }),
+    tail: new THREE.MeshBasicMaterial({ color: 0xd0101f, toneMapped: false, side: THREE.DoubleSide }),
+    tailLed: new THREE.MeshBasicMaterial({ color: 0xff3040, toneMapped: false }),
   };
 
   car.add(new THREE.Mesh(loftGeometry(BODY), mats.paint));
   car.add(new THREE.Mesh(loftGeometry(CABIN), mats.glass));
 
-  // Feux avant : deux fines signatures LED qui remontent vers l'extérieur.
+  const front = (y, z, off = 0.008) => new THREE.Vector3(endSurfaceX(BODY, y, z, 1) + off, y, z);
+  const rear = (y, z, off = 0.008) => new THREE.Vector3(endSurfaceX(BODY, y, z, -1) - off, y, z);
+
+  // ── Habitacle : toit et montants couleur carrosserie, vitres cerclées de chrome ──
+  const ROOF_INSET = 0.07;
+  car.add(surfacePanel((u, v) => {
+    const x = lerp(-1.3, 0.45, u);
+    const zEdge = sideSurfaceZ(CABIN, x, CABIN.top(x) - ROOF_INSET);
+    const z = (2 * v - 1) * zEdge;
+    return new THREE.Vector3(x, topSurfaceY(CABIN, x, z) + 0.005, z);
+  }, 40, 16, mats.paint));
+
   for (const side of [1, -1]) {
-    const samples = [];
-    for (let i = 0; i <= 8; i++) {
-      const t = i / 8;
-      samples.push([0.44 + 0.06 * t * t, side * (0.3 + 0.36 * t)]);
+    const onCabin = (x, y, off = 0) => new THREE.Vector3(x, y, side * (sideSurfaceZ(CABIN, x, y) + off));
+
+    // Arête de toit qui descend en montants A (avant) et C (arrière).
+    const rail = [];
+    for (let i = 0; i <= 40; i++) {
+      const x = lerp(-1.74, 1.04, i / 40);
+      rail.push(onCabin(x, Math.max(CABIN.top(x) - ROOF_INSET, 0.99)));
     }
-    car.add(endStrip(BODY, 1, samples, 0.018, mats.headlight));
+    car.add(tube(rail, 0.045, mats.paint));
+
+    // Ceinture de caisse couleur carrosserie sous les vitres.
+    const belt = [];
+    for (let i = 0; i <= 30; i++) {
+      const x = lerp(-1.86, 1.12, i / 30);
+      belt.push(onCabin(x, 0.94));
+    }
+    car.add(tube(belt, 0.075, mats.paint));
+
+    // Montant B.
+    const bx = -0.28;
+    car.add(tube([onCabin(bx, 1.02), onCabin(bx, 1.2), onCabin(bx, CABIN.top(bx) - ROOF_INSET)], 0.035, mats.paint));
+
+    // Entourage chromé des vitres latérales.
+    const winTop = (x) => CABIN.top(x) - 0.115;
+    const loop = [];
+    for (let i = 0; i <= 24; i++) {
+      const x = lerp(0.86, -1.56, i / 24);
+      loop.push(onCabin(x, Math.max(winTop(x), 1.035), 0.012));
+    }
+    for (let i = 1; i < 12; i++) loop.push(onCabin(lerp(-1.56, 0.86, i / 12), 1.035, 0.012));
+    car.add(tube(loop, 0.011, mats.chrome, true));
+
+    // Rétroviseur.
+    const mirror = new THREE.Group();
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), mats.paint);
+    shell.scale.set(0.1, 0.07, 0.13);
+    mirror.add(shell);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.12), mats.black);
+    arm.position.set(0.02, -0.05, -side * 0.09);
+    mirror.add(arm);
+    mirror.position.set(0.82, 1.06, side * (sideSurfaceZ(CABIN, 0.82, 1.0) + 0.15));
+    car.add(mirror);
+
+    // Poignées de porte.
+    for (const hx of [0.32, -0.78]) {
+      const handle = new THREE.Mesh(new THREE.CapsuleGeometry(0.016, 0.11, 4, 12), mats.chrome);
+      handle.rotation.z = Math.PI / 2;
+      handle.position.set(hx, 0.9, side * (sideSurfaceZ(BODY, hx, 0.9) + 0.008));
+      car.add(handle);
+    }
+
+    // Jonc chromé de bas de caisse.
+    const sill = [];
+    for (let i = 0; i <= 12; i++) {
+      const x = lerp(-0.9, 0.9, i / 12);
+      sill.push(new THREE.Vector3(x, 0.26, side * (sideSurfaceZ(BODY, x, 0.26) + 0.008)));
+    }
+    car.add(tube(sill, 0.018, mats.chrome));
   }
 
-  // Bandeau arrière traversant.
-  const tail = [];
-  for (let i = 0; i <= 16; i++) {
-    const z = -0.7 + (1.4 * i) / 16;
-    tail.push([0.7 - 0.03 * Math.pow(Math.abs(z) / 0.7, 2), z]);
-  }
-  car.add(endStrip(BODY, -1, tail, 0.02, mats.taillight));
+  // ── Face avant ──
+  const grilleAt = (u, v) => {
+    const y = lerp(0.41, 0.66, v);
+    const corner = Math.min((y - 0.41) / 0.06, (0.66 - y) / 0.06, 1);
+    const hw = (0.4 + (0.66 - y) * 0.24) * (0.88 + 0.12 * Math.sin((corner * Math.PI) / 2));
+    return front(y, (2 * u - 1) * hw);
+  };
+  car.add(surfacePanel(grilleAt, 32, 12, mats.grille));
+  car.add(tube(panelOutline((u, v) => {
+    const p = grilleAt(u, v);
+    p.x += 0.01;
+    return p;
+  }), 0.02, mats.chrome, true));
 
-  // Prise d'air avant et diffuseur arrière.
-  const intake = [];
-  for (let i = 0; i <= 12; i++) intake.push([0.3, -0.55 + (1.1 * i) / 12]);
-  car.add(endStrip(BODY, 1, intake, 0.05, mats.black));
-  const diffuser = [];
-  for (let i = 0; i <= 12; i++) diffuser.push([0.32, -0.6 + (1.2 * i) / 12]);
-  car.add(endStrip(BODY, -1, diffuser, 0.055, mats.black));
-
-  // Bas de caisse noirs entre les roues : affinent visuellement la silhouette.
   for (const side of [1, -1]) {
-    const pts = [];
-    for (let i = 0; i <= 10; i++) {
-      const x = -0.84 + (1.68 * i) / 10;
-      pts.push(new THREE.Vector3(x, 0.27, side * (sideSurfaceZ(BODY, x, 0.27) + 0.01)));
+    // Optique : boîtier sombre effilé + ligne LED supérieure + deux projecteurs.
+    const lampAt = (u, v, off = 0.01) => {
+      const yc = 0.66 + 0.07 * u;
+      const hh = 0.06 * (1 - 0.4 * u);
+      return front(yc + (2 * v - 1) * hh, side * lerp(0.48, 0.76, u), off);
+    };
+    car.add(surfacePanel(lampAt, 20, 4, mats.black));
+    const ledLine = [];
+    for (let i = 0; i <= 14; i++) ledLine.push(lampAt(i / 14, 0.85, 0.02));
+    car.add(tube(ledLine, 0.01, mats.led));
+    for (const u of [0.22, 0.45]) {
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.022, 16, 12), mats.led);
+      bulb.position.copy(lampAt(u, 0.35, 0.02));
+      car.add(bulb);
     }
-    const sill = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.05, 10, false), mats.black);
-    sill.scale.y = 0.7;
-    sill.position.y = 0.08;
-    car.add(sill);
+
+    // Prises d'air latérales cerclées de chrome.
+    const intakeAt = (u, v) => {
+      const y = lerp(0.21, 0.35, v);
+      const hw = 0.11 + (0.35 - y) * 0.15;
+      return front(y, side * (0.6 + (2 * u - 1) * hw));
+    };
+    car.add(surfacePanel(intakeAt, 12, 6, mats.black));
+    car.add(tube(panelOutline((u, v) => {
+      const p = intakeAt(u, v);
+      p.x += 0.008;
+      return p;
+    }, 8), 0.013, mats.chrome, true));
   }
 
+  // Prise d'air centrale basse et lame chromée.
+  car.add(surfacePanel((u, v) => front(lerp(0.22, 0.33, v), (2 * u - 1) * 0.36), 12, 4, mats.black));
+  const blade = [];
+  for (let i = 0; i <= 16; i++) blade.push(front(0.19, lerp(-0.74, 0.74, i / 16), 0.012));
+  car.add(tube(blade, 0.012, mats.chrome));
+
+  // ── Face arrière ──
+  for (const side of [1, -1]) {
+    const tailAt = (u, v, off = 0.008) => {
+      const yc = 0.86 - 0.025 * u;
+      const hh = 0.04 * (1 - 0.35 * u);
+      return rear(yc + (2 * v - 1) * hh, side * lerp(0.36, 0.78, u), off);
+    };
+    car.add(surfacePanel(tailAt, 20, 4, mats.tail));
+    const line = [];
+    for (let i = 0; i <= 14; i++) line.push(tailAt(i / 14, 0.9, 0.016));
+    car.add(tube(line, 0.008, mats.tailLed));
+
+    // Embouts d'échappement chromés intégrés au diffuseur.
+    const exhaustAt = (u, v) => rear(lerp(0.25, 0.31, v), side * lerp(0.46, 0.66, u), 0.012);
+    car.add(tube(panelOutline(exhaustAt, 6), 0.011, mats.chrome, true));
+  }
+  const trim = [];
+  for (let i = 0; i <= 10; i++) trim.push(rear(0.86, lerp(-0.36, 0.36, i / 10), 0.012));
+  car.add(tube(trim, 0.012, mats.chrome));
+  car.add(surfacePanel((u, v) => rear(lerp(0.2, 0.34, v), (2 * u - 1) * 0.78), 16, 4, mats.black));
+
+  // ── Roues ──
   const spinners = [];
   for (const x of [-AXLE_X, AXLE_X]) {
     for (const side of [1, -1]) {
@@ -280,8 +474,11 @@ function buildCar(paint) {
     }
   }
 
+  car.scale.setScalar(CAR_SCALE);
   return { car, spinners };
 }
+
+// ── Showroom ──
 
 function buildStage() {
   const stage = new THREE.Group();
@@ -299,7 +496,7 @@ function buildStage() {
   stage.add(floor);
 
   const shadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(5.4, 2.6),
+    new THREE.PlaneGeometry(5.9, 2.7),
     new THREE.MeshBasicMaterial({
       map: radialTexture([[0, 'rgba(0,0,0,0.95)'], [0.5, 'rgba(0,0,0,0.75)'], [1, 'rgba(0,0,0,0)']]),
       transparent: true, depthWrite: false,
@@ -339,7 +536,7 @@ export function mountHero3D(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.1;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.className = 'hero-3d-canvas';
   container.prepend(renderer.domElement);
@@ -349,25 +546,29 @@ export function mountHero3D(container) {
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   pmrem.dispose();
 
-  const key = new THREE.DirectionalLight(0xffffff, 1.4);
+  const key = new THREE.DirectionalLight(0xffffff, 1.6);
   key.position.set(4, 7, 3);
   scene.add(key);
   const rim = new THREE.DirectionalLight(0xf0c96a, 2.2);
   rim.position.set(-5, 3, -4);
   scene.add(rim);
 
-  const paint = new THREE.MeshPhysicalMaterial({
-    color: PAINTS[0].color, metalness: 0.6, roughness: 0.26, clearcoat: 1, clearcoatRoughness: 0.03,
-  });
-  const targetColor = new THREE.Color(PAINTS[0].color);
+  const firstSwatch = container.querySelector('[data-paint]');
+  const startColor = firstSwatch ? firstSwatch.dataset.paint : '#3c3d42';
+  const startFinish = FINISHES[firstSwatch?.dataset.finish] || FINISHES.matte;
+  // DoubleSide : la peinture sert aussi aux panneaux plaqués (toit), dont l'orientation varie.
+  const paint = new THREE.MeshPhysicalMaterial({ color: startColor, side: THREE.DoubleSide, ...startFinish });
+  const targetColor = new THREE.Color(startColor);
+  const targetFinish = { ...startFinish };
 
-  const { car, spinners } = buildCar(paint);
+  const { car, spinners } = buildCar(paint, scene.environment);
   const { stage, ring } = buildStage();
   scene.add(stage, car);
 
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  const target = new THREE.Vector3(0, 0.5, 0);
-  const finalDir = new THREE.Vector3(0.45, 0.24, 1).normalize(); // trois-quarts avant
+  const target = new THREE.Vector3(0, 0.55, 0);
+  // Départ légèrement en arrière du profil : l'auto-rotation passe ensuite par le profil puis le trois-quarts avant.
+  const finalDir = new THREE.Vector3(-0.25, 0.2, 1).normalize();
   let camDistance = 9;
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -387,10 +588,11 @@ export function mountHero3D(container) {
   const hint = container.querySelector('.hero-3d-hint');
   controls.addEventListener('start', () => hint && hint.classList.add('hidden'));
 
-  // Sélecteur de couleur
+  // Sélecteur de couleur / finition
   container.querySelectorAll('[data-paint]').forEach((btn) => {
     btn.addEventListener('click', () => {
       targetColor.set(btn.dataset.paint);
+      Object.assign(targetFinish, FINISHES[btn.dataset.finish] || FINISHES.gloss);
       container.querySelectorAll('[data-paint]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
     });
   });
@@ -402,7 +604,7 @@ export function mountHero3D(container) {
     camera.aspect = w / h;
     // Recule la caméra sur les formats étroits pour garder la voiture entière.
     const aspect = w / h;
-    camDistance = aspect < 1.25 ? 10.5 : aspect < 1.6 ? 8.6 : aspect < 2.2 ? 7.6 : 6.6;
+    camDistance = aspect < 1.25 ? 11 : aspect < 1.6 ? 9.2 : aspect < 2.2 ? 8.1 : 7.1;
     camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(container);
@@ -431,9 +633,7 @@ export function mountHero3D(container) {
       camera.position.copy(target).addScaledVector(dir, camDistance * (1.6 - 0.6 * ease));
       camera.lookAt(target);
     } else {
-      if (!controls.enabled) {
-        controls.enabled = true;
-      }
+      if (!controls.enabled) controls.enabled = true;
       // Garde la distance voulue (changement de format pendant la rotation).
       const offset = camera.position.clone().sub(target);
       offset.setLength(THREE.MathUtils.damp(offset.length(), camDistance, 6, dt));
@@ -441,7 +641,10 @@ export function mountHero3D(container) {
       controls.update(dt);
     }
 
-    paint.color.lerp(targetColor, 1 - Math.exp(-dt * 5));
+    const k = 1 - Math.exp(-dt * 5);
+    paint.color.lerp(targetColor, k);
+    for (const prop of Object.keys(targetFinish)) paint[prop] = lerp(paint[prop], targetFinish[prop], k);
+
     if (!reducedMotion) {
       for (const s of spinners) s.rotation.z -= dt * 2.2;
       ring.material.opacity = 0.65 + 0.2 * Math.sin(now / 900);
