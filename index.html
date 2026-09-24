@@ -12,6 +12,28 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script>
+    // Aperçu de thème : ?theme=presse l'active et le mémorise, ?theme=off
+    // revient au thème par défaut. Posé avant la feuille de style pour
+    // qu'aucun thème ne clignote au chargement.
+    (function () {
+      var THEMES = ['presse'];
+      try {
+        var p = new URLSearchParams(location.search).get('theme');
+        if (p === 'off' || p === 'default') localStorage.removeItem('autospec_theme');
+        else if (THEMES.indexOf(p) > -1) localStorage.setItem('autospec_theme', p);
+        var t = localStorage.getItem('autospec_theme');
+        if (THEMES.indexOf(t) > -1) {
+          document.documentElement.setAttribute('data-theme', t);
+          // Les polices du thème ne sont téléchargées que s'il est actif.
+          var l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = 'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Archivo:wght@400;500;600;700&display=swap';
+          document.head.appendChild(l);
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="src/style.css">
   <script type="importmap">
     { "imports": {
@@ -1129,6 +1151,11 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="theme-flag">
+    Aperçu du thème « Presse »
+    <a href="?theme=off">Revenir au thème actuel</a>
   </div>
 
   <!-- ══════════ BARRE DU BAS (MOBILE) ══════════ -->
