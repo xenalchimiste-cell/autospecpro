@@ -54,110 +54,35 @@
       AutoSpec <small>Pro</small>
     </div>
 
-    <!-- Hamburger Icon -->
-    <div class="hamburger" id="hamburger" onclick="toggleDrawer()">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-
-    <div class="nav-tabs">
-      <button class="nav-tab active" onclick="showPage('fiche',this)">
+    <div class="nav-tabs" role="tablist" aria-label="Sections principales">
+      <button class="nav-tab active" data-group="fiche" onclick="showPage('fiche',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Fiche
+        Rechercher
       </button>
-      <button class="nav-tab" data-at="passionne" onclick="showPage('compare',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
-        Comparer
+      <button class="nav-tab" data-group="outils" onclick="showPage('outils',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2.4"/><line x1="4" y1="13" x2="20" y2="13"/><circle cx="15" cy="13" r="2.4"/><line x1="4" y1="19" x2="20" y2="19"/><circle cx="11" cy="19" r="2.4"/></svg>
+        Outils
       </button>
-      <button class="nav-tab" data-at="passionne" onclick="showPage('sim',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Simulateur
-      </button>
-      <button class="nav-tab" data-at="pro" onclick="showPage('entretien',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-        Entretien
-      </button>
-      <button class="nav-tab" onclick="showPage('community',this)">
+      <button class="nav-tab" data-group="communaute" onclick="showPage('communaute',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Communauté
         <span class="nav-dot" id="comm-dot"></span>
       </button>
-      <button class="nav-tab" onclick="showPage('plans',this)" style="color:var(--accent);">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        Plans
-      </button>
-      <button id="nav-tab-messages" class="nav-tab" onclick="goToMessages()" style="position:relative;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Messages
-        <span class="nav-dot" id="msg-dot" style="display:none;"></span>
-        <span class="nav-badge" id="msg-badge-nav" style="top:4px; right:4px;"></span>
-      </button>
-      <button id="nav-tab-account" class="nav-tab" onclick="showPage('account',this)" style="display:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Compte
-      </button>
-      <button id="nav-tab-admin" class="nav-tab" onclick="showPage('admin',this)" style="display:none; color: #ff4757; font-weight: 700;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Admin
-      </button>
     </div>
-    <div id="user-nav-area" style="margin-left:auto; display:flex; align-items:center; gap:10px; padding-right:15px;">
-      <button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>
+    <div id="user-nav-area" class="nav-right">
+      <button class="btn btn-outline btn-connect" onclick="openAuthModal()">Connexion</button>
     </div>
   </nav>
 
-  <!-- ══════════ MOBILE DRAWER ══════════ -->
-  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-  <div class="drawer" id="drawer">
-    <div class="drawer-header">
-      <div class="nav-logo">AutoSpec <small>Pro</small></div>
-      <div class="close-drawer" onclick="closeDrawer()">&times;</div>
-    </div>
-    <div class="drawer-content">
-      <div class="drawer-item active" id="dtab-fiche" onclick="showPage('fiche', null, true)">
-        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-        <span>Fiche Technique</span>
-      </div>
-      <div class="drawer-item" id="dtab-compare" onclick="showPage('compare', null, true)">
-        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg></div>
-        <span>Comparateur</span>
-      </div>
-      <div class="drawer-item" id="dtab-sim" onclick="showPage('sim', null, true)">
-        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-        <span>Simulateur</span>
-      </div>
-      <div class="drawer-item" id="dtab-community" onclick="showPage('community', null, true)">
-        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-        <span>Communauté</span>
-      </div>
-      <div class="drawer-item" id="dtab-messages" onclick="showPage('messages', null, true)" style="position:relative;">
-        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-        <span>Messages</span>
-        <span class="nav-dot" id="msg-dot-drawer" style="display:none;"></span>
-      </div>
-      <div class="drawer-item" id="dtab-account" onclick="showPage('account', null, true)">
-        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-        <span>Mon Compte</span>
-      </div>
-      <div class="drawer-item" id="dtab-plans" onclick="showPage('plans', null, true)">
-        <div class="d-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-        <span>Abonnements</span>
-      </div>
-      <div class="drawer-item" id="dtab-admin" onclick="showPage('admin', null, true)" style="display:none; color: #ff4757;">
-        <div class="d-icon" style="background: rgba(255, 71, 87, 0.1);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-        <span style="font-weight:700;">Admin</span>
-      </div>
-    </div>
-    <div class="drawer-footer">
-       <button class="btn btn-pro w-full" onclick="showPage('plans', null, true)">Passer à AutoSpec PRO</button>
-    </div>
-  </div>
-
   <!-- ══════════ ADMIN DASHBOARD ══════════ -->
   <div class="page" id="page-admin">
-    <div class="page-title">Panneau de Contrôle<br/><em>Administration</em></div>
-    <div class="page-sub">Gérez les utilisateurs, validez les comptes Pro et suivez l'activité plateforme.</div>
+    <div class="subnav" role="tablist" aria-label="Compte">
+      <button class="subnav-item" data-page="account" onclick="showPage('account')">Mon compte</button>
+      <button class="subnav-item" data-page="plans" onclick="showPage('plans')">Abonnement</button>
+      <button class="subnav-item subnav-admin" data-page="admin" onclick="showPage('admin')" hidden>Admin</button>
+    </div>
+
+    <div class="page-sub">Gérez les utilisateurs, validez les comptes Pro et suivez l'activité.</div>
 
     <div class="admin-stats-grid">
       <div class="admin-stat-card">
@@ -421,8 +346,13 @@
 
   <!-- ══════════ COMPARATEUR ══════════ -->
   <div class="page" id="page-compare">
-    <div class="page-title"><em>Comparer</em> deux voitures.</div>
-    <div class="page-sub">Choisissez les filtres pour chaque voiture, puis comparez.</div>
+    <div class="subnav" role="tablist" aria-label="Outils">
+      <button class="subnav-item" data-page="compare" data-tier="passionne" onclick="showPage('compare')">Comparateur<span class="subnav-tier">Passionné</span></button>
+      <button class="subnav-item" data-page="sim" data-tier="passionne" onclick="showPage('sim')">Simulateur<span class="subnav-tier">Passionné</span></button>
+      <button class="subnav-item" data-page="entretien" data-tier="pro" onclick="showPage('entretien')">Coût d'entretien<span class="subnav-tier">Pro</span></button>
+    </div>
+
+    <div class="page-sub">Deux voitures côte à côte : moteur, performances, consommation.</div>
     <div class="compare-inputs">
       <div class="compare-col">
         <label>Voiture A</label>
@@ -499,8 +429,13 @@
 
   <!-- ══════════ SIMULATEUR ══════════ -->
   <div class="page" id="page-sim">
-    <div class="page-title">Simulateur de<br/><em>performance.</em></div>
-    <div class="page-sub">Entrez les caractéristiques d'une voiture pour simuler son comportement.</div>
+    <div class="subnav" role="tablist" aria-label="Outils">
+      <button class="subnav-item" data-page="compare" data-tier="passionne" onclick="showPage('compare')">Comparateur<span class="subnav-tier">Passionné</span></button>
+      <button class="subnav-item" data-page="sim" data-tier="passionne" onclick="showPage('sim')">Simulateur<span class="subnav-tier">Passionné</span></button>
+      <button class="subnav-item" data-page="entretien" data-tier="pro" onclick="showPage('entretien')">Coût d'entretien<span class="subnav-tier">Pro</span></button>
+    </div>
+
+    <div class="page-sub">Réglez puissance, couple et masse pour estimer les performances.</div>
     <div class="sim-controls">
       <div class="ctrl-group">
         <div class="ctrl-label">Puissance</div>
@@ -553,8 +488,13 @@
 
   <!-- ══════════ ENTRETIEN ══════════ -->
   <div class="page" id="page-entretien">
-    <div class="page-title">Coût d'<em>entretien</em><br/>annuel estimé.</div>
-    <div class="page-sub">Configurez votre profil pour estimer vos dépenses annuelles.</div>
+    <div class="subnav" role="tablist" aria-label="Outils">
+      <button class="subnav-item" data-page="compare" data-tier="passionne" onclick="showPage('compare')">Comparateur<span class="subnav-tier">Passionné</span></button>
+      <button class="subnav-item" data-page="sim" data-tier="passionne" onclick="showPage('sim')">Simulateur<span class="subnav-tier">Passionné</span></button>
+      <button class="subnav-item" data-page="entretien" data-tier="pro" onclick="showPage('entretien')">Coût d'entretien<span class="subnav-tier">Pro</span></button>
+    </div>
+
+    <div class="page-sub">Estimez ce que votre voiture vous coûtera sur une année.</div>
     <div class="entretien-inputs">
       <div class="entretien-card">
         <div class="ent-label">Type de véhicule</div>
@@ -596,9 +536,13 @@
 
   <!-- ══════════ COMMUNAUTÉ ══════════ -->
   <div class="page fade" id="page-community">
+    <div class="subnav" role="tablist" aria-label="Communauté">
+      <button class="subnav-item" data-page="community" onclick="showPage('community')">Fil</button>
+      <button class="subnav-item" data-page="messages" onclick="showPage('messages')">Messages<span class="subnav-count" id="msg-count-sub"></span></button>
+    </div>
+
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1.5rem;">
       <div>
-        <div class="page-title">La <em>Communauté</em></div>
         <div class="page-sub" id="community-subtext">Découvrez et partagez les plus belles pépites.</div>
       </div>
       <div id="community-action-buttons">
@@ -700,10 +644,14 @@
 
   <!-- ══════════ PAGE MESSAGES ══════════ -->
   <div id="page-messages" class="page">
+    <div class="subnav" role="tablist" aria-label="Communauté">
+      <button class="subnav-item" data-page="community" onclick="showPage('community')">Fil</button>
+      <button class="subnav-item" data-page="messages" onclick="showPage('messages')">Messages<span class="subnav-count" id="msg-count-sub"></span></button>
+    </div>
+
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1.5rem;">
       <div>
-        <h1 class="page-title" style="margin-bottom:0;">Mes <em>Messages</em></h1>
-        <p class="page-sub" style="margin-top:5px; margin-bottom:0;">Discutez avec les autres passionnés du club.</p>
+        <p class="page-sub" style="margin-top:0; margin-bottom:0;">Vos conversations avec les autres membres.</p>
       </div>
       <button class="btn btn-outline" style="border-radius:50%; width:44px; height:44px; padding:0; display:flex; justify-content:center; align-items:center;" onclick="showPage('community')" title="Nouveau message (Annuaire)">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -758,8 +706,13 @@
 
   <!-- ══════════ PAGE MON COMPTE ══════════ -->
   <div id="page-account" class="page fade">
-    <h1 class="page-title">Mon <em>Compte</em></h1>
-    <p class="page-sub">Gérez votre abonnement et suivez vos parrainages.</p>
+    <div class="subnav" role="tablist" aria-label="Compte">
+      <button class="subnav-item" data-page="account" onclick="showPage('account')">Mon compte</button>
+      <button class="subnav-item" data-page="plans" onclick="showPage('plans')">Abonnement</button>
+      <button class="subnav-item subnav-admin" data-page="admin" onclick="showPage('admin')" hidden>Admin</button>
+    </div>
+
+    <p class="page-sub">Votre profil, votre abonnement et vos parrainages.</p>
 
     <div class="account-grid">
       <!-- Profil Personnel -->
@@ -930,6 +883,12 @@
 
   <!-- ══════════ PAGE PLANS ══════════ -->
   <div id="page-plans" class="page fade">
+    <div class="subnav" role="tablist" aria-label="Compte">
+      <button class="subnav-item" data-page="account" onclick="showPage('account')">Mon compte</button>
+      <button class="subnav-item" data-page="plans" onclick="showPage('plans')">Abonnement</button>
+      <button class="subnav-item subnav-admin" data-page="admin" onclick="showPage('admin')" hidden>Admin</button>
+    </div>
+
     <h1 class="page-title">Choisissez votre <em>expérience</em></h1>
     <p class="page-sub">Débloquez la puissance maximale d'AutoSpec Pro avec nos offres adaptées.</p>
 
@@ -1142,37 +1101,25 @@
     </div>
   </div>
 
-  <!-- ══════════ BOTTOM NAV MOBILE ══════════ -->
-  <nav class="bottom-nav" id="bottom-nav">
-    <button class="bnav-item active" id="bnav-fiche" onclick="showPage('fiche',this,true,'bnav')">
+  <!-- ══════════ BARRE DU BAS (MOBILE) ══════════ -->
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Sections principales">
+    <button class="bnav-item active" data-group="fiche" onclick="showPage('fiche',this,false,'bnav')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <span>Fiche</span>
+      <span>Rechercher</span>
     </button>
-    <button class="bnav-item" id="bnav-compare" onclick="showPage('compare',this,true,'bnav')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
-      <span>Comparer</span>
+    <button class="bnav-item" data-group="outils" onclick="showPage('outils',this,false,'bnav')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2.4"/><line x1="4" y1="13" x2="20" y2="13"/><circle cx="15" cy="13" r="2.4"/><line x1="4" y1="19" x2="20" y2="19"/><circle cx="11" cy="19" r="2.4"/></svg>
+      <span>Outils</span>
     </button>
-    <button class="bnav-item" id="bnav-sim" onclick="showPage('sim',this,true,'bnav')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span>Simuler</span>
-    </button>
-    <button class="bnav-item" id="bnav-community" onclick="showPage('community',this,true,'bnav')">
+    <button class="bnav-item" data-group="communaute" onclick="showPage('communaute',this,false,'bnav')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <span>Communauté</span>
       <span class="nav-badge" id="comm-badge"></span>
     </button>
-    <button class="bnav-item" id="bnav-plans" onclick="showPage('plans',this,true,'bnav')" style="color:var(--accent);">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <span>Plans</span>
-    </button>
-    <button class="bnav-item" id="bnav-messages" onclick="goToMessages()" style="position:relative;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <span>Messages</span>
+    <button class="bnav-item" data-group="compte" onclick="showPage('compte',this,false,'bnav')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Compte</span>
       <span class="nav-badge" id="msg-badge-bnav"></span>
-    </button>
-    <button class="bnav-item" id="bnav-admin" onclick="showPage('admin',this,true,'bnav')" style="display:none; color:#ff4757;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <span>Admin</span>
     </button>
   </nav>
 

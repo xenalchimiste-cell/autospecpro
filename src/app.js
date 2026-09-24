@@ -412,85 +412,57 @@ function handleLogout() {
 
 function updateNav() {
   const area = document.getElementById('user-nav-area');
-  const drawerAuthArea = document.getElementById('drawer-auth-area');
-  const adminNav = document.getElementById('nav-tab-admin');
-  const adminDrawer = document.getElementById('dtab-admin');
-  const adminBnav = document.getElementById('bnav-admin');
-  const accountNav = document.getElementById('nav-tab-account');
+  if (!area) return;
 
-  if (currentUser) {
-    const fn = currentUser.first_name || 'U';
-    const ln = currentUser.last_name || '';
-    const initials = (fn[0] + (ln[0] || '')).toUpperCase();
-    
-    const notifGranted = 'Notification' in window && Notification.permission === 'granted';
-    const notifSupported = 'Notification' in window && 'serviceWorker' in navigator;
+  if (!currentUser) {
+    area.innerHTML = `<button class="btn btn-outline btn-connect" onclick="openAuthModal()">Connexion</button>`;
+    document.querySelectorAll('.subnav-admin').forEach(el => el.hidden = true);
+    return;
+  }
 
-    console.log("Push support check:", { supported: notifSupported, granted: notifGranted });
+  const fn = currentUser.first_name || 'Vous';
+  const tierLabels = { free: 'Gratuit', passionne: 'Passionné', pro: 'Pro' };
+  const userEmail = (currentUser.email || '').toLowerCase().trim();
+  const isAdmin = currentUser.user_type === 'admin' || userEmail === 'andreasgiacomello23@gmail.com';
 
-    let pushBtn = '';
-    if (notifSupported) {
-      if (notifGranted) {
-        // Already granted - show status
-        pushBtn = `<button class="btn btn-outline" title="Notifications activées" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: #4ecb82; color: #4ecb82; cursor:default; background: rgba(78,203,130,0.05);">🔔 Activé ✓</button>`;
-      } else {
-        pushBtn = `<button class="btn btn-outline" onclick="requestNotificationPermission()" title="Activer les notifications" style="height:32px; font-size:11px; padding:0 10px; margin-right: 10px; border-color: var(--accent); color: var(--accent); font-weight:700; animation: pulse 2s infinite;">🔔 Activer Push</button>`;
-      }
-    } else {
-      // Small debug hint for dev
-      console.warn("Push notifications are not supported in this browser environment.");
-    }
+  const notifSupported = 'Notification' in window && 'serviceWorker' in navigator;
+  const notifGranted = notifSupported && Notification.permission === 'granted';
+  const notifRow = !notifSupported ? ''
+    : notifGranted
+      ? `<div class="acct-row acct-row-static">Notifications activées</div>`
+      : `<button class="acct-row" onclick="requestNotificationPermission()">Activer les notifications</button>`;
 
-    area.innerHTML = `
-      <div style="display:flex; align-items:center;">
-        ${pushBtn}
-        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-          <div class="user-profile-nav" onclick="handleLogout()">
-            ${getUserAvatarHtml(currentUser)}
-            <span style="font-size:12px; font-weight:600;">${fn}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          </div>
-          <div style="font-size:9px; color:var(--text3); cursor:default;">Parrain : <span style="color:var(--accent); font-weight:700;">${currentUser.referral_code || '---'}</span></div>
+  // Un seul point d'entrée vers tout ce qui n'est pas une destination :
+  // compte, abonnement, messages, notifications, admin, déconnexion.
+  area.innerHTML = `
+    ${currentTier !== 'pro' ? `<button class="btn-upgrade" onclick="showPage('plans')">Passer Pro</button>` : ''}
+    <div class="acct-wrap">
+      <button class="acct-trigger" id="acct-trigger" data-group="compte" aria-haspopup="menu" aria-expanded="false" onclick="toggleAcctMenu(event)">
+        ${getUserAvatarHtml(currentUser)}
+        <span class="acct-name">${esc(fn)}</span>
+        <svg class="acct-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+        <span class="nav-dot" id="msg-dot" style="display:none;"></span>
+      </button>
+      <div class="acct-menu" id="acct-menu" role="menu">
+        <div class="acct-head">
+          <span class="acct-head-name">${esc(fn)}</span>
+          <span class="acct-tier acct-tier-${currentTier}">${tierLabels[currentTier] || 'Gratuit'}</span>
         </div>
+        <button class="acct-row" onclick="showPage('account')">Mon compte</button>
+        <button class="acct-row" onclick="showPage('plans')">Abonnement</button>
+        <button class="acct-row" onclick="showPage('messages')">Messages<span class="nav-badge acct-badge" id="msg-badge-nav"></span></button>
+        ${notifRow}
+        ${isAdmin ? `<button class="acct-row acct-row-admin" onclick="showPage('admin')">Admin</button>` : ''}
+        <div class="acct-sep"></div>
+        <div class="acct-row acct-row-static">Code parrain <strong>${esc(currentUser.referral_code || '—')}</strong></div>
+        <button class="acct-row acct-row-out" onclick="handleLogout()">Se déconnecter</button>
       </div>
-    `;
-    // Auto re-subscribe if permission already granted (ensures DB is up to date)
-    if (notifGranted) {
-      navigator.serviceWorker.ready.then(reg => subscribeUserToPush(reg)).catch(() => {});
-    }
+    </div>`;
 
-    if (drawerAuthArea) {
-      drawerAuthArea.innerHTML = `<button class="btn btn-outline drawer-auth-btn" onclick="handleLogout(); closeDrawer();">Déconnexion</button>`;
-    }
-    
-    // Show/Hide Admin Tab
-    const userEmail = (currentUser.email || "").toLowerCase().trim();
-    const isAdmin = currentUser.user_type === 'admin' || userEmail === 'andreasgiacomello23@gmail.com';
-    
-    if (accountNav) accountNav.style.display = 'flex';
-    
-    if (isAdmin) {
-      if (adminNav) adminNav.style.display = 'flex';
-      if (adminDrawer) adminDrawer.style.display = 'flex';
-      if (adminBnav) adminBnav.style.display = 'flex';
-      // Sécurité : au cas où l'élément est manquant ou ne s'affiche pas
-      console.log("Admin access detected for:", userEmail);
-    } else {
-      if (adminNav) adminNav.style.display = 'none';
-      if (adminDrawer) adminDrawer.style.display = 'none';
-      if (adminBnav) adminBnav.style.display = 'none';
-    }
-  } else {
-    if (adminNav) adminNav.style.display = 'none';
-    if (adminDrawer) adminDrawer.style.display = 'none';
-    if (adminBnav) adminBnav.style.display = 'none';
-    if (accountNav) accountNav.style.display = 'none';
-    area.innerHTML = `<button class="btn btn-outline" style="height:34px;font-size:12px;padding:0 15px;" onclick="openAuthModal()">Connexion</button>`;
-    if (drawerAuthArea) {
-      drawerAuthArea.innerHTML = `<button class="btn btn-outline drawer-auth-btn" onclick="openAuthModal(); closeDrawer();">Connexion</button>`;
-    }
-    if (adminNav) adminNav.style.display = 'none';
-    if (adminDrawer) adminDrawer.style.display = 'none';
+  document.querySelectorAll('.subnav-admin').forEach(el => el.hidden = !isAdmin);
+
+  if (notifGranted) {
+    navigator.serviceWorker.ready.then(reg => subscribeUserToPush(reg)).catch(() => {});
   }
 }
 
@@ -673,16 +645,37 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// ── NAVIGATION ──
+// Une seule table décrit toute l'arborescence : trois destinations principales
+// (chercher une voiture, calculer, échanger) et un espace compte. Tout le reste
+// vit un niveau en dessous, dans le sélecteur de section de sa destination.
+const PAGES = {
+  fiche:        { group: 'fiche',      label: 'Fiche technique' },
+  compare:      { group: 'outils',     label: 'Comparateur',       tier: 'passionne' },
+  sim:          { group: 'outils',     label: 'Simulateur',        tier: 'passionne' },
+  entretien:    { group: 'outils',     label: "Coût d'entretien",  tier: 'pro' },
+  community:    { group: 'communaute', label: 'Fil' },
+  messages:     { group: 'communaute', label: 'Messages' },
+  'user-profile': { group: 'communaute', label: 'Profil' },
+  account:      { group: 'compte',     label: 'Mon compte' },
+  plans:        { group: 'compte',     label: 'Abonnement' },
+  admin:        { group: 'compte',     label: 'Admin' },
+};
+// Destination de repli quand on clique sur un groupe depuis la navigation.
+const GROUP_HOME = { fiche: 'fiche', outils: 'compare', communaute: 'community', compte: 'account' };
+
 function showPage(id, btn, fromDrawer=false, source='nav'){
-  // Check access if needed
-  if (id !== 'plans') {
-    const targetTab = btn || document.querySelector(`.nav-tab[onclick*="'${id}'"]`);
-    if (targetTab) {
-      const required = targetTab.getAttribute('data-at');
-      if (required && !checkAccess(required)) {
-        id = 'plans'; // Redirect to plans if locked
-      }
-    }
+  // Un clic sur une destination principale ouvre sa première section.
+  if (GROUP_HOME[id] && !PAGES[id]) id = GROUP_HOME[id];
+
+  // Sans compte, « Mon compte » n'a rien à montrer : on demande la connexion.
+  if (id === 'account' && !currentUser) { openAuthModal(); return; }
+
+  // Contrôle d'accès : la table fait foi, plus les attributs du bouton cliqué.
+  const needed = PAGES[id]?.tier;
+  if (needed && !checkAccess(needed)) {
+    showToast(`« ${PAGES[id].label} » fait partie de l'offre ${needed === 'pro' ? 'Pro' : 'Passionné'}.`, 'info');
+    id = 'plans';
   }
 
   document.querySelectorAll('.page.active').forEach(p=>p.classList.remove('active'));
@@ -697,72 +690,56 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
     if (id === 'account') updateAccountPage();
     if (id === 'messages') {
       fetchConversations();
-      if (document.getElementById('msg-dot')) document.getElementById('msg-dot').style.display = 'none';
-      if (document.getElementById('msg-dot-drawer')) document.getElementById('msg-dot-drawer').style.display = 'none';
+      document.querySelectorAll('#msg-dot').forEach(el => el.style.display = 'none');
     }
     if (id === 'community') {
       fetchCommunityPosts();
       localStorage.setItem('last_comm_visit', Date.now().toString());
-      if (document.getElementById('comm-badge')) document.getElementById('comm-badge').style.display = 'none';
-      if (document.getElementById('comm-dot')) document.getElementById('comm-dot').style.display = 'none';
-      
+      document.querySelectorAll('#comm-badge, #comm-dot').forEach(el => el.style.display = 'none');
+
       if (Notification.permission === 'default') {
         setTimeout(requestNotificationPermission, 2000);
       }
     }
   }
 
-  // Reset all tabs
-  document.querySelectorAll('.nav-tab.active, .drawer-tab.active, .drawer-item.active, .bnav-item.active').forEach(t=>t.classList.remove('active'));
-
-  // Sync Nav Desktop
-  document.querySelectorAll('.nav-tab').forEach(t=>{
-    if(t.getAttribute('onclick') && t.getAttribute('onclick').includes("'"+id+"'")) t.classList.add('active');
+  // Synchronisation des trois niveaux : destination principale (haut + barre du
+  // bas), section active dans le sélecteur, et entrées de l'espace compte.
+  const group = PAGES[id]?.group || id;
+  document.querySelectorAll('.nav-tab, .bnav-item, .subnav-item, .acct-trigger').forEach(t => {
+    t.classList.remove('active');
+    t.removeAttribute('aria-current');
   });
+  document.querySelectorAll(`.nav-tab[data-group="${group}"], .bnav-item[data-group="${group}"], .acct-trigger[data-group="${group}"]`)
+    .forEach(t => { t.classList.add('active'); t.setAttribute('aria-current', 'page'); });
+  document.querySelectorAll(`.subnav-item[data-page="${id}"]`)
+    .forEach(t => { t.classList.add('active'); t.setAttribute('aria-current', 'page'); });
 
-  // Sync Drawer
-  const drawerTab = document.getElementById('dtab-'+id);
-  if(drawerTab) drawerTab.classList.add('active');
-
-  // Sync Bottom Nav
-  const bnavTab = document.getElementById('bnav-'+id);
-  if(bnavTab) bnavTab.classList.add('active');
-
+  closeAcctMenu();
   if(fromDrawer) closeDrawer();
   if (id === 'admin') loadAdminData();
 }
 
-function toggleDrawer(){
-  const drawer = document.getElementById('drawer');
-  const overlay = document.getElementById('drawerOverlay');
-  const hamburger = document.getElementById('hamburger');
-  const isOpen = drawer.classList.contains('open');
-  if(isOpen){ closeDrawer(); } else { openDrawer(); }
+// ── MENU COMPTE ──
+// L'avatar déclenchait handleLogout() : un clic de curiosité déconnectait.
+function toggleAcctMenu(e) {
+  e?.stopPropagation();
+  const menu = document.getElementById('acct-menu');
+  if (!menu) return;
+  const open = menu.classList.toggle('open');
+  document.getElementById('acct-trigger')?.setAttribute('aria-expanded', String(open));
 }
+function closeAcctMenu() {
+  document.getElementById('acct-menu')?.classList.remove('open');
+  document.getElementById('acct-trigger')?.setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest?.('.acct-wrap')) closeAcctMenu();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAcctMenu(); });
 
-function openDrawer(){
-  const drawer = document.getElementById('drawer');
-  const overlay = document.getElementById('drawerOverlay');
-  const hamburger = document.getElementById('hamburger');
-  overlay.style.display = 'block';
-  requestAnimationFrame(()=>{
-    overlay.classList.add('open');
-    drawer.classList.add('open');
-    hamburger.classList.add('open');
-  });
-  document.body.style.overflow = 'hidden';
-}
-
-function closeDrawer(){
-  const drawer = document.getElementById('drawer');
-  const overlay = document.getElementById('drawerOverlay');
-  const hamburger = document.getElementById('hamburger');
-  drawer.classList.remove('open');
-  overlay.classList.remove('open');
-  hamburger.classList.remove('open');
-  document.body.style.overflow = '';
-  setTimeout(()=>{ overlay.style.display='none'; }, 300);
-}
+function toggleDrawer(){ /* le tiroir a été remplacé par le menu compte */ }
+function closeDrawer(){ /* idem : conservé pour les appels existants */ }
 
 // ── TIERS LOGIC ──
 function isCurrentUserAdmin() {
@@ -905,14 +882,9 @@ function updateUIForTier() {
     }
   });
 
-  // Nav tab locks
-  document.querySelectorAll('.nav-tab, .drawer-tab').forEach(t => {
-    const req = t.getAttribute('data-at');
-    if (req && !checkAccess(req)) {
-      t.classList.add('locked');
-    } else {
-      t.classList.remove('locked');
-    }
+  // Sections verrouillées : le badge de palier n'apparaît que si l'accès manque.
+  document.querySelectorAll('.subnav-item[data-tier]').forEach(t => {
+    t.classList.toggle('locked', !checkAccess(t.getAttribute('data-tier')));
   });
 
   // Lock specific UI elements
@@ -3898,9 +3870,7 @@ window.fetchConversations = async function() {
       `;
     }).join('');
 
-    // Toggle dots
-    document.getElementById('msg-dot').style.display = unreadCount > 0 ? 'block' : 'none';
-    document.getElementById('msg-dot-drawer').style.display = unreadCount > 0 ? 'block' : 'none';
+    updateMsgBadges(unreadCount);
 
   } catch (err) { console.error("Msg Error:", err); }
 };
@@ -4198,10 +4168,14 @@ window.goToMessages = function() {
   showPage('messages');
 };
 
-// Update all message badges (nav, bnav, drawer) with unread count
+// Répercute le nombre de messages non lus partout où il est signalé :
+// pastille du menu compte, onglet Compte de la barre du bas, sélecteur Communauté.
 function updateMsgBadges(count) {
+  const sub = document.getElementById('msg-count-sub');
+  if (sub) { sub.textContent = count > 0 ? (count > 9 ? '9+' : count) : ''; sub.hidden = !(count > 0); }
+
   const badges = ['msg-badge-nav', 'msg-badge-bnav'];
-  const dots   = ['msg-dot', 'msg-dot-drawer'];
+  const dots   = ['msg-dot'];
 
   badges.forEach(id => {
     const el = document.getElementById(id);
