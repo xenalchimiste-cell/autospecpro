@@ -3461,3 +3461,59 @@ body.show-fab .fab-post { display: flex; }
 :root[data-theme="presse"] .theme-flag { display: flex; }
 .theme-flag a { color: var(--accent); font-weight: 600; white-space: nowrap; }
 @media (min-width: 769px) { .theme-flag { bottom: 20px; right: 20px; } }
+
+/* ═══════════════════════════════════════════
+   ANNONCE D'OUVERTURE DE FICHE
+   La marque se déduit de la requête : on l'annonce pendant que le modèle
+   travaille. Le nom s'installe en resserrant son interlettrage, un filet
+   se trace, puis la désignation arrive. Un seul mouvement, une fois.
+   Pas de logo constructeur : marques déposées.
+═══════════════════════════════════════════ */
+.reveal {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 2.25rem 1rem 1.75rem;
+  text-align: center;
+}
+.reveal-brand {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.05;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.34em;
+  /* L'interlettrage se resserre : le nom « se pose » au lieu d'apparaître. */
+  animation: revealBrand .72s cubic-bezier(.22,.9,.28,1) both;
+  /* Compense le dernier espacement, sinon le mot paraît décalé à gauche. */
+  text-indent: 0.34em;
+}
+.reveal-rule {
+  width: 0; height: 2px; margin: 1rem 0 0;
+  background: var(--accent);
+  animation: revealRule .5s .34s cubic-bezier(.22,.9,.28,1) both;
+}
+.reveal-model {
+  margin-top: .9rem;
+  font-size: clamp(13px, 1.7vw, 15px);
+  font-weight: 600;
+  color: var(--text2);
+  /* La désignation se lit comme une plaque de custode : capitales espacées. */
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  text-indent: .14em;
+  animation: revealModel .5s .52s cubic-bezier(.22,.9,.28,1) both;
+}
+@keyframes revealBrand {
+  from { opacity: 0; letter-spacing: .62em; }
+  to   { opacity: 1; letter-spacing: .34em; }
+}
+@keyframes revealRule  { from { width: 0; } to { width: 82px; } }
+@keyframes revealModel { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+
+.skeleton-card .skeleton-status { justify-content: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-brand, .reveal-rule, .reveal-model { animation: none; }
+  .reveal-brand { letter-spacing: .34em; opacity: 1; }
+  .reveal-rule { width: 82px; }
+  .reveal-model { opacity: 1; transform: none; }
+}

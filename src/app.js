@@ -1439,14 +1439,67 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function ficheSkeleton(label) {
-  return `<div class="card skeleton-card" aria-busy="true">
-    <div class="skeleton-status"><div class="spin"></div><span id="load-status">${label}</span></div>
-    <div class="sk sk-title"></div>
-    <div class="sk sk-sub"></div>
+// ── ANNONCE D'OUVERTURE ──
+// L'attente durait plusieurs secondes devant un squelette gris. Comme la
+// marque se déduit de la requête avant même d'interroger le modèle, on
+// l'annonce tout de suite : le temps mort devient une présentation.
+// Pas de logo constructeur — ce sont des marques déposées ; c'est le nom
+// qui porte l'identité, en capitales largement espacées.
+function ficheSkeleton(label, query) {
+  const { brand, model } = brandAndModel(query || '');
+  const titre = brand || 'AutoSpec';
+  const sous = model || (brand ? '' : 'Identification en cours');
+
+  return `<div class="card skeleton-card" aria-busy="true" aria-live="polite">
+    <div class="reveal">
+      <div class="reveal-brand">${esc(titre)}</div>
+      <div class="reveal-rule"></div>
+      ${sous ? `<div class="reveal-model">${esc(sous)}</div>` : ''}
+    </div>
+    <div class="skeleton-status"><div class="spin"></div><span id="load-status">${esc(label)}</span></div>
     <div class="sk-grid">${'<div class="sk sk-box"></div>'.repeat(6)}</div>
     <div class="sk sk-line"></div><div class="sk sk-line"></div><div class="sk sk-line short"></div>
   </div>`;
+}
+
+// Les six chiffres de tête montent depuis zéro, décalés les uns des autres :
+// un tableau de bord qui s'allume plutôt que six blocs qui apparaissent.
+//
+// Règle absolue : la valeur réelle doit s'afficher quoi qu'il arrive. Une
+// animation qui écrit 0 en attendant requestAnimationFrame laisserait des
+// zéros à l'écran dès que l'onglet passe en arrière-plan, où le navigateur
+// gèle les images. D'où le garde-fou en fin de fonction.
+function animateHeroFigures(cardEl) {
+  if (!cardEl) return;
+  const sansMouvement = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (sansMouvement || document.hidden) return;
+
+  cardEl.querySelectorAll('.hero-item .h-val').forEach((el, i) => {
+    const cible = toNum(el.textContent);
+    if (cible === null || cible === 0) return;
+    const final = el.textContent;
+    const decimales = /[.,]/.test(final) ? 1 : 0;
+    const depart = 90 + i * 70, duree = 620;
+
+    // Le filet de sécurité est posé AVANT de toucher au contenu : même si
+    // l'animation ne démarre jamais, la valeur revient.
+    const secours = setTimeout(() => { el.textContent = final; }, depart + duree + 400);
+
+    el.textContent = decimales > 0 ? '0,0' : '0';
+    setTimeout(() => {
+      if (document.hidden) { clearTimeout(secours); el.textContent = final; return; }
+      const t0 = performance.now();
+      (function pas(now) {
+        const p = Math.min((now - t0) / duree, 1);
+        const cur = cible * (1 - Math.pow(1 - p, 3));
+        el.textContent = decimales > 0
+          ? cur.toFixed(1).replace('.', ',')
+          : Math.round(cur).toLocaleString('fr-FR');
+        if (p < 1) requestAnimationFrame(pas);
+        else { clearTimeout(secours); el.textContent = final; }
+      })(performance.now());
+    }, depart);
+  });
 }
 
 // Numéro de la dernière recherche : une réponse plus ancienne n'écrase jamais la plus récente.
@@ -1492,7 +1545,9 @@ async function searchFiche() {
   };
 
   // Affichage du loader initial (squelette de fiche : la page ne « saute » pas au rendu)
-  out.innerHTML = ficheSkeleton(searchMode === 'plate' ? 'Initialisation de l\'identification...' : 'Analyse AutoSpec en cours...');
+  out.innerHTML = searchMode === 'plate'
+    ? ficheSkeleton("Initialisation de l'identification...", '')
+    : ficheSkeleton('Analyse AutoSpec en cours...', q);
   if (out.getBoundingClientRect().top > window.innerHeight * 0.6) {
     out.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -1552,7 +1607,7 @@ async function searchFiche() {
         
         finalModel = plateData.model;
         techData = plateData.tech || {};
-        setStatus(`✅ Véhicule identifié : ${finalModel}`);
+        out.innerHTML = ficheSkeleton(`Véhicule identifié : ${finalModel}`, finalModel);
         await new Promise(r => setTimeout(r, 600)); // Pause pour lecture
         setStatus("Génération de la fiche technique haute fidélité...");
       } catch (err) {
@@ -1583,8 +1638,8 @@ async function searchFiche() {
         return;
     }
     
-    const html = renderCard(car);
-    out.innerHTML = html;
+    out.innerHTML = renderCard(car);
+    animateHeroFigures(out.querySelector('.card'));
     if (searchMode !== 'plate') addRecentSearch(q);
 
     if (stage) {

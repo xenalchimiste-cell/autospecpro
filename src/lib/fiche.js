@@ -70,6 +70,22 @@ function normalizeCarQuery(raw) {
   return q;
 }
 
+// Sépare la marque du reste, pour l'annonce qui ouvre la fiche : on sait
+// quelle marque afficher dès la frappe, sans attendre la réponse du modèle.
+function brandAndModel(raw) {
+  const q = normalizeCarQuery(raw);
+  if (!q) return { brand: '', model: '' };
+  const words = q.split(' ').filter(Boolean);
+  const keys = words.map(w => deaccent(w).toLowerCase().replace(/[^a-z0-9]/g, ''));
+  for (let n = Math.min(3, words.length); n >= 1; n--) {
+    const brand = BRAND_LOOKUP.get(keys.slice(0, n).join(' '));
+    // La marque canonique peut compter plus de mots que l'entrée ("vw" →
+    // "Volkswagen") : on retire ce qui a été consommé côté entrée, pas côté sortie.
+    if (brand) return { brand, model: words.slice(n).join(' ') };
+  }
+  return { brand: '', model: q };
+}
+
 // Forme canonique (insensible casse/accents) : sert de clé de cache stable.
 function canonicalQuery(raw) {
   return deaccent(normalizeCarQuery(raw)).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();

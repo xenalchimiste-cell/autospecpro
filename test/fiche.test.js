@@ -118,3 +118,18 @@ test('hasVal rejette les valeurs de remplissage', () => {
   assert.equal(hasVal('0'), true);
   assert.equal(toNum('1 364 kg'), 1364);
 });
+
+// ── ANNONCE D'OUVERTURE ──
+test('la marque est séparée du modèle pour l\'annonce', () => {
+  assert.deepEqual({ ...ctx.brandAndModel('bmw m3 competition 2023') }, { brand: 'BMW', model: 'm3 competition 2023' });
+  assert.deepEqual({ ...ctx.brandAndModel('vw golf 7 gti') }, { brand: 'Volkswagen', model: 'golf 7 gti' });
+  assert.deepEqual({ ...ctx.brandAndModel('alpha romeo giulia qv') }, { brand: 'Alfa Romeo', model: 'giulia qv' });
+});
+
+test('une marque inconnue laisse la requête entière comme modèle', () => {
+  const r = ctx.brandAndModel('caterham seven 620');
+  assert.equal(r.brand, 'Caterham');
+  const s = ctx.brandAndModel('quelque chose 2020');
+  assert.equal(s.brand, '');
+  assert.equal(s.model, 'quelque chose 2020');
+});
