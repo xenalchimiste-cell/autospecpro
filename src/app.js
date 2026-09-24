@@ -1050,10 +1050,17 @@ function fetchFiche(rawQuery, carburant = '', stage = '', tech = {}) {
     const content = data.choices?.[0]?.message?.content;
     if (!content) throw new Error('Réponse inattendue de l\'API — aucun contenu retourné.');
     const raw = content.replace(/```[\w]*\n?/g,'').replace(/```/g,'').trim();
+    let objet;
     try {
-      JSON.parse(raw);
+      objet = JSON.parse(raw);
     } catch (_) {
       throw new Error('Réponse IA incomplète — relancez la recherche.');
+    }
+    // La provenance vient du serveur, pas du modèle : on la rattache ici pour
+    // qu'elle traverse le cache avec la fiche.
+    if (Array.isArray(data.sources) && data.sources.length) {
+      objet._sources = data.sources;
+      return JSON.stringify(objet);
     }
     // On ne met en cache que les JSON valides (sinon une fiche cassée resterait 7 jours).
     setCache(cacheKey, raw);
@@ -1292,6 +1299,15 @@ function renderCard(c){
     ${variants.map(x => `<button type="button" class="tv-chip" data-q="${esc(x)}">${esc(x)}</button>`).join('')}
   </div>` : '';
 
+  // Provenance : n'est affichée que si une base officielle a réellement
+  // fourni des valeurs. Revendiquer une source qu'on n'a pas consultée serait
+  // pire que de ne rien dire.
+  const sources = Array.isArray(c._sources) ? c._sources : [];
+  const sourcesHtml = sources.length ? `<div class="fiche-sources">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span>${sources.map(s => `<strong>${esc(s.champs.join(', '))}</strong> d'après <a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.nom)}</a>${s.correspondance ? ` — ${esc(s.correspondance)}` : ''}`).join(' · ')}</span>
+  </div>` : '';
+
   const alertBar = (c._alerts || []).length ? `<div class="trust trust-warn">
     <span class="trust-dot"></span>
     <span class="trust-txt">${c._alerts.map(esc).join(' ')}</span>
@@ -1330,8 +1346,9 @@ function renderCard(c){
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
     Télécharger la fiche client (PDF)
   </button>
+  ${sourcesHtml}
   <div class="card-foot">
-    <span class="footer-note">Données générées par IA — à titre indicatif.</span>
+    <span class="footer-note">${sourcesHtml ? 'Champs non couverts par la source : générés par IA.' : 'Données générées par IA — à titre indicatif.'}</span>
     <button type="button" class="report-open" onclick="toggleReport('${cardId}')">Signaler une erreur</button>
   </div>
   <div class="report-form" id="report-${cardId}" hidden></div>

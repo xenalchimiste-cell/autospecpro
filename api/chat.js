@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 import { isAllowedOrigin, consumeAiQuota, quotaExceededBody } from "./_lib/ai-guard.js";
 import { ficheCacheKey, readFiche, writeFiche } from "./_lib/fiche-cache.js";
+import { chercherAdeme, lignesCertifiees } from "./_lib/ademe.js";
 import { JWT_SECRET, getUserIdFromRequest, requireAdmin } from "./_lib/auth.js";
 
 // llama-3.3-70b-versatile a été retiré par Groq (model_not_found).
@@ -14,7 +15,7 @@ const AI_FALLBACK_MODEL = "openai/gpt-oss-20b";
 const AI_MAX_TOKENS = 4000;
 // Incrémenter ce numéro dès que le prompt ou le gabarit JSON change : les
 // fiches mises en cache par l'ancienne version cessent alors d'être servies.
-const FICHE_PROMPT_VERSION = 3;
+const FICHE_PROMPT_VERSION = 4;
 
 export default async function handler(req, res) {
   // CORS Headers
@@ -154,7 +155,7 @@ const JSON_STRUCTURE = `{"marque":"","modele":"","generation":"","finition":"","
 const CARBURANTS = ["Essence", "Diesel", "Hybride", "Electrique", "E85"];
 const STAGES = ["Stage 1", "Stage 2", "Stage 3"];
 
-function buildFicheMessages(body) {
+function buildFicheMessages(body, ademe) {
   const query = String(body.query || "")
     .replace(/[\n\r"'`{}<>\\]/g, " ")
     .replace(/\s+/g, " ")
@@ -174,6 +175,9 @@ function buildFicheMessages(body) {
   if (engineCode) facts.push(`Code moteur officiel : ${engineCode}. Il identifie la motorisation exacte : aligne toutes les données techniques dessus.`);
   if (carb) facts.push(`Carburant imposé : ${carb}. Si cette entrée existe en plusieurs énergies, retiens celle-ci.`);
   if (stage) facts.push(`L'utilisateur s'intéresse en priorité à la préparation ${stage} : détaille ce bloc en premier, sans dégrader les valeurs STOCK.`);
+  // Les données ADEME sont officielles : elles passent avant tout le reste,
+  // y compris avant les indices de carte grise, qui peuvent être partiels.
+  facts.push(...lignesCertifiees(ademe));
   if (facts.length) ctx += `\n=== DONNÉES CERTIFIÉES (prioritaires sur ta mémoire) ===\n- ${facts.join("\n- ")}\n`;
 
   const user = [
@@ -278,6 +282,23 @@ function valeursEnAnglais(raw) {
   return trouve;
 }
 
+// Ce que la fiche affichera comme provenance. Vide si rien d'officiel n'a
+// été trouvé : on ne revendique jamais une source qu'on n'a pas consultée.
+function sourcesDe(ademe) {
+  if (!ademe) return [];
+  const champs = [];
+  if (ademe.conso_mixte != null) champs.push("consommation");
+  if (ademe.co2 != null) champs.push("CO2");
+  if (ademe.puissance_ch != null) champs.push("puissance");
+  if (!champs.length) return [];
+  return [{
+    nom: "ADEME — véhicules commercialisés en France",
+    url: "https://www.data.gouv.fr/datasets/emissions-de-co2-et-de-polluants-des-vehicules-commercialises-en-france/",
+    champs,
+    correspondance: `${ademe.marque} ${ademe.modele}${ademe.annee ? ` (${ademe.annee})` : ""}`,
+  }];
+}
+
 function isFailedGeneration(err) {
   const e = err || {};
   const msg = String(e.message || "").toLowerCase();
@@ -300,7 +321,12 @@ async function handleAiProxy(req, res) {
 
   const body = req.body || {};
   const kind = body.kind === "expert" ? "expert" : body.kind === "fiche" ? "fiche" : null;
-  const messages = kind === "fiche" ? buildFicheMessages(body)
+
+  // Base officielle française : si le véhicule y figure, ses chiffres
+  // d'homologation remplacent la mémoire du modèle.
+  const ademe = kind === "fiche" ? await chercherAdeme(body.query) : null;
+
+  const messages = kind === "fiche" ? buildFicheMessages(body, ademe)
     : kind === "expert" ? buildExpertMessages(body)
     : null;
   if (!messages) return res.status(400).json({ error: "Requête invalide." });
@@ -320,6 +346,7 @@ async function handleAiProxy(req, res) {
         choices: [{ message: { content: hit } }],
         quota: quotaInfo,
         cached: true,
+        sources: sourcesDe(ademe),
       });
     }
   }
@@ -351,7 +378,7 @@ async function handleAiProxy(req, res) {
       });
     }
     if (options?.cacher !== false) await cacheIfUsable(attempt.data);
-    return res.status(200).json({ ...attempt.data, quota: quotaInfo });
+    return res.status(200).json({ ...attempt.data, quota: quotaInfo, sources: sourcesDe(ademe) });
   };
 
   try {

@@ -3462,3 +3462,17 @@ body::before { background-image: none; }
   .accel-bloc { padding: 1.25rem 1.1rem 1rem; }
   .accel-note { font-size: 11px; }
 }
+
+/* ── Provenance des données ──
+   Affichée seulement quand une base officielle a fourni des valeurs. */
+.fiche-sources {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: .7rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(22, 122, 60, 0.06);
+  font-size: 12.5px; line-height: 1.45; color: var(--text2);
+}
+.fiche-sources svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; color: var(--green); }
+.fiche-sources strong { color: var(--text); font-weight: 600; }
+.fiche-sources a { color: var(--accent); }
+@media (max-width: 768px) { .fiche-sources { padding: .65rem 1.1rem; } }
