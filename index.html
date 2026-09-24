@@ -332,9 +332,9 @@
     <div id="out-fiche"><div class="empty"><div class="empty-icon">🏎</div>Entrez un modèle pour afficher sa fiche.</div></div>
 
     <!-- AVIS UTILISATEURS -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:40px; margin-bottom:15px; padding:0 20px;">
-      <h2 style="font-family:'DM Serif Display',serif; font-size:24px; color:var(--text);">Avis de la <em>communauté</em></h2>
-      <button class="btn btn-outline" onclick="openReviewModal()" style="font-size:12px; height:32px;">+ Laisser un avis</button>
+    <div class="reviews-head">
+      <h2>Avis de la <em>communauté</em></h2>
+      <button class="btn btn-outline" onclick="openReviewModal()">Laisser un avis</button>
     </div>
     <div class="reviews-marquee-container">
       <div class="reviews-marquee" id="reviews-marquee-inner">
@@ -417,8 +417,8 @@
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="searchCompare()">Comparer</button>
+    <button class="btn btn-primary btn-compare" onclick="searchCompare()">Comparer</button>
+    <div class="chips">
       <span class="chip" onclick="presetCompare('BMW M3 Competition 2023','Audi RS4 2023')">M3 vs RS4</span>
       <span class="chip" onclick="presetCompare('Porsche 911 GT3 2024','Ferrari 488 GTB 2019')">911 GT3 vs 488</span>
       <span class="chip" onclick="presetCompare('Tesla Model 3 2024','BMW i4 2023')">Model 3 vs i4</span>
@@ -454,8 +454,7 @@
       </div>
       <div class="ctrl-group">
         <div class="ctrl-label">Transmission</div>
-        <div class="ctrl-val" style="font-size:14px;margin-bottom:.75rem;" id="sv-tr">Intégrale</div>
-        <select class="s-input" id="sl-tr" style="height:36px;font-size:13px;" onchange="updateSim()">
+        <select class="s-input ctrl-select" id="sl-tr" onchange="updateSim()">
           <option value="0.95">Intégrale (xDrive…)</option>
           <option value="0.90">Propulsion</option>
           <option value="0.88">Traction</option>

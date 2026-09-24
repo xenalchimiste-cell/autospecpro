@@ -1590,7 +1590,6 @@ select.s-input {
   .cmp-head h3 { font-size: 16px; }
   .cmp-cell { padding: .65rem 1.1rem; font-size: 13px; }
   .cmp-cell.label { background: var(--bg4); font-size: 10px; padding: .45rem 1.1rem; justify-content: flex-start; }
-  .cmp-filter-row { grid-template-columns: 1fr; }
 
   /* SIMULATEUR */
   .sim-controls { grid-template-columns: 1fr 1fr; gap: .875rem; }
@@ -1673,7 +1672,7 @@ select.s-input {
 
 /* BREAKPOINT 420px — very small phones */
 @media (max-width: 420px) {
-  .page { padding: 1.25rem .875rem 7rem; }
+  .page { padding: 1.25rem 1rem 6.5rem; }
   .page-title { font-size: clamp(22px, 8vw, 30px); }
 
   .hero-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1681,16 +1680,10 @@ select.s-input {
   .hero-item:nth-child(n+3) { border-top: 1px solid var(--border); }
   .hero-item:nth-child(3) { border-right: 1px solid var(--border); }
 
-  .sim-controls { grid-template-columns: 1fr; }
   .sim-grid { grid-template-columns: 1fr 1fr; }
-  .entretien-inputs { grid-template-columns: 1fr; }
   .cost-grid { grid-template-columns: 1fr 1fr; }
-  .conv-result-grid { grid-template-columns: 1fr; }
-  .filter-row { grid-template-columns: 1fr; }
-  .cmp-filter-row { grid-template-columns: 1fr 1fr; }
   .admin-stats-grid { grid-template-columns: 1fr; }
-  .chips { gap: 4px; }
-  .chip { font-size: 10px; padding: 4px 9px; }
+  .chip { font-size: 11px; padding: 5px 10px; }
   .fiche-tab { font-size: 10px; }
 }
 
@@ -2238,6 +2231,7 @@ select.s-input {
 
 /* BOUTON D'ACTION FLOTTANT (FAB) */
 .fab-post {
+  display: none;
   position: fixed;
   bottom: 90px;
   right: 30px;
@@ -2246,7 +2240,6 @@ select.s-input {
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: #000;
-  display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 10px 30px rgba(212,168,67,0.4);
@@ -2263,6 +2256,8 @@ select.s-input {
 .fab-post:hover {
   transform: scale(1.1) rotate(90deg);
 }
+body.show-fab .fab-post { display: flex; }
+
 @keyframes fab-pulse {
   0% { transform: scale(1); opacity: 1; }
   70%, 100% { transform: scale(1.5); opacity: 0; }
@@ -3154,4 +3149,111 @@ select.s-input {
 
 @media (prefers-reduced-motion: reduce) {
   .acct-menu.open { animation: none; }
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE — ATTEINDRE L'ACTION SANS DÉROULER
+   Sur un écran de 390 px, le champ de recherche commençait à 716 px : il
+   fallait faire défiler toute la page avant de pouvoir chercher une voiture.
+   Ce bloc remonte l'action principale et resserre les rythmes verticaux.
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Le bandeau de marques est de la décoration : il n'a pas à occuper
+     la première bande de l'écran, au-dessus de ce qu'on vient faire. */
+  .brands-marquee-container { display: none; }
+
+  /* Le showroom 3D passe sous le bloc de recherche. `display: contents`
+     dissout la grille du hero pour que ses enfants deviennent des éléments
+     de la colonne de la page et puissent être réordonnés. */
+  /* `.active` est indispensable : un sélecteur d'id l'emporterait sur
+     `.page { display: none }` et la page resterait affichée sous les autres. */
+  #page-fiche.active { display: flex; flex-direction: column; }
+  #page-fiche > *, #page-fiche .hero > * { order: 1; }
+  #page-fiche .hero { display: contents; }
+  #page-fiche .hero-3d { order: 2; margin: .25rem 0 1.5rem; }
+  #page-fiche #out-fiche, #page-fiche .reviews-marquee-container { order: 3; }
+
+  /* Rythme vertical : une seule respiration entre deux blocs. */
+  .page-title { margin-bottom: .375rem; }
+  .page-sub { margin-bottom: 1rem; }
+  .hero { gap: 0; margin-bottom: 0; }
+  .filter-row { gap: 10px; margin-bottom: .875rem; }
+  .search-mode-tabs { margin-bottom: .75rem; }
+  .search-row, .vin-upload-row { margin-bottom: .875rem; }
+  .chips { margin-bottom: 1.25rem; }
+
+  /* Colonnes égales et gouttières identiques d'un bloc à l'autre. */
+  .search-mode-tabs { width: 100%; }
+  .mode-tab { flex: 1; padding: 8px 4px; text-align: center; justify-content: center; }
+  .search-row { flex-direction: column; gap: 10px; }
+  .search-row .search-wrap, .search-row .btn { width: 100%; }
+  .search-row .btn { height: 48px; }
+  .s-input { height: 48px; }
+  .filter-select { height: 44px; }
+  .chips { gap: 6px; }
+}
+
+/* Le showroom reste visible en bas d'écran plutôt que de pousser
+   la recherche hors du champ de vision. */
+@media (max-width: 768px) {
+  .hero-3d { height: 210px; }
+}
+@media (max-width: 480px) {
+  .hero-3d { height: 190px; }
+}
+
+/* En-tête des avis : les marges étaient en style en ligne (padding 0 20px),
+   qui désalignait ce bloc de tous les autres de la page. */
+.reviews-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin: 3rem 0 1rem;
+}
+.reviews-head h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(20px, 3vw, 24px); color: var(--text); font-weight: 400;
+}
+.reviews-head .btn { height: 34px; font-size: 12px; padding: 0 14px; flex-shrink: 0; }
+
+@media (max-width: 768px) {
+  /* Il accompagne le carrousel d'avis, pas le bloc de recherche. */
+  #page-fiche .reviews-head { order: 3; }
+  .reviews-head { margin: 2rem 0 .875rem; }
+
+  /* Les exemples tiennent sur une ligne qui défile, au lieu de deux lignes
+     qui repoussent le showroom hors de l'écran. */
+  .chips {
+    flex-wrap: nowrap; overflow-x: auto;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+}
+
+@media (max-width: 768px) {
+  /* `.hero .page-sub` remet la marge à zéro pour la mise en page desktop :
+     une fois la grille dissoute, il faut la rendre au bloc de texte. */
+  #page-fiche .hero-text { margin-bottom: 1.25rem; }
+
+  /* La ligne d'exemples défile : un dégradé sur le bord droit le dit,
+     au lieu de laisser croire à un mot coupé. */
+  .chips {
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  .chips.recent-searches { mask-image: none; -webkit-mask-image: none; }
+}
+
+/* Carte Transmission : sans ligne de valeur, le sélecteur doit occuper
+   la place du couple valeur + curseur pour que les quatre cartes
+   du simulateur gardent la même hauteur. */
+.ctrl-group { display: flex; flex-direction: column; }
+.ctrl-group input[type=range] { margin-top: auto; }
+.ctrl-select { height: 44px; font-size: 13px; margin-top: auto; }
+
+/* Le bouton de comparaison prend la largeur de la colonne, les duos
+   suggérés vivent sur leur propre ligne. */
+.btn-compare { width: 100%; max-width: 260px; margin-bottom: 1rem; }
+@media (max-width: 768px) {
+  .btn-compare { max-width: none; height: 48px; }
 }

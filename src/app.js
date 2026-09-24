@@ -715,6 +715,10 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
   document.querySelectorAll(`.subnav-item[data-page="${id}"]`)
     .forEach(t => { t.classList.add('active'); t.setAttribute('aria-current', 'page'); });
 
+  // « Partager ma caisse » n'a de sens que sur le fil : partout ailleurs
+  // ce bouton flottant ne faisait que recouvrir le contenu.
+  document.body.classList.toggle('show-fab', id === 'community');
+
   closeAcctMenu();
   if(fromDrawer) closeDrawer();
   if (id === 'admin') loadAdminData();
@@ -1971,12 +1975,10 @@ function updateSim(){
   const nm=+document.getElementById('sl-nm').value;
   const kg=+document.getElementById('sl-kg').value;
   const eff=+document.getElementById('sl-tr').value;
-  const trLabel={'0.95':'Intégrale (xDrive…)','0.90':'Propulsion','0.88':'Traction'};
 
-  animateValue('sv-ch', ch, 0, ' ch');
-  animateValue('sv-nm', nm, 0, ' N·m');
-  animateValue('sv-kg', kg, 0, ' kg');
-  document.getElementById('sv-tr').textContent=trLabel[document.getElementById('sl-tr').value];
+  animateValue('sv-ch', ch, 0);
+  animateValue('sv-nm', nm, 0);
+  animateValue('sv-kg', kg, 0);
 
   const kw=Math.round(ch*0.7355);
   const pw=(kg/ch).toFixed(1);
