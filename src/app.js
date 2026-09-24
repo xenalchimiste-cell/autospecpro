@@ -223,8 +223,8 @@ function handleSiretInput(input) {
 
   // Show loading
   status.style.display = 'flex';
-  status.style.background = 'rgba(255,255,255,0.04)';
-  status.style.border = '1px solid rgba(255,255,255,0.1)';
+  status.style.background = 'var(--bg3)';
+  status.style.border = '1px solid var(--border2)';
   status.style.color = 'var(--text2)';
   status.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin_pay 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Vérification SIRET en cours...`;
 
@@ -1163,6 +1163,13 @@ function renderCard(c){
     <div class="hero-item"><div class="h-label">Conso. mixte</div><div class="h-val">${consoHero.val}</div><div class="h-unit">${consoHero.unit}</div></div>
     <div class="hero-item"><div class="h-label">Masse</div><div class="h-val">${vnum(dim.masse)}</div><div class="h-unit">kg</div></div>
   </div>
+  <div class="accel-bloc">
+    <div class="accel-tete">
+      <span class="sec-title" style="margin:0">Montée en vitesse</span>
+      <span class="accel-note">d'après les temps homologués</span>
+    </div>
+    <canvas class="accel-canvas"></canvas>
+  </div>
   <div class="section"><div class="sec-title">Motorisation</div><div class="kv">
     <div class="kv-row"><span class="kv-k">Type</span><span class="kv-v">${v(m.type)}</span></div>
     <div class="kv-row"><span class="kv-k">Cylindrée</span><span class="kv-v">${v(m.cylindree)}</span></div>
@@ -1657,7 +1664,9 @@ async function searchFiche() {
     }
     
     out.innerHTML = renderCard(car);
-    animateHeroFigures(out.querySelector('.card'));
+    const carte = out.querySelector('.card');
+    animateHeroFigures(carte);
+    animerCourbe(carte, car);
     if (searchMode !== 'plate') addRecentSearch(q);
 
     if (stage) {
@@ -1820,7 +1829,10 @@ function animateValue(id, toVal, decimals=0, suffix='', duration=520){
     const p = Math.min((now-start)/duration, 1);
     const ease = p<0.5 ? 2*p*p : -1+(4-2*p)*p;
     const cur = from + (to-from)*ease;
-    el.textContent = (decimals>0 ? cur.toFixed(decimals) : Math.round(cur).toLocaleString('fr-FR')) + suffix;
+    // Virgule décimale, comme partout ailleurs sur le site.
+    el.textContent = (decimals > 0
+      ? cur.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+      : Math.round(cur).toLocaleString('fr-FR')) + suffix;
     if(p<1) _animTargets[id] = requestAnimationFrame(step);
     else { el.dataset.rawVal = to; }
   }
@@ -1829,6 +1841,7 @@ function animateValue(id, toVal, decimals=0, suffix='', duration=520){
 
 // ── RADAR CHART ──
 function drawRadar(A, B){
+  const T = jetonsGraphe();
   const canvas = document.getElementById('radarChart');
   if(!canvas) return;
   const dpr = window.devicePixelRatio || 1;
@@ -1882,7 +1895,7 @@ function drawRadar(A, B){
       i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y);
     }
     ctx.closePath();
-    ctx.strokeStyle = t===1 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)';
+    ctx.strokeStyle = t === 1 ? T.axe : T.grilleFine;
     ctx.lineWidth = 1;
     ctx.stroke();
   });
@@ -1891,7 +1904,7 @@ function drawRadar(A, B){
   axes.forEach((_,i) => {
     const p = axisPoint(i, R);
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(p.x,p.y);
-    ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.strokeStyle = T.grille; ctx.lineWidth=1; ctx.stroke();
   });
 
   // Draw polygon for a dataset
@@ -1926,9 +1939,9 @@ function drawRadar(A, B){
       ctx.beginPath();
       for(let i=0;i<n;i++){const pt=axisPoint(i,R*t);i===0?ctx.moveTo(pt.x,pt.y):ctx.lineTo(pt.x,pt.y);}
       ctx.closePath();
-      ctx.strokeStyle=t===1?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.05)';ctx.lineWidth=1;ctx.stroke();
+      ctx.strokeStyle = t === 1 ? T.axe : T.grilleFine;ctx.lineWidth=1;ctx.stroke();
     });
-    axes.forEach((_,i)=>{const pt=axisPoint(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(pt.x,pt.y);ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=1;ctx.stroke();});
+    axes.forEach((_,i)=>{const pt=axisPoint(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(pt.x,pt.y);ctx.strokeStyle = T.grille;ctx.lineWidth=1;ctx.stroke();});
 
     const animA = scoresA.map(s=>s*ease);
     const animB = scoresB.map(s=>s*ease);
@@ -1940,7 +1953,7 @@ function drawRadar(A, B){
       sc.forEach((s,i)=>{
         const pt=axisPoint(i,R*s);
         ctx.beginPath();ctx.arc(pt.x,pt.y,3.5,0,Math.PI*2);
-        ctx.fillStyle=di===0?'#d4a843':'#5b9bd5';ctx.fill();
+        ctx.fillStyle = di === 0 ? T.accent : T.compare;ctx.fill();
       });
     });
 
@@ -1991,10 +2004,154 @@ function updateSim(){
   drawChart(ch, kg, eff);
 }
 
+// ── COURBE D'ACCÉLÉRATION DE LA FICHE ──
+// Le simulateur trace une courbe à partir d'un modèle physique. Ici on a
+// mieux : les temps homologués. La courbe passe EXACTEMENT par les points
+// mesurés (0–100, 0–200) et n'interpole qu'entre eux — elle décrit la
+// voiture, pas une estimation.
+function pointsAcceleration(car) {
+  const ch = toNum(hasVal(car.moteur?.puissance_ch) ? car.moteur.puissance_ch : null);
+  const kg = toNum(hasVal(car.chassis?.masse) ? car.chassis.masse : null);
+  const t100 = toNum(hasVal(car.performances?.zero_cent) ? car.performances.zero_cent : null);
+  const t200 = toNum(hasVal(car.performances?.zero_deux_cent) ? car.performances.zero_deux_cent : null);
+  const vmax = toNum(hasVal(car.performances?.vitesse_max) ? car.performances.vitesse_max : null);
+  if (!t100 || !vmax || vmax < 60) return null;
+
+  // t(v) = A·(v/100)^k. A est le 0–100 réel ; k vient du 0–200 quand il est
+  // connu, sinon d'une heuristique fondée sur le rapport poids/puissance.
+  const A = t100;
+  let k = (ch && kg) ? 1.2 + (kg / ch) * 0.05 : 1.45;
+  if (t200 && t200 > t100) k = Math.log(t200 / A) / Math.log(2);
+  k = Math.min(Math.max(k, 1.05), 2.6);
+
+  const pts = [];
+  const pas = Math.max(2, Math.round(vmax / 60));
+  for (let v = 0; v <= vmax; v += pas) pts.push({ v, t: v === 0 ? 0 : A * Math.pow(v / 100, k) });
+  if (pts[pts.length - 1].v !== vmax) pts.push({ v: vmax, t: A * Math.pow(vmax / 100, k) });
+  return { pts, t100, t200, vmax, A, k };
+}
+
+function drawCourbeAcceleration(canvas, car, progression) {
+  const d = pointsAcceleration(car);
+  if (!canvas || !d) return false;
+  const T = jetonsGraphe();
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 600, H = 170;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const PAD = { top: 18, right: 16, bottom: 28, left: 40 };
+  const cW = W - PAD.left - PAD.right, cH = H - PAD.top - PAD.bottom;
+  const tMax = Math.ceil(d.pts[d.pts.length - 1].t / 5) * 5 || 5;
+  const toX = v => PAD.left + (v / d.vmax) * cW;
+  const toY = t => PAD.top + cH - (t / tMax) * cH;
+
+  ctx.strokeStyle = T.grilleFine; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+  ctx.font = `10px ${T.police}`; ctx.fillStyle = T.texte3; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const y = PAD.top + (i / 4) * cH;
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + cW, y); ctx.stroke();
+    ctx.fillText(Math.round(tMax - (i / 4) * tMax) + ' s', PAD.left - 6, y + 3.5);
+  }
+  ctx.setLineDash([]);
+  ctx.strokeStyle = T.axe;
+  ctx.beginPath(); ctx.moveTo(PAD.left, PAD.top); ctx.lineTo(PAD.left, PAD.top + cH);
+  ctx.lineTo(PAD.left + cW, PAD.top + cH); ctx.stroke();
+
+  // Portion tracée : l'animation fait monter l'aiguille de 0 à la vitesse max.
+  const p = Math.min(Math.max(progression == null ? 1 : progression, 0), 1);
+  const visibles = d.pts.filter(pt => pt.v <= d.vmax * p);
+  if (visibles.length < 2) return true;
+
+  const grad = ctx.createLinearGradient(0, PAD.top, 0, PAD.top + cH);
+  grad.addColorStop(0, `rgba(${T.accentRgb},0.20)`);
+  grad.addColorStop(1, `rgba(${T.accentRgb},0.02)`);
+  ctx.beginPath();
+  visibles.forEach((pt, i) => i ? ctx.lineTo(toX(pt.v), toY(pt.t)) : ctx.moveTo(toX(pt.v), toY(pt.t)));
+  ctx.lineTo(toX(visibles[visibles.length - 1].v), PAD.top + cH);
+  ctx.lineTo(PAD.left, PAD.top + cH);
+  ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+
+  ctx.beginPath();
+  ctx.strokeStyle = T.accent; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  visibles.forEach((pt, i) => i ? ctx.lineTo(toX(pt.v), toY(pt.t)) : ctx.moveTo(toX(pt.v), toY(pt.t)));
+  ctx.stroke();
+
+  // Les repères ne s'allument qu'une fois la vitesse atteinte.
+  const repere = (v, t, libelle) => {
+    if (!t || v > d.vmax * p || v > d.vmax) return;
+    const x = toX(v), y = toY(t);
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = T.accent; ctx.fill();
+    ctx.fillStyle = T.texte2; ctx.font = `600 10px ${T.police}`; ctx.textAlign = 'center';
+    ctx.fillText(libelle, x, y - 9);
+  };
+  repere(100, d.t100, d.t100.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' s');
+  repere(200, d.t200, d.t200 ? d.t200.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' s' : '');
+
+  // Pas de graduation à la vitesse maximale : elle tombe sur le bord droit,
+  // où se trouve l'unité, et les deux se chevauchaient. La valeur est de
+  // toute façon affichée dans les chiffres de tête.
+  ctx.fillStyle = T.texte3; ctx.font = `10px ${T.police}`; ctx.textAlign = 'center';
+  [0, 100, 200].filter(v => v <= d.vmax * 0.92).forEach(v => ctx.fillText(v, toX(v), H - 9));
+  ctx.textAlign = 'right';
+  ctx.fillText('km/h', W - PAD.right, H - 9);
+  return true;
+}
+
+// Le tracé s'anime une fois, à l'ouverture de la fiche. Comme pour les
+// chiffres, l'état final est garanti même si les images sont gelées.
+function animerCourbe(cardEl, car) {
+  const canvas = cardEl?.querySelector('.accel-canvas');
+  if (!canvas) return;
+  if (!drawCourbeAcceleration(canvas, car, 1)) { canvas.closest('.accel-bloc')?.remove(); return; }
+
+  const sansMouvement = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (sansMouvement || document.hidden) return;
+
+  const secours = setTimeout(() => drawCourbeAcceleration(canvas, car, 1), 1500);
+  const t0 = performance.now(), duree = 900;
+  (function pas(now) {
+    if (!canvas.isConnected) { clearTimeout(secours); return; }
+    const p = Math.min((now - t0) / duree, 1);
+    drawCourbeAcceleration(canvas, car, 1 - Math.pow(1 - p, 3));
+    if (p < 1) requestAnimationFrame(pas);
+    else clearTimeout(secours);
+  })(performance.now());
+}
+
+// ── COULEURS DES GRAPHES ──
+// Les tracés sur canvas ne peuvent pas lire une feuille de style : leurs
+// couleurs étaient écrites en dur pour le thème sombre, si bien que depuis
+// le passage au clair la grille se dessinait en blanc sur du papier. On lit
+// les jetons une fois par tracé.
+function jetonsGraphe() {
+  const cs = getComputedStyle(document.documentElement);
+  const j = (n, secours) => cs.getPropertyValue(n).trim() || secours;
+  const tint = j('--tint-rgb', '255,255,255');
+  const accentRgb = j('--accent-rgb', '212,168,67');
+  return {
+    accent: j('--accent', '#d4a843'),
+    accent2: j('--accent2', '#f0c96a'),
+    accentRgb,
+    texte2: j('--text2', '#8b869e'),
+    texte3: j('--text3', '#4a4660'),
+    grille: `rgba(${tint},0.10)`,
+    grilleFine: `rgba(${tint},0.06)`,
+    axe: `rgba(${tint},0.18)`,
+    compare: j('--blue', '#5b9bd5'),
+    police: j('--font-body', "'DM Sans', sans-serif"),
+  };
+}
+
 function drawChart(ch, kg, eff){
   const ratio = kg / ch;
   const canvas = document.getElementById('simChart');
   const ctx = canvas.getContext('2d');
+  const T = jetonsGraphe();
   const dpr = window.devicePixelRatio || 1;
   const W = canvas.offsetWidth || 600;
   const H = 200;
@@ -2022,14 +2179,14 @@ function drawChart(ch, kg, eff){
 
   // Background subtle gradient
   const bgGrad = ctx.createLinearGradient(0, PAD.top, 0, PAD.top+cH);
-  bgGrad.addColorStop(0,'rgba(255,255,255,0.02)');
+  bgGrad.addColorStop(0, `rgba(${T.accentRgb},0.04)`);
   bgGrad.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(PAD.left, PAD.top, cW, cH);
 
   // Grid lines Y
   ctx.setLineDash([3,4]);
-  ctx.strokeStyle='rgba(255,255,255,0.06)';
+  ctx.strokeStyle = T.grilleFine;
   ctx.lineWidth=1;
   const ySteps = 5;
   for(let i=0;i<=ySteps;i++){
@@ -2038,23 +2195,23 @@ function drawChart(ch, kg, eff){
     // Y labels
     const val = niceMaxT - (i/ySteps)*niceMaxT;
     ctx.setLineDash([]);
-    ctx.fillStyle='rgba(138,134,128,0.7)';
-    ctx.font=`10px 'DM Sans', sans-serif`;
+    ctx.fillStyle = T.texte3;
+    ctx.font = `10px ${T.police}`;
     ctx.textAlign='right';
-    ctx.fillText(val.toFixed(0)+'s', PAD.left-6, y+3.5);
+    ctx.fillText(val.toFixed(0) + ' s', PAD.left - 6, y + 3.5);
     ctx.setLineDash([3,4]);
   }
   ctx.setLineDash([]);
 
   // Grid lines X (subtle)
-  ctx.strokeStyle='rgba(255,255,255,0.04)';
+  ctx.strokeStyle = T.grilleFine;
   [0,50,100,150,200,250].forEach(s=>{
     const x = toX(s);
     ctx.beginPath(); ctx.moveTo(x,PAD.top); ctx.lineTo(x,PAD.top+cH); ctx.stroke();
   });
 
   // Axes
-  ctx.strokeStyle='rgba(255,255,255,0.1)';
+  ctx.strokeStyle = T.axe;
   ctx.lineWidth=1;
   ctx.beginPath();
   ctx.moveTo(PAD.left, PAD.top);
@@ -2064,8 +2221,8 @@ function drawChart(ch, kg, eff){
 
   // Fill under curve
   const fillGrad = ctx.createLinearGradient(0, PAD.top, 0, PAD.top+cH);
-  fillGrad.addColorStop(0,'rgba(212,168,67,0.22)');
-  fillGrad.addColorStop(1,'rgba(212,168,67,0.01)');
+  fillGrad.addColorStop(0, `rgba(${T.accentRgb},0.22)`);
+  fillGrad.addColorStop(1, `rgba(${T.accentRgb},0.01)`);
   ctx.beginPath();
   ctx.moveTo(toX(pts[0].s), toY(pts[0].t));
   pts.forEach(p => ctx.lineTo(toX(p.s), toY(p.t)));
@@ -2077,7 +2234,7 @@ function drawChart(ch, kg, eff){
 
   // Curve
   ctx.beginPath();
-  ctx.strokeStyle='#d4a843';
+  ctx.strokeStyle = T.accent;
   ctx.lineWidth=2.5;
   ctx.lineJoin='round';
   pts.forEach((p,i)=>{
@@ -2091,25 +2248,25 @@ function drawChart(ch, kg, eff){
     const cx2=toX(100), cy2=toY(p100.t);
     ctx.beginPath();
     ctx.arc(cx2,cy2,4,0,Math.PI*2);
-    ctx.fillStyle='#f0c96a';
+    ctx.fillStyle = T.accent;
     ctx.fill();
-    ctx.fillStyle='rgba(240,201,106,0.85)';
-    ctx.font=`bold 10px 'DM Mono', monospace`;
+    ctx.fillStyle = T.accent;
+    ctx.font = `600 10px ${T.police}`;
     ctx.textAlign='center';
-    ctx.fillText(p100.t.toFixed(1)+'s', cx2, cy2-10);
+    ctx.fillText(p100.t.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' s', cx2, cy2 - 10);
   }
 
   // X axis labels
-  ctx.fillStyle='rgba(74,71,68,0.9)';
-  ctx.font=`10px 'DM Sans', sans-serif`;
+  ctx.fillStyle = T.texte3;
+  ctx.font = `10px ${T.police}`;
   ctx.textAlign='center';
   [0,50,100,150,200,250].forEach(s=>{
     ctx.fillText(s, toX(s), H-8);
   });
 
   // Axis titles
-  ctx.fillStyle='rgba(138,134,128,0.5)';
-  ctx.font=`9px 'DM Sans', sans-serif`;
+  ctx.fillStyle = T.texte3;
+  ctx.font = `9px ${T.police}`;
   ctx.textAlign='center';
   ctx.fillText('Vitesse (km/h)', PAD.left + cW/2, H-1);
   ctx.save();
@@ -2137,7 +2294,7 @@ function updateEntretien(){
 
   document.getElementById('ent-km-val').textContent=(km/1000).toFixed(0)+' 000';
   document.getElementById('ent-age-val').textContent=age;
-  document.getElementById('ent-fuel-val').textContent=fuelPrice.toFixed(2);
+  document.getElementById('ent-fuel-val').textContent = fuelPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const d=entData[type];
   const ageMult=1+age*0.04;
@@ -2231,6 +2388,11 @@ window.addEventListener('resize', function() {
   _resizeRedrawTimeout = setTimeout(function() {
     if (carA && carB) drawRadar(carA, carB);
     if (document.getElementById('simChart')) updateSim();
+    document.querySelectorAll('.accel-canvas').forEach(c => {
+      const carte = c.closest('.card');
+      const donnees = carte && window.carCache[carte.id];
+      if (donnees) drawCourbeAcceleration(c, donnees, 1);
+    });
   }, 150);
 });
 
@@ -4071,7 +4233,7 @@ window.handleMsgUserSearch = function() {
         resultsDiv.innerHTML = '<div style="padding:12px; color:var(--text3); font-size:12px; text-align:center;">Aucun membre trouvé</div>';
       } else {
         resultsDiv.innerHTML = users.map(u => `
-          <div class="conv-item" style="border-bottom:1px solid rgba(255,255,255,0.05);" onclick="selectUserForChat(${u.id}, '${(u.name || '').replace(/'/g, "\\'")}', '${u.avatar_url || ''}')">
+          <div class="conv-item" style="border-bottom:1px solid var(--border);" onclick="selectUserForChat(${u.id}, '${(u.name || '').replace(/'/g, "\\'")}', '${u.avatar_url || ''}')">
             ${getUserAvatarHtml(u, 'user-avatar-nav')}
             <div class="conv-info">
               <div class="conv-name" style="display:flex; align-items:center; gap:5px;">

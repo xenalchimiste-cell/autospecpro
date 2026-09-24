@@ -3445,3 +3445,20 @@ body::before { background-image: none; }
 
 @media (max-width: 768px) {
   }
+
+/* ── Courbe de montée en vitesse (fiche) ── */
+.accel-bloc {
+  padding: 1.5rem 1.4rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.accel-tete {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: .5rem;
+}
+.accel-note { font-size: 11.5px; color: var(--text3); }
+.accel-canvas { display: block; width: 100%; }
+
+@media (max-width: 768px) {
+  .accel-bloc { padding: 1.25rem 1.1rem 1rem; }
+  .accel-note { font-size: 11px; }
+}
