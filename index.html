@@ -12,25 +12,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-  <script>
-    // Le thème clair est celui par défaut. ?theme=sombre rappelle l'ancien et
-    // le mémorise, ?theme=clair revient au défaut. Posé avant la feuille de
-    // style pour qu'aucun thème ne clignote au chargement.
-    (function () {
-      try {
-        var p = new URLSearchParams(location.search).get('theme');
-        if (p === 'clair' || p === 'off' || p === 'presse') localStorage.removeItem('autospec_theme');
-        else if (p === 'sombre') localStorage.setItem('autospec_theme', 'sombre');
-        if (localStorage.getItem('autospec_theme') === 'sombre') {
-          document.documentElement.setAttribute('data-theme', 'sombre');
-          var l = document.createElement('link');
-          l.rel = 'stylesheet';
-          l.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap';
-          document.head.appendChild(l);
-        }
-      } catch (e) {}
-    })();
-  </script>
   <link rel="stylesheet" href="src/style.css">
   <script type="importmap">
     { "imports": {
@@ -88,11 +69,6 @@
         <span class="nav-dot" id="comm-dot"></span>
       </button>
     </div>
-    <button type="button" class="theme-toggle" id="theme-toggle" onclick="toggleTheme()"
-            aria-label="Passer au thème sombre" title="Changer de thème">
-      <svg class="ico-lune" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="ico-soleil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-    </button>
     <div id="user-nav-area" class="nav-right">
       <button class="btn btn-outline btn-connect" onclick="openAuthModal()">Connexion</button>
     </div>

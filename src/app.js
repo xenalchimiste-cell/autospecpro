@@ -724,47 +724,6 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
   if (id === 'admin') loadAdminData();
 }
 
-// ── BASCULE DE THÈME ──
-// Le clair est le thème par défaut ; le sombre reste un choix, mémorisé par
-// navigateur. Les polices du thème sombre ne sont téléchargées qu'au moment
-// où on y passe, et une seule fois.
-function chargerPolicesSombres() {
-  if (document.getElementById('polices-sombre')) return;
-  const l = document.createElement('link');
-  l.id = 'polices-sombre';
-  l.rel = 'stylesheet';
-  l.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap';
-  document.head.appendChild(l);
-}
-
-function majBoutonTheme() {
-  const b = document.getElementById('theme-toggle');
-  if (!b) return;
-  const sombre = document.documentElement.getAttribute('data-theme') === 'sombre';
-  b.setAttribute('aria-label', sombre ? 'Passer au thème clair' : 'Passer au thème sombre');
-  b.setAttribute('aria-pressed', String(sombre));
-}
-
-window.toggleTheme = function () {
-  const sombre = document.documentElement.getAttribute('data-theme') === 'sombre';
-  try {
-    if (sombre) {
-      document.documentElement.removeAttribute('data-theme');
-      localStorage.removeItem('autospec_theme');
-    } else {
-      document.documentElement.setAttribute('data-theme', 'sombre');
-      localStorage.setItem('autospec_theme', 'sombre');
-      chargerPolicesSombres();
-    }
-  } catch (e) {
-    // Navigation privée : le thème s'applique quand même, il n'est pas retenu.
-    document.documentElement.toggleAttribute('data-theme');
-  }
-  majBoutonTheme();
-};
-
-window.addEventListener('DOMContentLoaded', majBoutonTheme);
-
 // ── MENU COMPTE ──
 // L'avatar déclenchait handleLogout() : un clic de curiosité déconnectait.
 function toggleAcctMenu(e) {
