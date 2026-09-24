@@ -310,22 +310,22 @@
     </div>
 
     <div class="ocr-upload-row" id="search-row-ocr" style="display:none;">
-      <div class="ocr-dropzone" onclick="document.getElementById('plate-ocr-input').click()">
+      <button type="button" class="ocr-dropzone" onclick="document.getElementById('plate-ocr-input').click()">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <p>Prendre en photo ou importer une plaque</p>
         <span style="font-size:12px; opacity:0.6;">Analyse automatique par IA</span>
-      </div>
+      </button>
       <input type="file" id="plate-ocr-input" accept="image/*" capture="environment" style="display:none;" onchange="handlePlateOCR(this)">
     </div>
     <div class="chips">
-      <span class="chip" onclick="qf('BMW M3 Competition 2023')">BMW M3 2023</span>
-      <span class="chip" onclick="qf('Ferrari 488 GTB 2019')">Ferrari 488</span>
-      <span class="chip" onclick="qf('Porsche 911 GT3 2024')">Porsche 911 GT3</span>
-      <span class="chip" onclick="qf('Tesla Model 3 2024')">Tesla Model 3</span>
-      <span class="chip" onclick="qf('Renault Clio 5 2023')">Renault Clio</span>
-      <span class="chip" onclick="qf('Audi RS6 Avant 2023')">Audi RS6</span>
-      <span class="chip" onclick="qf('Toyota GR86 2022')">Toyota GR86</span>
-      <span class="chip" onclick="qf('Honda Civic Type R 2023')">Honda Civic Type R</span>
+      <button type="button" class="chip" onclick="qf('BMW M3 Competition 2023')">BMW M3 2023</button>
+      <button type="button" class="chip" onclick="qf('Ferrari 488 GTB 2019')">Ferrari 488</button>
+      <button type="button" class="chip" onclick="qf('Porsche 911 GT3 2024')">Porsche 911 GT3</button>
+      <button type="button" class="chip" onclick="qf('Tesla Model 3 2024')">Tesla Model 3</button>
+      <button type="button" class="chip" onclick="qf('Renault Clio 5 2023')">Renault Clio</button>
+      <button type="button" class="chip" onclick="qf('Audi RS6 Avant 2023')">Audi RS6</button>
+      <button type="button" class="chip" onclick="qf('Toyota GR86 2022')">Toyota GR86</button>
+      <button type="button" class="chip" onclick="qf('Honda Civic Type R 2023')">Honda Civic Type R</button>
     </div>
     <div class="chips recent-searches" id="recent-searches" hidden></div>
 
@@ -419,10 +419,10 @@
     </div>
     <button class="btn btn-primary btn-compare" onclick="searchCompare()">Comparer</button>
     <div class="chips">
-      <span class="chip" onclick="presetCompare('BMW M3 Competition 2023','Audi RS4 2023')">M3 vs RS4</span>
-      <span class="chip" onclick="presetCompare('Porsche 911 GT3 2024','Ferrari 488 GTB 2019')">911 GT3 vs 488</span>
-      <span class="chip" onclick="presetCompare('Tesla Model 3 2024','BMW i4 2023')">Model 3 vs i4</span>
-      <span class="chip" onclick="presetCompare('Renault Clio 5 2023','Peugeot 208 2023')">Clio vs 208</span>
+      <button type="button" class="chip" onclick="presetCompare('BMW M3 Competition 2023','Audi RS4 2023')">M3 vs RS4</button>
+      <button type="button" class="chip" onclick="presetCompare('Porsche 911 GT3 2024','Ferrari 488 GTB 2019')">911 GT3 vs 488</button>
+      <button type="button" class="chip" onclick="presetCompare('Tesla Model 3 2024','BMW i4 2023')">Model 3 vs i4</button>
+      <button type="button" class="chip" onclick="presetCompare('Renault Clio 5 2023','Peugeot 208 2023')">Clio vs 208</button>
     </div>
     <div id="out-compare"><div class="empty"><div class="empty-icon">⚖️</div>Entrez deux modèles à comparer.</div></div>
   </div>
@@ -455,7 +455,7 @@
       <div class="ctrl-group">
         <div class="ctrl-label">Transmission</div>
         <select class="s-input ctrl-select" id="sl-tr" onchange="updateSim()">
-          <option value="0.95">Intégrale (xDrive…)</option>
+          <option value="0.95">Intégrale</option>
           <option value="0.90">Propulsion</option>
           <option value="0.88">Traction</option>
         </select>
@@ -1304,9 +1304,9 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- BOUTON FLOTTANT POSTER -->
-  <div class="fab-post" onclick="openPostModal()" title="Partager ma caisse">
+  <button type="button" class="fab-post" onclick="openPostModal()" title="Partager ma caisse" aria-label="Partager ma caisse">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </div>
+  </button>
 
   <script src="src/lib/fiche.js"></script>
   <script src="src/app.js"></script>

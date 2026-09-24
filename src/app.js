@@ -742,6 +742,38 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAcctMenu(); });
 
+// ── FERMETURE DES MODALES AU CLAVIER ──
+// Chaque modale se fermait au clic sur son fond, mais rien ne permettait d'en
+// sortir au clavier : on se retrouvait piégé derrière un voile.
+const MODAL_CLOSERS = {
+  'auth-modal': () => closeAuthModal(),
+  'payment-modal': () => closePaymentModal(),
+  'review-modal': () => closeReviewModal(),
+  'postModal': () => closePostModal(),
+  'playlistModal': () => closePlaylistModal(),
+  'playlistDetailModal': () => closePlaylistDetail(),
+  'postDetailModal': () => closePostDetail(),
+};
+
+function topmostOpenModal() {
+  let best = null, bestZ = -1;
+  for (const id of Object.keys(MODAL_CLOSERS)) {
+    const el = document.getElementById(id);
+    if (!el || getComputedStyle(el).display === 'none') continue;
+    const z = Number(getComputedStyle(el).zIndex) || 0;
+    if (z >= bestZ) { best = id; bestZ = z; }
+  }
+  return best;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const id = topmostOpenModal();
+  if (!id) return;
+  e.preventDefault();
+  try { MODAL_CLOSERS[id](); } catch (err) { console.warn('[modale] fermeture impossible :', err.message); }
+});
+
 function toggleDrawer(){ /* le tiroir a été remplacé par le menu compte */ }
 function closeDrawer(){ /* idem : conservé pour les appels existants */ }
 
@@ -1273,9 +1305,79 @@ function renderCard(c){
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
     Télécharger la fiche client (PDF)
   </button>
-  <div class="footer-note">Données générées par IA — à titre indicatif.</div>
+  <div class="card-foot">
+    <span class="footer-note">Données générées par IA — à titre indicatif.</span>
+    <button type="button" class="report-open" onclick="toggleReport('${cardId}')">Signaler une erreur</button>
+  </div>
+  <div class="report-form" id="report-${cardId}" hidden></div>
 </div>`;
 }
+
+// ── SIGNALEMENT D'UNE DONNÉE FAUSSE ──
+// La fiche annonce un niveau de confiance ; sans retour, ce niveau reste une
+// promesse. Ces signalements disent où le modèle se trompe vraiment.
+const REPORT_FIELDS = [
+  ['identification', "Ce n'est pas le bon véhicule"],
+  ['puissance', 'Puissance'],
+  ['couple', 'Couple'],
+  ['performances', '0–100, vitesse max'],
+  ['consommation', 'Consommation, CO₂'],
+  ['masse', 'Masse'],
+  ['dimensions', 'Dimensions, coffre'],
+  ['transmission', 'Boîte, transmission'],
+  ['entretien', 'Entretien, huile'],
+  ['tuning', 'Préparations (stages)'],
+  ['autre', 'Autre'],
+];
+
+window.toggleReport = function(cardId) {
+  const box = document.getElementById('report-' + cardId);
+  if (!box) return;
+  if (!box.hidden) { box.hidden = true; return; }
+  const car = window.carCache[cardId] || {};
+  box.innerHTML = `
+    <label class="report-row">
+      <span class="report-label">Quelle donnée est fausse ?</span>
+      <select class="s-input report-field" id="rf-${cardId}">
+        ${REPORT_FIELDS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}
+      </select>
+    </label>
+    <label class="report-row">
+      <span class="report-label">La bonne valeur, si vous la connaissez</span>
+      <input class="s-input" id="rv-${cardId}" maxlength="200" placeholder="ex : 250 ch, et non 245"/>
+    </label>
+    <div class="report-actions">
+      <button type="button" class="btn btn-outline" onclick="toggleReport('${cardId}')">Annuler</button>
+      <button type="button" class="btn btn-primary" onclick="sendReport('${cardId}')">Envoyer le signalement</button>
+    </div>`;
+  box.hidden = false;
+  box.dataset.query = car._query || car.nom || '';
+  document.getElementById('rf-' + cardId)?.focus();
+};
+
+window.sendReport = async function(cardId) {
+  const box = document.getElementById('report-' + cardId);
+  const field = document.getElementById('rf-' + cardId)?.value;
+  const expected = document.getElementById('rv-' + cardId)?.value || '';
+  const query = box?.dataset.query || '';
+  if (!query || !field) return;
+
+  const btn = box.querySelector('.btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Envoi…'; }
+  try {
+    const res = await fetch(API_BASE + '/api/report', {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ query, field, expected }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Signalement non enregistré.');
+    box.innerHTML = '<div class="report-done">Merci — c\'est noté. Les signalements servent à corriger les fiches les plus consultées.</div>';
+  } catch (err) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Envoyer le signalement'; }
+    showToast(err.message, 'error');
+  }
+};
 
 // ── FILTRES ──
 function updateFilterChips(){
