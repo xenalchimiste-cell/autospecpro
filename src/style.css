@@ -1367,24 +1367,30 @@ select.s-input {
 /* ═══════════════════════════════════════════
    MARQUES & AVIS (MARQUEE)
 ═══════════════════════════════════════════ */
-.brands-marquee-container {
-  width: 100%; overflow: hidden; margin-bottom: 2rem;
-  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-}
-.brands-marquee {
-  display: flex; gap: 2rem; align-items: center; width: max-content;
-  animation: marquee-scroll 25s linear infinite;
-  will-change: transform;
-  color: var(--text3); font-weight: 700; font-size: 13px; letter-spacing: 2px;
-}
-.brands-marquee .dot { color: var(--border2); font-size: 10px; opacity: 0.5; }
 
 .reviews-marquee-container {
   width: 100%; overflow: hidden; margin: 2rem 0; padding: 10px 0;
   mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
 }
+/* Défilement du carrousel d'avis. (L'ancien bandeau de marques partageait
+   cette animation ; il a été retiré, elle sert toujours ici.) */
+/* Ces deux animations étaient appelées sans jamais être définies : le panneau
+   d'authentification et les messages du chat apparaissaient d'un coup. */
+@keyframes authSlide {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
 .reviews-marquee {
   display: flex; gap: 1.5rem; width: max-content;
   animation: marquee-scroll 40s linear infinite;
@@ -1403,11 +1409,6 @@ select.s-input {
 .review-stars { color: var(--accent); font-size: 14px; letter-spacing: 2px; }
 .review-text { font-size: 13px; color: var(--text); white-space: normal; line-height: 1.5; font-style: italic; }
 .review-author { font-size: 11px; color: var(--text3); font-weight: 600; margin-top: auto; }
-
-@keyframes marquee-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
 
 /* RATING SELECTOR */
 .star-btn {
@@ -3224,8 +3225,7 @@ body.show-fab .fab-post { display: flex; }
   .acct-menu { width: min(268px, calc(100vw - 24px)); }
   /* Le bandeau de marques est de la décoration : il n'a pas à occuper
      la première bande de l'écran, au-dessus de ce qu'on vient faire. */
-  .brands-marquee-container { display: none; }
-
+  
   /* Le showroom 3D passe sous le bloc de recherche. `display: contents`
      dissout la grille du hero pour que ses enfants deviennent des éléments
      de la colonne de la page et puissent être réordonnés. */
@@ -3476,3 +3476,61 @@ body::before { background-image: none; }
 .fiche-sources strong { color: var(--text); font-weight: 600; }
 .fiche-sources a { color: var(--accent); }
 @media (max-width: 768px) { .fiche-sources { padding: .65rem 1.1rem; } }
+
+/* ── Icônes au trait ──
+   Elles remplacent les émojis : elles héritent de currentColor, donc du
+   thème, et se dessinent pareil sur tous les systèmes. */
+.ico {
+  width: 1em; height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.13em;
+}
+.filter-label .ico, .filter-active-chip .ico { width: 13px; height: 13px; }
+.badge .ico { width: 12px; height: 12px; }
+.anecdote .ico, .stage-remarque .ico, .fuel-remarque .ico,
+.footer-note .ico, .err .ico {
+  width: 15px; height: 15px; margin-right: 2px;
+}
+.fuel-icon .ico { width: 22px; height: 22px; }
+.cost-icon .ico { width: 18px; height: 18px; }
+.empty-icon .ico, .etat-ico .ico { width: 38px; height: 38px; stroke-width: 1.4; }
+.etat-ico { display: flex; justify-content: center; margin-bottom: 1rem; color: var(--text3); }
+.empty-icon { color: var(--text3); }
+.community-tab .ico, .up-tab .ico { width: 15px; height: 15px; margin-right: 5px; }
+
+/* ── Pastilles de fiabilité ──
+   Un rond de couleur dit le niveau ; l'émoji dépendait du système et ne
+   suivait aucun thème. */
+.dot-fiab {
+  display: inline-block; width: 9px; height: 9px;
+  border-radius: 50%; vertical-align: 0;
+  margin-right: 2px;
+}
+.dot-ok     { background: var(--green); }
+.dot-moy    { background: var(--accent); }
+.dot-risque { background: var(--red); }
+.dot-nc     { background: var(--text3); }
+
+/* ── Les plus consultées ──
+   Occupe la place de l'ancien bandeau de marques. Une ligne qui défile
+   latéralement si elle déborde, jamais deux lignes. */
+.plus-vues {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 1.75rem; min-width: 0;
+}
+.plus-vues-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .08em;
+  color: var(--text3); white-space: nowrap; flex-shrink: 0;
+}
+.plus-vues-liste {
+  display: flex; gap: 6px; overflow-x: auto; min-width: 0;
+  scrollbar-width: none; padding-bottom: 2px;
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+.plus-vues-liste::-webkit-scrollbar { display: none; }
+.plus-vues-liste .chip { flex-shrink: 0; }
+@media (max-width: 768px) {
+  .plus-vues { margin-bottom: 1.25rem; gap: 9px; }
+  .plus-vues-label { font-size: 10px; }
+}

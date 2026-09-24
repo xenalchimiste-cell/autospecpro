@@ -2,7 +2,7 @@ import { sql, initDb } from "./_lib/db.js";
 import jwt from "jsonwebtoken";
 
 import { isAllowedOrigin, consumeAiQuota, quotaExceededBody } from "./_lib/ai-guard.js";
-import { ficheCacheKey, readFiche, writeFiche } from "./_lib/fiche-cache.js";
+import { ficheCacheKey, readFiche, writeFiche, ficheslesPlusVues } from "./_lib/fiche-cache.js";
 import { chercherAdeme, lignesCertifiees } from "./_lib/ademe.js";
 import { JWT_SECRET, getUserIdFromRequest, requireAdmin } from "./_lib/auth.js";
 
@@ -41,6 +41,13 @@ export default async function handler(req, res) {
 
   // ── Signalement d'une donnée fausse (voir la réécriture /api/report) ──
   if (action === "report") return await handleReport(req, res);
+
+  // ── Palmarès des fiches consultées (page d'accueil) ──
+  if (action === "populaires") {
+    if (!applyAiCors(req, res)) return;
+    res.setHeader("Cache-Control", "public, max-age=600");
+    return res.status(200).json({ fiches: await ficheslesPlusVues(12) });
+  }
 
   // ── Chat d'entraide communautaire (comportement par défaut) ──
   await initDb();

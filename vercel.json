@@ -33,6 +33,10 @@
     {
       "source": "/api/report",
       "destination": "/api/chat.js?action=report"
+    },
+    {
+      "source": "/api/populaires",
+      "destination": "/api/chat.js?action=populaires"
     }
   ],
   "headers": [

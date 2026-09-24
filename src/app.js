@@ -107,7 +107,7 @@ async function searchVin() {
     await searchFiche();
 
   } catch (err) {
-    document.getElementById('out-fiche').innerHTML = `<div class="err">⚠️ ${err.message}</div>`;
+    document.getElementById('out-fiche').innerHTML = `<div class="err">${ico('alerte')} ${err.message}</div>`;
   }
 }
 
@@ -1099,16 +1099,60 @@ function quotaCard(err) {
 
 function badge(e){
   if(!e)return'';const l=String(e).toLowerCase();
-  if(l.includes('electr'))return`<span class="badge badge-e">⚡ ${esc(e)}</span>`;
-  if(l.includes('hybride'))return`<span class="badge badge-h">🔋 ${esc(e)}</span>`;
+  if(l.includes('electr'))return`<span class="badge badge-e">${ico('eclair')} ${esc(e)}</span>`;
+  if(l.includes('hybride'))return`<span class="badge badge-h">${ico('batterie')} ${esc(e)}</span>`;
   return`<span class="badge badge-g">${esc(e)}</span>`;
 }
 // Échappe le HTML des données IA (évite qu'une réponse casse la mise en page ou injecte du code).
+// ── ICÔNES ──
+// Le produit affichait quatre-vingt-quinze émojis. Dans une mise en page
+// éditoriale ils sonnent faux, ils ne suivent aucune couleur de thème et ils
+// se dessinent différemment sur chaque système. Des tracés au trait, comme
+// ceux de la navigation, qui héritent de currentColor.
+const ICONES = {
+  carburant: '<path d="M14 20V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v15"/><path d="M2 20h14"/><path d="M3 10h11"/><path d="M17 8l3 3v7a2 2 0 0 1-4 0v-9"/>',
+  eclair:    '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+  batterie:  '<rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 11v2M10 11v2"/>',
+  reinit:    '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
+  voiture:   '<path d="M5 17h14"/><path d="M3 17v-4l2-5h14l2 5v4"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
+  balance:   '<path d="M12 3v18"/><path d="M5 7h14"/><path d="M5 7 2 14h6L5 7z"/><path d="M19 7l-3 7h6l-3-7z"/><path d="M8 21h8"/>',
+  jauge:     '<circle cx="12" cy="12" r="9"/><path d="M12 12l4-3"/><path d="M12 3v2M21 12h-2M12 21v-2M3 12h2"/>',
+  reservoir: '<path d="M6 4h12v14a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z"/><path d="M6 10h12"/><path d="M4 4h16"/>',
+  route:     '<path d="M4 21 8 3"/><path d="M20 21 16 3"/><path d="M12 5v3M12 11v3M12 17v3"/>',
+  huile:     '<path d="M12 3s5 5.5 5 9a5 5 0 0 1-10 0c0-3.5 5-9 5-9z"/>',
+  calendrier:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  engrenage: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/>',
+  ampoule:   '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V18h8v-3.3A7 7 0 0 0 12 2z"/>',
+  antenne:   '<path d="M5 12a7 7 0 0 1 7-7"/><path d="M2 12a10 10 0 0 1 10-10"/><circle cx="12" cy="18" r="2"/><path d="M12 16v-4"/>',
+  interdit:  '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+  alerte:    '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  trophee:   '<path d="M8 21h8M12 17v4"/><path d="M6 4h12v5a6 6 0 0 1-12 0z"/><path d="M6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3"/>',
+  cle:       '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>',
+  pneu:      '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/>',
+  frein:     '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 5.5v2M18.5 12h-2M12 18.5v-2M5.5 12h2"/>',
+  presse:    '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/>',
+  bouclier:  '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+};
+
+function ico(nom, classe) {
+  const d = ICONES[nom];
+  if (!d) return '';
+  return `<svg class="ico${classe ? ' ' + classe : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+}
+
 function esc(x){return String(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function v(x){return (x===0||x)?esc(x):'—';}
 // Affichage à la française : virgule décimale, espace insécable pour les
 // milliers. Réservé aux grandeurs mesurées — une année ne se groupe pas,
 // « 2 021 » serait une faute.
+// Les valeurs composées gardent leur texte mais passent à la virgule :
+// « 10.2 L/100 km (WLTP) » devient « 10,2 L/100 km (WLTP) ». Le point n'est
+// remplacé qu'entre deux chiffres, pour ne pas toucher aux abréviations.
+function vfr(x) {
+  if (!hasVal(x)) return '—';
+  return esc(String(x).replace(/(\d)\.(\d)/g, '$1,$2'));
+}
+
 function vnum(x) {
   if (!hasVal(x)) return '—';
   const brut = String(x).trim();
@@ -1136,12 +1180,12 @@ function ficheTab(cardId, tab){
 
 function stageColor(n){ return n===1?'s1':n===2?'s2':'s3'; }
 function fiabiliteIcon(f){
-  if(!f) return '⚪';
+  if(!f) return '<span class="dot-fiab dot-nc"></span>';
   const l = String(f).toLowerCase();
-  if(l.includes('excell')) return '🟢';
-  if(l.includes('bonne')) return '🟢';
-  if(l.includes('correct')) return '🟡';
-  return '🔴';
+  if(l.includes('excell')) return '<span class="dot-fiab dot-ok"></span>';
+  if(l.includes('bonne')) return '<span class="dot-fiab dot-ok"></span>';
+  if(l.includes('correct')) return '<span class="dot-fiab dot-moy"></span>';
+  return '<span class="dot-fiab dot-risque"></span>';
 }
 
 function renderCard(c){
@@ -1179,9 +1223,9 @@ function renderCard(c){
   </div>
   <div class="section"><div class="sec-title">Motorisation</div><div class="kv">
     <div class="kv-row"><span class="kv-k">Type</span><span class="kv-v">${v(m.type)}</span></div>
-    <div class="kv-row"><span class="kv-k">Cylindrée</span><span class="kv-v">${v(m.cylindree)}</span></div>
-    <div class="kv-row"><span class="kv-k">Régime puissance</span><span class="kv-v">${v(m.regime_puissance)}</span></div>
-    <div class="kv-row"><span class="kv-k">Régime couple</span><span class="kv-v">${v(m.regime_couple)}</span></div>
+    <div class="kv-row"><span class="kv-k">Cylindrée</span><span class="kv-v">${vfr(m.cylindree)}</span></div>
+    <div class="kv-row"><span class="kv-k">Régime puissance</span><span class="kv-v">${vfr(m.regime_puissance)}</span></div>
+    <div class="kv-row"><span class="kv-k">Régime couple</span><span class="kv-v">${vfr(m.regime_couple)}</span></div>
     <div class="kv-row"><span class="kv-k">Alimentation</span><span class="kv-v">${v(m.alimentation)}</span></div>
     <div class="kv-row"><span class="kv-k">0–200 km/h</span><span class="kv-v">${vnum(p.zero_deux_cent)}</span></div>
   </div></div>
@@ -1194,18 +1238,18 @@ function renderCard(c){
     <div class="kv-row"><span class="kv-k">Freins AV/AR</span><span class="kv-v">${v(su.freins_avant)} / ${v(su.freins_arriere)}</span></div>
   </div></div>
   <div class="section"><div class="sec-title">Dimensions & pneus</div><div class="kv">
-    <div class="kv-row"><span class="kv-k">L × l × h</span><span class="kv-v">${v(dim.longueur)} × ${v(dim.largeur)} × ${v(dim.hauteur)}</span></div>
-    <div class="kv-row"><span class="kv-k">Empattement</span><span class="kv-v">${v(dim.empattement)}</span></div>
+    <div class="kv-row"><span class="kv-k">L × l × h</span><span class="kv-v">${vfr(dim.longueur)} × ${vfr(dim.largeur)} × ${vfr(dim.hauteur)}</span></div>
+    <div class="kv-row"><span class="kv-k">Empattement</span><span class="kv-v">${vfr(dim.empattement)}</span></div>
     <div class="kv-row"><span class="kv-k">Coffre</span><span class="kv-v">${vnu(dim.coffre, 'L')}</span></div>
     <div class="kv-row"><span class="kv-k">Pneus AV/AR</span><span class="kv-v">${v(pn.avant)} / ${v(pn.arriere)}</span></div>
   </div></div>
   <div class="section"><div class="sec-title">Consommation</div><div class="kv">
-    <div class="kv-row"><span class="kv-k">Mixte</span><span class="kv-v">${v(co.mixte)}</span></div>
-    <div class="kv-row"><span class="kv-k">Urbaine</span><span class="kv-v">${v(co.urbaine)}</span></div>
-    <div class="kv-row"><span class="kv-k">Autoroute</span><span class="kv-v">${v(co.autoroute)}</span></div>
-    <div class="kv-row"><span class="kv-k">CO₂</span><span class="kv-v">${v(co.co2)}</span></div>
+    <div class="kv-row"><span class="kv-k">Mixte</span><span class="kv-v">${vfr(co.mixte)}</span></div>
+    <div class="kv-row"><span class="kv-k">Urbaine</span><span class="kv-v">${vfr(co.urbaine)}</span></div>
+    <div class="kv-row"><span class="kv-k">Autoroute</span><span class="kv-v">${vfr(co.autoroute)}</span></div>
+    <div class="kv-row"><span class="kv-k">CO₂</span><span class="kv-v">${vfr(co.co2)}</span></div>
   </div></div>
-  ${c.anecdote?`<div class="anecdote">💡 ${esc(c.anecdote)}</div>`:''}`;
+  ${c.anecdote?`<div class="anecdote">${ico('ampoule')} ${esc(c.anecdote)}</div>`:''}`;
 
   // ── PANEL STAGE ──
   const stages = [
@@ -1231,33 +1275,33 @@ function renderCard(c){
   }).join('');
 
   const panelStage = `
-  ${tun.remarque_generale?`<div class="stage-remarque">⚙️ ${esc(tun.remarque_generale)}</div>`:''}
+  ${tun.remarque_generale?`<div class="stage-remarque">${ico('engrenage')} ${esc(tun.remarque_generale)}</div>`:''}
   <div class="stage-grid">${stageCards}</div>
   <div class="footer-note">Estimations indicatives — résultats variables selon le préparateur.</div>`;
 
   // ── PANEL CARBURANT ──
   const panelFuel = `
   <div class="fuel-hero">
-    <div class="fuel-item"><div class="fuel-icon">⛽</div><div class="fuel-label">Type</div><div class="fuel-val">${v(fuel.type)}</div></div>
-    <div class="fuel-item"><div class="fuel-icon">🔢</div><div class="fuel-label">Indice d'octane</div><div class="fuel-val">${vnum(fuel.indice_octane)}</div></div>
-    <div class="fuel-item"><div class="fuel-icon">🪣</div><div class="fuel-label">Réservoir</div><div class="fuel-val">${vnum(fuel.reservoir)}</div><div class="fuel-sub">litres</div></div>
-    <div class="fuel-item"><div class="fuel-icon">🛣</div><div class="fuel-label">Autonomie est.</div><div class="fuel-val">${vnum(fuel.autonomie_estimee)}</div><div class="fuel-sub">km</div></div>
+    <div class="fuel-item"><div class="fuel-icon">${ico('carburant')}</div><div class="fuel-label">Type</div><div class="fuel-val">${vfr(fuel.type)}</div></div>
+    <div class="fuel-item"><div class="fuel-icon">${ico('jauge')}</div><div class="fuel-label">Indice d'octane</div><div class="fuel-val">${vnum(fuel.indice_octane)}</div></div>
+    <div class="fuel-item"><div class="fuel-icon">${ico('reservoir')}</div><div class="fuel-label">Réservoir</div><div class="fuel-val">${vnum(fuel.reservoir)}</div><div class="fuel-sub">litres</div></div>
+    <div class="fuel-item"><div class="fuel-icon">${ico('route')}</div><div class="fuel-label">Autonomie est.</div><div class="fuel-val">${vnum(fuel.autonomie_estimee)}</div><div class="fuel-sub">km</div></div>
   </div>
   <div class="section"><div class="sec-title">Consommation détaillée</div><div class="kv">
-    <div class="kv-row"><span class="kv-k">Mixte</span><span class="kv-v">${v(co.mixte)}</span></div>
-    <div class="kv-row"><span class="kv-k">Urbaine</span><span class="kv-v">${v(co.urbaine)}</span></div>
-    <div class="kv-row"><span class="kv-k">Autoroute</span><span class="kv-v">${v(co.autoroute)}</span></div>
-    <div class="kv-row"><span class="kv-k">CO₂</span><span class="kv-v">${v(co.co2)}</span></div>
+    <div class="kv-row"><span class="kv-k">Mixte</span><span class="kv-v">${vfr(co.mixte)}</span></div>
+    <div class="kv-row"><span class="kv-k">Urbaine</span><span class="kv-v">${vfr(co.urbaine)}</span></div>
+    <div class="kv-row"><span class="kv-k">Autoroute</span><span class="kv-v">${vfr(co.autoroute)}</span></div>
+    <div class="kv-row"><span class="kv-k">CO₂</span><span class="kv-v">${vfr(co.co2)}</span></div>
   </div></div>
-  ${fuel.remarque?`<div class="fuel-remarque">💡 ${esc(fuel.remarque)}</div>`:''}`;
+  ${fuel.remarque?`<div class="fuel-remarque">${ico('ampoule')} ${esc(fuel.remarque)}</div>`:''}`;
 
   // ── PANEL ENTRETIEN ──
   const vigItems = (Array.isArray(ent.points_vigilance)?ent.points_vigilance:[]).map(pt => `<li>${esc(pt)}</li>`).join('');
   const panelEntretien = `
   <div class="fuel-hero" style="background:rgba(212,168,67,0.05); border:1px solid rgba(212,168,67,0.1); margin-top:0;">
-    <div class="fuel-item"><div class="fuel-icon">🛢️</div><div class="fuel-label">Huile Moteur</div><div class="fuel-val" style="font-size:16px;">${v(ent.huile_viscosite)}</div><div class="fuel-sub">${v(ent.huile_norme)}</div></div>
-    <div class="fuel-item"><div class="fuel-icon">📅</div><div class="fuel-label">Vidange</div><div class="fuel-val" style="font-size:16px;">${v(ent.frequence_vidange)}</div></div>
-    <div class="fuel-item"><div class="fuel-icon">⚙️</div><div class="fuel-label">Distribution</div><div class="fuel-val" style="font-size:14px; line-height:1.2;">${v(ent.distribution)}</div></div>
+    <div class="fuel-item"><div class="fuel-icon">${ico('huile')}</div><div class="fuel-label">Huile Moteur</div><div class="fuel-val" style="font-size:16px;">${vfr(ent.huile_viscosite)}</div><div class="fuel-sub">${v(ent.huile_norme)}</div></div>
+    <div class="fuel-item"><div class="fuel-icon">${ico('calendrier')}</div><div class="fuel-label">Vidange</div><div class="fuel-val" style="font-size:16px;">${vfr(ent.frequence_vidange)}</div></div>
+    <div class="fuel-item"><div class="fuel-icon">${ico('engrenage')}</div><div class="fuel-label">Distribution</div><div class="fuel-val" style="font-size:14px; line-height:1.2;">${v(ent.distribution)}</div></div>
   </div>
   <div class="section"><div class="sec-title">Préconisations Maintenance</div><div class="kv">
     <div class="kv-row"><span class="kv-k">Maintenance</span><span class="kv-v">Voir points de vigilance ci-dessous</span></div>
@@ -1435,8 +1479,8 @@ function updateFilterChips(){
   if(!carb && !stage){ active.style.display='none'; return; }
   active.style.display='flex';
   let html = '';
-  if(carb) html += `<span class="filter-active-chip">⛽ ${carb}</span>`;
-  if(stage) html += `<span class="filter-active-chip">⚡ ${stage}</span>`;
+  if(carb) html += `<span class="filter-active-chip">${ico('carburant')} ${carb}</span>`;
+  if(stage) html += `<span class="filter-active-chip">${ico('eclair')} ${stage}</span>`;
   chips.innerHTML = html;
 }
 
@@ -1448,6 +1492,42 @@ function resetFilters(){
 
 // ── FICHE ──
 function qf(t){setSearchMode('car');document.getElementById('q1').value=t;searchFiche();}
+
+// ── LES PLUS CONSULTÉES ──
+// Remplace un bandeau de logos de marques qui suggérait des partenariats
+// inexistants. Ces modèles viennent du cache de fiches : c'est ce que le site
+// a réellement produit. Si la liste est vide — installation neuve — le bloc
+// reste masqué plutôt que d'afficher une promesse creuse.
+// « bmw m3 competition » doit se lire « BMW M3 Competition ». Une simple
+// capitale initiale donnerait « Bmw M3 Gti » : les sigles et désignations
+// s'écrivent en capitales, le reste prend une majuscule.
+function habillerRequete(q) {
+  return String(q).split(/\s+/).filter(Boolean).map(mot => {
+    if (/\d/.test(mot) || mot.length <= 3) return mot.toUpperCase();
+    return mot.charAt(0).toUpperCase() + mot.slice(1);
+  }).join(' ');
+}
+
+async function chargerPlusVues() {
+  const bloc = document.getElementById('plus-vues');
+  const liste = document.getElementById('plus-vues-liste');
+  if (!bloc || !liste) return;
+  try {
+    const res = await fetch(API_BASE + '/api/populaires');
+    if (!res.ok) return;
+    const data = await res.json();
+    const fiches = (data.fiches || []).filter(f => f.requete && f.requete.length > 2).slice(0, 10);
+    if (fiches.length < 3) return;
+    liste.innerHTML = fiches.map(f => {
+      const titre = habillerRequete(f.requete);
+      return `<button type="button" class="chip" data-q="${esc(titre)}">${esc(titre)}</button>`;
+    }).join('');
+    bloc.hidden = false;
+  } catch (e) {
+    // Rien à afficher n'est pas une erreur : le bloc reste simplement masqué.
+  }
+}
+window.addEventListener('DOMContentLoaded', chargerPlusVues);
 
 // ── RECHERCHES RÉCENTES ──
 const RECENT_KEY = 'autospec_recent_searches';
@@ -1471,12 +1551,10 @@ function renderRecentSearches() {
 }
 window.addEventListener('DOMContentLoaded', () => {
   renderRecentSearches();
+  // Toute puce porteuse de data-q relance une recherche : variantes d'une
+  // fiche, recherches récentes, modèles les plus consultés.
   document.addEventListener('click', e => {
-    const chip = e.target.closest?.('.tv-chip[data-q]');
-    if (chip) qf(chip.dataset.q);
-  });
-  document.getElementById('recent-searches')?.addEventListener('click', e => {
-    const chip = e.target.closest('[data-q]');
+    const chip = e.target.closest?.('[data-q]');
     if (chip) qf(chip.dataset.q);
   });
 });
@@ -1621,7 +1699,7 @@ async function searchFiche() {
           if (plateData.error === 'plate_provider_unavailable') {
             out.innerHTML = `
               <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
-                <div style="font-size:40px; margin-bottom:1rem;">📡</div>
+                <div class="etat-ico">${ico('antenne')}</div>
                 <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Service d'identification saturé</div>
                 <div style="color:var(--text2); font-size:13px; margin-bottom:1.5rem;">Les serveurs d'identification partenaires ne répondent pas. Pour une identification 100% garantie, vous pouvez configurer une clé <strong>RAPIDAPI_KEY</strong> dans Vercel.</div>
                 <p style="font-size:12px; color:var(--text2); margin-bottom:1.5rem;">Sinon, passe en recherche manuelle (marque + modèle + année).</p>
@@ -1635,7 +1713,7 @@ async function searchFiche() {
             if (plateData.diagnostics) console.warn("[AutoSpec Diagnostics]", plateData.diagnostics);
             out.innerHTML = `
               <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
-                <div style="font-size:40px; margin-bottom:1rem;">🛰️</div>
+                <div class="etat-ico">${ico('antenne')}</div>
                 <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Échec de l'identification automatique</div>
                 <div style="color:var(--text3); font-size:13px; margin-bottom:1.5rem;">Désolé, nos capteurs n'ont pas trouvé de correspondance pour la plaque <strong>${q}</strong>.</div>
                 <p style="font-size:12px; color:var(--text2); margin-bottom:1.5rem;">Essayez de saisir le modèle manuellement (ex: BMW M3 2023).</p>
@@ -1672,7 +1750,7 @@ async function searchFiche() {
     if (isEmptyFiche(car)) {
         out.innerHTML = `
           <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
-            <div style="font-size:40px; margin-bottom:1rem;">🚫</div>
+            <div class="etat-ico">${ico('interdit')}</div>
             <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Aucun véhicule identifié</div>
             <div style="color:var(--text3); font-size:13px;">Aucune donnée fiable pour « ${esc(q)} ».<br/>Précisez la marque, le modèle et l'année — par exemple <strong>Peugeot 308 GT 1.6 THP 2018</strong>.</div>
           </div>
@@ -1696,7 +1774,7 @@ async function searchFiche() {
   } catch (e) {
     if (seq !== ficheSeq) return;
     if (e.code === 'QUOTA_EXCEEDED') { out.innerHTML = quotaCard(e); return; }
-    out.innerHTML = `<div class="card"><div class="err">❌ ${esc(e.message)}<br/><button class="btn btn-outline" style="margin-top:1rem" onclick="searchFiche()">Réessayer</button></div></div>`;
+    out.innerHTML = `<div class="card"><div class="err">${ico('alerte')} ${esc(e.message)}<br/><button class="btn btn-outline" style="margin-top:1rem" onclick="searchFiche()">Réessayer</button></div></div>`;
   } finally {
     if (seq === ficheSeq && btn) btn.classList.remove('is-loading');
   }
@@ -1740,7 +1818,7 @@ async function searchCompare(){
     if (isErrA || isErrB) {
         out.innerHTML = `
           <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
-            <div style="font-size:40px; margin-bottom:1rem;">🚫</div>
+            <div class="etat-ico">${ico('interdit')}</div>
             <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Requête incorrecte</div>
             <div style="color:var(--text3); font-size:13px;">Rien n'a été trouvé à ce sujet. Assurez-vous d'entrer des modèles valides.</div>
           </div>
@@ -1758,7 +1836,7 @@ async function searchCompare(){
   }catch(e){
     if (seq !== compareSeq) return;
     if (e.code === 'QUOTA_EXCEEDED') { out.innerHTML = quotaCard(e); return; }
-    out.innerHTML=`<div class="card"><div class="err">❌ ${esc(e.message)}</div></div>`;
+    out.innerHTML=`<div class="card"><div class="err">${ico('alerte')} ${esc(e.message)}</div></div>`;
   }
 }
 
@@ -1799,14 +1877,14 @@ function renderCompare(A,B){
   <div class="compare-grid" style="display:grid;grid-template-columns:1fr 160px 1fr;">
     <div class="cmp-head" style="border-right:1px solid var(--border)">
       <h3>${v(A.nom)}</h3>
-      <p>${v(A.annee)} · ${v(A.type)} · ${badge(A.energie)}${A._filterLabel?` <span class="badge" style="background:rgba(155,127,232,.15);color:var(--purple);border:1px solid rgba(155,127,232,.25)">⚡ ${A._filterLabel}</span>`:''}</p>
+      <p>${v(A.annee)} · ${v(A.type)} · ${badge(A.energie)}${A._filterLabel?` <span class="badge" style="background:rgba(155,127,232,.15);color:var(--purple);border:1px solid rgba(155,127,232,.25)">${ico('eclair')} ${A._filterLabel}</span>`:''}</p>
     </div>
     <div class="cmp-head" style="background:var(--bg3);display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border)">
       <span style="font-size:13px;font-weight:600;color:var(--text3);">VS</span>
     </div>
     <div class="cmp-head">
       <h3>${v(B.nom)}</h3>
-      <p>${v(B.annee)} · ${v(B.type)} · ${badge(B.energie)}${B._filterLabel?` <span class="badge" style="background:rgba(155,127,232,.15);color:var(--purple);border:1px solid rgba(155,127,232,.25)">⚡ ${B._filterLabel}</span>`:''}</p>
+      <p>${v(B.annee)} · ${v(B.type)} · ${badge(B.energie)}${B._filterLabel?` <span class="badge" style="background:rgba(155,127,232,.15);color:var(--purple);border:1px solid rgba(155,127,232,.25)">${ico('eclair')} ${B._filterLabel}</span>`:''}</p>
     </div>
     ${rowsHTML}
     <div class="cmp-cell" style="border-right:1px solid var(--border);font-size:12px;color:var(--text3);">${v(A.moteur?.boite||A.transmission?.boite)}</div>
@@ -1825,10 +1903,10 @@ function renderCompare(A,B){
     <canvas id="radarChart" style="width:100%;max-width:420px;height:280px;display:block;margin:0 auto;"></canvas>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border)">
-    ${A.anecdote?`<div class="anecdote" style="border-right:1px solid var(--border)">💡 ${esc(A.anecdote)}</div>`:'<div></div>'}
-    ${B.anecdote?`<div class="anecdote">💡 ${esc(B.anecdote)}</div>`:'<div></div>'}
+    ${A.anecdote?`<div class="anecdote" style="border-right:1px solid var(--border)">${ico('ampoule')} ${esc(A.anecdote)}</div>`:'<div></div>'}
+    ${B.anecdote?`<div class="anecdote">${ico('ampoule')} ${esc(B.anecdote)}</div>`:'<div></div>'}
   </div>
-  <div class="footer-note" style="color:var(--green)">🏆 Valeurs en vert = meilleure dans la catégorie</div>
+  <div class="footer-note" style="color:var(--green)">${ico('trophee')} Valeurs en vert = meilleure dans la catégorie</div>
 </div>`;
 }
 
@@ -2320,13 +2398,13 @@ function updateEntretien(){
     : (km/100)*d.carburant_conso*fuelPrice;
 
   const items=[
-    {icon:'🛢',name:'Vidange huile',price:Math.round(d.vidange*ageMult),freq:'/ an'},
-    {icon:'🔧',name:'Filtres (air, habitacle…)',price:Math.round(d.filtres),freq:'/ an'},
-    {icon:'🛞',name:'Pneumatiques (prorata)',price:Math.round((d.pneus/3)*ageMult),freq:'/ an'},
-    {icon:'🔴',name:'Freins (plaquettes/disques)',price:Math.round((d.freins/2)*ageMult),freq:'/ an'},
-    {icon:'📋',name:'Révision générale',price:Math.round(d.revision*ageMult),freq:'/ an'},
-    ...(d.courroie>0?[{icon:'⚙️',name:'Courroie distribution',price:Math.round(d.courroie/5),freq:'/ an (prorata)'}]:[]),
-    {icon:d.kwh?'⚡':'⛽',name:d.kwh?'Électricité':'Carburant',price:Math.round(carburant),freq:'/ an'},
+    {icon:ico('huile'),name:'Vidange huile',price:Math.round(d.vidange*ageMult),freq:'/ an'},
+    {icon:ico('cle'),name:'Filtres (air, habitacle…)',price:Math.round(d.filtres),freq:'/ an'},
+    {icon:ico('pneu'),name:'Pneumatiques (prorata)',price:Math.round((d.pneus/3)*ageMult),freq:'/ an'},
+    {icon:ico('frein'),name:'Freins (plaquettes/disques)',price:Math.round((d.freins/2)*ageMult),freq:'/ an'},
+    {icon:ico('presse'),name:'Révision générale',price:Math.round(d.revision*ageMult),freq:'/ an'},
+    ...(d.courroie>0?[{icon:ico('engrenage'),name:'Courroie distribution',price:Math.round(d.courroie/5),freq:'/ an (prorata)'}]:[]),
+    {icon: d.kwh ? ico('eclair') : ico('carburant'),name:d.kwh?'Électricité':'Carburant',price:Math.round(carburant),freq:'/ an'},
   ];
 
   const total=items.reduce((s,i)=>s+i.price,0);
@@ -2533,7 +2611,7 @@ function finalizeProDossier() {
       <!-- Bloc Expertise & Maintenance -->
       <div style="margin-top: 30px; border-top: 2px solid #1a1a1a; padding-top: 20px;">
         <div style="font-size: 20px; font-weight: bold; color: #1a1a1a; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;">
-           🛠️ Expertise Maintenance & Vigilance
+           Expertise maintenance & Vigilance
         </div>
         <div style="display: flex; gap: 30px; margin-bottom: 25px;">
           <div style="flex: 1; background: #f9f9f9; padding: 15px; border-radius: 8px;">
@@ -2553,7 +2631,7 @@ function finalizeProDossier() {
 
         <div style="background: rgba(231, 76, 60, 0.03); border: 1px solid rgba(231, 76, 60, 0.2); padding: 20px; border-radius: 8px;">
           <div style="font-weight: bold; color: #e74c3c; margin-bottom: 10px; font-size: 14px; display:flex; align-items:center; gap:8px;">
-            ⚠️ POINTS DE VIGILANCE TECHNIQUE
+            POINTS DE VIGILANCE TECHNIQUE
           </div>
           <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #444; line-height: 1.6;">
             ${(Array.isArray(c.entretien?.points_vigilance)?c.entretien.points_vigilance:[]).map(pt => `<li>${esc(pt)}</li>`).join('')}
@@ -2577,7 +2655,7 @@ function finalizeProDossier() {
   // Redirection vers une nouvelle fenêtre pour affichage/impression native
   const newWin = window.open('', '_blank');
   if(!newWin) {
-    btn.innerHTML = '❌ Fenêtre bloquée';
+    btn.innerHTML = 'Fenêtre bloquée';
     setTimeout(() => { btn.innerHTML = oldHtml; btn.style.pointerEvents = 'auto'; }, 3000);
     return;
   }

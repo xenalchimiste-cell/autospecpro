@@ -163,7 +163,7 @@
       <h3 style="margin-bottom:15px; color:var(--text); font-family: 'DM Serif Display', serif;">Envoyer une Notification</h3>
       <input type="text" id="push-title" class="p-input" placeholder="Titre de la notification" style="margin-bottom:10px;" value="AutoSpec">
       <textarea id="push-body" class="p-input" placeholder="Message..." style="margin-bottom:10px; height:80px;">Découvrez nos dernières fonctionnalités !</textarea>
-      <button class="btn btn-primary" onclick="sendAdminPush()">🚀 Envoyer à tous les abonnés</button>
+      <button class="btn btn-primary" onclick="sendAdminPush()">Envoyer à tous les abonnés</button>
     </div>
 
     <!-- Sub-tab: Users -->
@@ -229,36 +229,15 @@
   <!-- ══════════ FICHE ══════════ -->
   <div class="page active" id="page-fiche">
     
-    <!-- MARQUES COLLABORATIVES -->
-    <div class="brands-marquee-container">
-      <div class="brands-marquee">
-        <span>BREMBO</span><span class="dot">•</span>
-        <span>MICHELIN</span><span class="dot">•</span>
-        <span>AKRAPOVIC</span><span class="dot">•</span>
-        <span>RECARO</span><span class="dot">•</span>
-        <span>BILSTEIN</span><span class="dot">•</span>
-        <span>BOSCH</span><span class="dot">•</span>
-        <span>MOTUL</span><span class="dot">•</span>
-        <span>PIRELLI</span><span class="dot">•</span>
-        <span>CASTROL</span><span class="dot">•</span>
-        <span>SPARCO</span><span class="dot">•</span>
-        <span>H&R</span><span class="dot">•</span>
-        <span>EIBACH</span><span class="dot">•</span>
-        <!-- Duplicated for infinite scroll -->
-        <span>BREMBO</span><span class="dot">•</span>
-        <span>MICHELIN</span><span class="dot">•</span>
-        <span>AKRAPOVIC</span><span class="dot">•</span>
-        <span>RECARO</span><span class="dot">•</span>
-        <span>BILSTEIN</span><span class="dot">•</span>
-        <span>BOSCH</span><span class="dot">•</span>
-        <span>MOTUL</span><span class="dot">•</span>
-        <span>PIRELLI</span><span class="dot">•</span>
-        <span>CASTROL</span><span class="dot">•</span>
-        <span>SPARCO</span><span class="dot">•</span>
-        <span>H&R</span><span class="dot">•</span>
-        <span>EIBACH</span><span class="dot">•</span>
-      </div>
+    <!-- LES PLUS CONSULTÉES —
+         Remplace un bandeau de logos de marques qui laissait croire à des
+         partenariats. Ces modèles sortent du cache de fiches : c'est une
+         donnée que le site produit vraiment. Masqué tant qu'il n'y en a pas. -->
+    <div class="plus-vues" id="plus-vues" hidden>
+      <span class="plus-vues-label">Les plus consultées</span>
+      <div class="plus-vues-liste" id="plus-vues-liste"></div>
     </div>
+
 
     <div class="hero">
       <div class="hero-text">
@@ -281,7 +260,7 @@
 
     <div class="filter-row">
       <div class="filter-group">
-        <div class="filter-label">⛽ Carburant</div>
+        <div class="filter-label"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 20V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v15"/><path d="M2 20h14"/><path d="M3 10h11"/><path d="M17 8l3 3v7a2 2 0 0 1-4 0v-9"/></svg> Carburant</div>
         <select class="filter-select" id="f-carburant" onchange="updateFilterChips()">
           <option value="">Tous</option>
           <option value="Essence">Essence</option>
@@ -292,7 +271,7 @@
         </select>
       </div>
       <div class="filter-group">
-        <div class="filter-label">⚡ Préparation</div>
+        <div class="filter-label"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg> Préparation</div>
         <select class="filter-select" id="f-stage" onchange="updateFilterChips()">
           <option value="">Stock</option>
           <option value="Stage 1">Stage 1</option>
@@ -305,7 +284,7 @@
     <div class="filter-active" id="filter-active" style="display:none">
       <span class="filter-active-label">Filtres actifs :</span>
       <span id="filter-active-chips"></span>
-      <button class="filter-reset" onclick="resetFilters()">✕ Réinitialiser</button>
+      <button class="filter-reset" onclick="resetFilters()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg> Réinitialiser</button>
     </div>
 
     <div class="search-mode-tabs">
@@ -360,7 +339,7 @@
     </div>
     <div class="chips recent-searches" id="recent-searches" hidden></div>
 
-    <div id="out-fiche"><div class="empty"><div class="empty-icon">🏎</div>Entrez un modèle pour afficher sa fiche.</div></div>
+    <div id="out-fiche"><div class="empty"><div class="empty-icon"><svg class="ico ico-vide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17h14"/><path d="M3 17v-4l2-5h14l2 5v4"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/></svg></div>Entrez un modèle pour afficher sa fiche.</div></div>
 
     <!-- AVIS UTILISATEURS -->
     <div class="reviews-head">
@@ -395,7 +374,7 @@
         </div>
         <div class="cmp-filter-row">
           <div class="filter-group">
-            <div class="filter-label">⛽ Carburant</div>
+            <div class="filter-label"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 20V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v15"/><path d="M2 20h14"/><path d="M3 10h11"/><path d="M17 8l3 3v7a2 2 0 0 1-4 0v-9"/></svg> Carburant</div>
             <select class="filter-select" id="cA-carburant">
               <option value="">Tous</option>
               <option value="Essence">Essence</option>
@@ -406,7 +385,7 @@
             </select>
           </div>
           <div class="filter-group">
-            <div class="filter-label">⚡ Stage</div>
+            <div class="filter-label"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg> Stage</div>
             <select class="filter-select" id="cA-stage">
               <option value="">Stock</option>
               <option value="Stage 1">Stage 1</option>
@@ -426,7 +405,7 @@
         </div>
         <div class="cmp-filter-row">
           <div class="filter-group">
-            <div class="filter-label">⛽ Carburant</div>
+            <div class="filter-label"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 20V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v15"/><path d="M2 20h14"/><path d="M3 10h11"/><path d="M17 8l3 3v7a2 2 0 0 1-4 0v-9"/></svg> Carburant</div>
             <select class="filter-select" id="cB-carburant">
               <option value="">Tous</option>
               <option value="Essence">Essence</option>
@@ -437,7 +416,7 @@
             </select>
           </div>
           <div class="filter-group">
-            <div class="filter-label">⚡ Stage</div>
+            <div class="filter-label"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg> Stage</div>
             <select class="filter-select" id="cB-stage">
               <option value="">Stock</option>
               <option value="Stage 1">Stage 1</option>
@@ -455,7 +434,7 @@
       <button type="button" class="chip" onclick="presetCompare('Tesla Model 3 2024','BMW i4 2023')">Model 3 vs i4</button>
       <button type="button" class="chip" onclick="presetCompare('Renault Clio 5 2023','Peugeot 208 2023')">Clio vs 208</button>
     </div>
-    <div id="out-compare"><div class="empty"><div class="empty-icon">⚖️</div>Entrez deux modèles à comparer.</div></div>
+    <div id="out-compare"><div class="empty"><div class="empty-icon"><svg class="ico ico-vide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M5 7h14"/><path d="M5 7 2 14h6L5 7z"/><path d="M19 7l-3 7h6l-3-7z"/><path d="M8 21h8"/></svg></div>Entrez deux modèles à comparer.</div></div>
   </div>
 
   <!-- ══════════ SIMULATEUR ══════════ -->
@@ -588,9 +567,9 @@
     </div>
 
     <div class="community-tabs" style="display:flex; gap:20px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-      <button class="comm-tab active" onclick="switchCommunityTab('bolides', this)">Bolides 🏎️</button>
-      <button class="comm-tab" onclick="switchCommunityTab('playlists', this)">Playlists 🎵</button>
-      <button class="comm-tab" onclick="switchCommunityTab('entraide', this)">Entraide 🔧</button>
+      <button class="comm-tab active" onclick="switchCommunityTab('bolides', this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17h14"/><path d="M3 17v-4l2-5h14l2 5v4"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/></svg> Bolides</button>
+      <button class="comm-tab" onclick="switchCommunityTab('playlists', this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Playlists</button>
+      <button class="comm-tab" onclick="switchCommunityTab('entraide', this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/></svg> Entraide</button>
     </div>
 
     <div id="community-feed" class="community-grid">
@@ -660,7 +639,7 @@
       <div class="up-main">
         <div class="up-tabs" style="display:flex; gap:20px; margin-bottom:20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
           <button class="up-tab active" onclick="switchUpTab('posts', this)">Publications</button>
-          <button class="up-tab" onclick="switchUpTab('playlists', this)">Playlists 🎵</button>
+          <button class="up-tab" onclick="switchUpTab('playlists', this)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Playlists</button>
         </div>
         <div id="up-posts-grid" class="community-grid">
           <!-- Posts de l'utilisateur -->

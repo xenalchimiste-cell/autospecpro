@@ -96,3 +96,21 @@ export async function writeFiche(cacheKey, query, content, model, promptVersion)
     console.warn('[fiche-cache] écriture impossible :', err.message);
   }
 }
+
+// Les fiches les plus consultées, lues dans le cache lui-même : c'est une
+// donnée que le site produit, pas un emprunt à des marques tierces.
+export async function ficheslesPlusVues(limite = 12) {
+  try {
+    await ensureTable();
+    const { rows } = await sql`
+      SELECT query, hits FROM fiche_cache
+      WHERE hits > 0 AND query <> ''
+      ORDER BY hits DESC, created_at DESC
+      LIMIT ${Math.min(Math.max(limite, 1), 30)}
+    `;
+    return rows.map(r => ({ requete: r.query, vues: r.hits }));
+  } catch (err) {
+    console.warn('[fiche-cache] palmarès indisponible :', err.message);
+    return [];
+  }
+}
