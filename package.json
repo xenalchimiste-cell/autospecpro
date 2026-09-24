@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "npx -y serve .",
-    "start": "npx -y serve ."
+    "start": "npx -y serve .",
+    "test": "node --experimental-test-module-mocks --test test/*.test.js"
   },
   "dependencies": {
     "@vercel/blob": "^0.22.1",

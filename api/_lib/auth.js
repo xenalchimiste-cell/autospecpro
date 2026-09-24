@@ -1,9 +1,30 @@
 import jwt from 'jsonwebtoken';
 import { sql } from './db.js';
 
-// Source unique de vérité pour le secret JWT et l'email admin — évite la
-// duplication du fallback `'super-secret-key'` dans chaque fonction API.
-export const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
+// Source unique de vérité pour le secret JWT et l'email admin.
+//
+// Le repli valait `'super-secret-key'`, une chaîne présente en clair dans le
+// dépôt : si la variable d'environnement manquait en production, n'importe qui
+// pouvait signer un jeton pour n'importe quel compte, admin compris. On refuse
+// désormais de démarrer plutôt que de tourner ouvert en silence.
+const DEV_SECRET = 'dev-only-insecure-secret';
+
+function resolveJwtSecret() {
+  const fromEnv = process.env.JWT_SECRET;
+  if (fromEnv && fromEnv.length >= 16) return fromEnv;
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      "JWT_SECRET est absente ou trop courte (16 caractères minimum). " +
+      "Définissez-la dans les variables d'environnement avant de déployer : " +
+      "sans elle, les jetons d'authentification seraient forgeables."
+    );
+  }
+  console.warn("[auth] JWT_SECRET absente : repli de développement utilisé. Ne jamais déployer ainsi.");
+  return DEV_SECRET;
+}
+
+export const JWT_SECRET = resolveJwtSecret();
 export const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'andreasgiacomello23@gmail.com').toLowerCase().trim();
 
 export function verifyToken(token) {

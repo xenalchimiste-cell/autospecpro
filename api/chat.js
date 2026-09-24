@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 import { JWT_SECRET } from "./_lib/auth.js";
 import { isAllowedOrigin, consumeAiQuota, quotaExceededBody } from "./_lib/ai-guard.js";
+import { ficheCacheKey, readFiche, writeFiche } from "./_lib/fiche-cache.js";
 
 // llama-3.3-70b-versatile a été retiré par Groq (model_not_found).
 // Le modèle est imposé côté serveur : le client ne peut plus le choisir.
@@ -11,6 +12,9 @@ const AI_FALLBACK_MODEL = "openai/gpt-oss-20b";
 // gpt-oss raisonne avant de répondre : les tokens de raisonnement comptent
 // dans la limite, d'où une marge large pour ne pas tronquer le JSON.
 const AI_MAX_TOKENS = 4000;
+// Incrémenter ce numéro dès que le prompt ou le gabarit JSON change : les
+// fiches mises en cache par l'ancienne version cessent alors d'être servies.
+const FICHE_PROMPT_VERSION = 1;
 
 export default async function handler(req, res) {
   // CORS Headers
@@ -259,6 +263,40 @@ async function handleAiProxy(req, res) {
   if (!quota.allowed) return res.status(429).json(quotaExceededBody(quota, kind));
   const quotaInfo = { tier: quota.tier, limit: quota.limit, remaining: quota.remaining };
 
+  // Cache partagé : une fiche déjà produite pour ce véhicule est resservie
+  // telle quelle, à tout le monde. Le quota reste décompté — le cache réduit
+  // le coût de production, pas la valeur de ce qui est servi.
+  const cacheKey = kind === "fiche" ? ficheCacheKey(body, FICHE_PROMPT_VERSION) : null;
+  if (cacheKey) {
+    const hit = await readFiche(cacheKey, FICHE_PROMPT_VERSION);
+    if (hit) {
+      return res.status(200).json({
+        choices: [{ message: { content: hit } }],
+        quota: quotaInfo,
+        cached: true,
+      });
+    }
+  }
+
+  // On ne met en cache qu'une fiche réellement exploitable : un JSON valide
+  // décrivant un véhicule. Une erreur ou un NOT_A_CAR resterait figé sinon.
+  // L'écriture est attendue avant la réponse : une fonction serverless peut
+  // être arrêtée dès que la réponse part, et le cache ne se remplirait jamais.
+  const cacheIfUsable = async (data) => {
+    if (!cacheKey) return;
+    const content = data?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") return;
+    const raw = content.replace(/```[\w]*\n?/g, "").replace(/```/g, "").trim();
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_) {
+      return;
+    }
+    if (!parsed || parsed.error === "NOT_A_CAR") return;
+    await writeFiche(cacheKey, body.query, raw, data?.model || AI_MODEL, FICHE_PROMPT_VERSION);
+  };
+
   const send = async (attempt) => {
     if (!attempt.ok) {
       await quota.refund();
@@ -266,6 +304,7 @@ async function handleAiProxy(req, res) {
         error: attempt.data?.error?.message || "Erreur Groq inconnue",
       });
     }
+    await cacheIfUsable(attempt.data);
     return res.status(200).json({ ...attempt.data, quota: quotaInfo });
   };
 
