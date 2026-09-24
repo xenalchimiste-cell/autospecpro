@@ -388,6 +388,40 @@ nav::after {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .car-sub { font-size: 13px; color: var(--text2); margin-top: 5px; font-weight: 300; }
+.car-ident { font-size: 12px; color: var(--text3); margin-top: 4px; font-weight: 300; letter-spacing: .02em; }
+
+/* ── Bandeau de fiabilité de la fiche ── */
+.trust {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 0.7rem 1.4rem; font-size: 12.5px; line-height: 1.45;
+  border-bottom: 1px solid var(--border);
+}
+.trust-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; margin-top: 5px; }
+.trust-txt { color: var(--text2); }
+.trust-txt strong { color: var(--text); font-weight: 600; }
+.trust-high { background: rgba(46, 204, 113, 0.07); }
+.trust-high .trust-dot { background: #2ecc71; box-shadow: 0 0 6px rgba(46, 204, 113, .6); }
+.trust-mid { background: rgba(212, 168, 67, 0.07); }
+.trust-mid .trust-dot { background: var(--accent, #d4a843); box-shadow: 0 0 6px rgba(212, 168, 67, .6); }
+.trust-low, .trust-warn { background: rgba(231, 76, 60, 0.07); }
+.trust-low .trust-dot, .trust-warn .trust-dot { background: #e74c3c; box-shadow: 0 0 6px rgba(231, 76, 60, .6); }
+
+.trust-variants {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
+  padding: 0.7rem 1.4rem; border-bottom: 1px solid var(--border);
+}
+.tv-label { font-size: 12px; color: var(--text3); margin-right: 2px; }
+.tv-chip {
+  font: inherit; font-size: 12px; cursor: pointer;
+  padding: 5px 11px; border-radius: 999px;
+  border: 1px solid var(--border); background: transparent; color: var(--text2);
+  transition: border-color .15s, color .15s, background .15s;
+}
+.tv-chip:hover { border-color: var(--accent, #d4a843); color: var(--text); background: rgba(212, 168, 67, 0.08); }
+
+@media (max-width: 640px) {
+  .trust, .trust-variants { padding: 0.65rem 1.1rem; }
+}
 
 .badge { font-size: 10px; padding: 3px 10px; border-radius: 99px; font-weight: 600; letter-spacing: 0.05em; }
 .badge-e { background: rgba(78,203,130,.12); color: var(--green); border: 1px solid rgba(78,203,130,.25); }

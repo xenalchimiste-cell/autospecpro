@@ -934,14 +934,14 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── API ──
-// v5 : les prompts sont construits côté serveur → nouvelles clés de cache.
-const CACHE_PREFIX = 'autospec_v5_';
+// v6 : prompt renforcé + requêtes normalisées → nouvelles clés de cache.
+const CACHE_PREFIX = 'autospec_v6_';
 const memCache = new Map();
 const inflight = new Map();
 
 try {
   Object.keys(localStorage)
-    .filter(k => k.startsWith('autospec_v3_') || k.startsWith('autospec_v4_'))
+    .filter(k => /^autospec_v[345]_/.test(k))
     .forEach(k => localStorage.removeItem(k));
 } catch (e) {}
 
@@ -1019,10 +1019,204 @@ async function postAi(body) {
   return data;
 }
 
+// ── NORMALISATION DES REQUÊTES ──
+// Deux personnes qui cherchent la même voiture doivent obtenir la même fiche :
+// on corrige les fautes de marque les plus courantes et on uniformise
+// espaces/casse/accents avant d'appeler l'IA et de calculer la clé de cache.
+function deaccent(s) {
+  return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+const BRAND_ALIASES = {
+  vw: 'Volkswagen', volkswagen: 'Volkswagen', wolkswagen: 'Volkswagen', volskwagen: 'Volkswagen', volswagen: 'Volkswagen', wolswagen: 'Volkswagen',
+  mercedes: 'Mercedes-Benz', 'mercedes benz': 'Mercedes-Benz', mercedez: 'Mercedes-Benz', merco: 'Mercedes-Benz', mercedes_benz: 'Mercedes-Benz', benz: 'Mercedes-Benz',
+  bmw: 'BMW', bm: 'BMW', bmv: 'BMW',
+  audi: 'Audi', audy: 'Audi', audii: 'Audi',
+  peugeot: 'Peugeot', peugot: 'Peugeot', peugeo: 'Peugeot', pegeot: 'Peugeot', peujot: 'Peugeot',
+  renault: 'Renault', renaud: 'Renault', reno: 'Renault', renault_sport: 'Renault',
+  citroen: 'Citroën', citroene: 'Citroën', citroin: 'Citroën',
+  ds: 'DS Automobiles',
+  porsche: 'Porsche', porche: 'Porsche', porsh: 'Porsche', porshe: 'Porsche', porsche_ag: 'Porsche',
+  ferrari: 'Ferrari', ferrarie: 'Ferrari', ferari: 'Ferrari',
+  lamborghini: 'Lamborghini', lambo: 'Lamborghini', lamborgini: 'Lamborghini', lamborghinie: 'Lamborghini',
+  'alfa romeo': 'Alfa Romeo', 'alpha romeo': 'Alfa Romeo', alfa: 'Alfa Romeo', alfaromeo: 'Alfa Romeo',
+  toyota: 'Toyota', toyot: 'Toyota', toyata: 'Toyota',
+  nissan: 'Nissan', nisan: 'Nissan',
+  hyundai: 'Hyundai', hyunday: 'Hyundai', hundai: 'Hyundai', hyundaï: 'Hyundai',
+  kia: 'Kia', skoda: 'Skoda', seat: 'Seat', cupra: 'Cupra', opel: 'Opel', ford: 'Ford', fiat: 'Fiat', mini: 'Mini',
+  'land rover': 'Land Rover', landrover: 'Land Rover', 'range rover': 'Land Rover Range Rover',
+  jaguar: 'Jaguar', volvo: 'Volvo', tesla: 'Tesla', telsa: 'Tesla', dacia: 'Dacia',
+  suzuki: 'Suzuki', subaru: 'Subaru', mazda: 'Mazda', honda: 'Honda', hondaa: 'Honda',
+  mitsubishi: 'Mitsubishi', mitsubichi: 'Mitsubishi',
+  chevrolet: 'Chevrolet', chevy: 'Chevrolet', jeep: 'Jeep', abarth: 'Abarth',
+  maserati: 'Maserati', maseratti: 'Maserati', bentley: 'Bentley',
+  'rolls royce': 'Rolls-Royce', 'aston martin': 'Aston Martin', mclaren: 'McLaren', 'mc laren': 'McLaren',
+  bugatti: 'Bugatti', koenigsegg: 'Koenigsegg', pagani: 'Pagani', alpine: 'Alpine', smart: 'Smart',
+  lexus: 'Lexus', infiniti: 'Infiniti', genesis: 'Genesis', polestar: 'Polestar', mg: 'MG', byd: 'BYD',
+  lancia: 'Lancia', saab: 'Saab', ssangyong: 'SsangYong', isuzu: 'Isuzu', lotus: 'Lotus', caterham: 'Caterham',
+};
+
+const BRAND_LOOKUP = (() => {
+  const map = new Map();
+  for (const [k, val] of Object.entries(BRAND_ALIASES)) {
+    map.set(deaccent(k).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(), val);
+  }
+  return map;
+})();
+
+// "golf7 gti" → "Volkswagen ..." n'est pas deviné : on corrige seulement
+// ce qui est sûr (marque connue, chiffre collé au modèle, espaces parasites).
+function normalizeCarQuery(raw) {
+  let q = String(raw || '').replace(/[«»"'`_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!q) return '';
+  // Chiffre collé : "golf7" → "golf 7", "2.0tdi" → "2.0 tdi".
+  // On épargne les noms courts type A3, M3, X5, GT3 où le chiffre fait partie du nom.
+  q = q.replace(/([A-Za-zÀ-ÿ]{3,})(\d)/g, '$1 $2').replace(/(\d)([A-Za-zÀ-ÿ]{2,})/g, '$1 $2');
+
+  const words = q.split(' ').filter(Boolean);
+  const keys = words.map(w => deaccent(w).toLowerCase().replace(/[^a-z0-9]/g, ''));
+  for (let n = Math.min(3, words.length); n >= 1; n--) {
+    const brand = BRAND_LOOKUP.get(keys.slice(0, n).join(' '));
+    if (brand) return [brand, ...words.slice(n)].join(' ').trim();
+  }
+  return q;
+}
+
+// Forme canonique (insensible casse/accents) : sert de clé de cache stable.
+function canonicalQuery(raw) {
+  return deaccent(normalizeCarQuery(raw)).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+// ── VALIDATION DES DONNÉES RENVOYÉES PAR L'IA ──
+// L'IA reste faillible : on refuse d'afficher un chiffre physiquement impossible
+// (mieux vaut « — » qu'une valeur fausse) et on signale les incohérences.
+const SPEC_RANGES = {
+  'moteur.puissance_ch': [15, 2500],
+  'moteur.puissance_kw': [10, 1900],
+  'moteur.couple_nm': [20, 3500],
+  'performances.zero_cent': [1.5, 40],
+  'performances.zero_deux_cent': [4, 150],
+  'performances.vitesse_max': [40, 550],
+  'chassis.masse': [300, 4500],
+  'chassis.coffre': [0, 4000],
+  'carburant.reservoir': [5, 200],
+  'carburant.autonomie_estimee': [30, 2500],
+  'carburant.indice_octane': [80, 120],
+};
+const STAGE_RANGES = { puissance_ch: [15, 3500], couple_nm: [20, 5000], gain_ch: [0, 2500], gain_nm: [0, 4000] };
+const RANGE_RE = /^\s*\d+(?:[.,]\d+)?\s*(?:[-–—]|à|a)\s*\d+(?:[.,]\d+)?\s*$/;
+
+function toNum(val) {
+  if (val === 0) return 0;
+  if (!val) return null;
+  const s = String(val)
+    .replace(/ /g, ' ')
+    .replace(/(\d)[  ](?=\d{3}\b)/g, '$1')  // "1 495 kg" → "1495 kg"
+    .replace(/(\d),(\d)/g, '$1.$2');
+  const m = s.match(/\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : null;
+}
+
+function getPath(obj, path) {
+  return path.split('.').reduce((o, k) => (o && typeof o === 'object' ? o[k] : undefined), obj);
+}
+function setPath(obj, path, val) {
+  const keys = path.split('.');
+  const last = keys.pop();
+  const parent = keys.reduce((o, k) => (o[k] && typeof o[k] === 'object' ? o[k] : (o[k] = {})), obj);
+  parent[last] = val;
+}
+
+// Champ numérique : on ne garde que le nombre (l'unité est déjà dans le gabarit),
+// et on supprime la valeur si elle sort des bornes physiques du champ.
+function cleanNumericField(obj, path, [min, max]) {
+  const raw = getPath(obj, path);
+  if (raw === undefined || raw === null || raw === '') return;
+  if (/^n\/?a$/i.test(String(raw).trim())) { setPath(obj, path, 'N/A'); return; }
+  if (RANGE_RE.test(String(raw))) return; // fourchette assumée : on la laisse telle quelle
+  const n = toNum(raw);
+  if (n === null || n < min || n > max) { setPath(obj, path, 'N/A'); return; }
+  setPath(obj, path, String(Number.isInteger(n) ? n : +n.toFixed(1)));
+}
+
+function hasVal(x) {
+  const s = String(x == null ? '' : x).trim();
+  return s !== '' && s !== '—' && !/^n\/?a$/i.test(s) && !/^(inconnu|non communiqué|non communique)$/i.test(s);
+}
+
+// Nettoie la fiche en place et renvoie la liste des incohérences détectées.
+function sanitizeFiche(car) {
+  const alerts = [];
+  if (!car || typeof car !== 'object') return car;
+
+  for (const [path, range] of Object.entries(SPEC_RANGES)) cleanNumericField(car, path, range);
+  for (const key of ['stage1', 'stage2', 'stage3']) {
+    if (car.tuning && car.tuning[key]) {
+      for (const [f, range] of Object.entries(STAGE_RANGES)) cleanNumericField(car.tuning[key], f, range);
+    }
+  }
+
+  // Puissance ch ↔ kW : une seule des deux fait foi, on recalcule l'autre.
+  const m = car.moteur || (car.moteur = {});
+  const ch = toNum(hasVal(m.puissance_ch) ? m.puissance_ch : null);
+  const kw = toNum(hasVal(m.puissance_kw) ? m.puissance_kw : null);
+  if (ch && (!kw || Math.abs(kw - ch * 0.7355) / (ch * 0.7355) > 0.12)) {
+    m.puissance_kw = String(Math.round(ch * 0.7355));
+  } else if (!ch && kw) {
+    m.puissance_ch = String(Math.round(kw / 0.7355));
+  }
+
+  // Nom d'affichage : reconstruit depuis l'identification si l'IA l'a laissé vide.
+  if (!hasVal(car.nom)) {
+    const built = [car.marque, car.modele, car.finition].filter(hasVal).join(' ').trim();
+    if (built) car.nom = built;
+  }
+  if (!hasVal(car.annee)) {
+    const years = [car.annee_debut, car.annee_fin].filter(hasVal).join(' – ');
+    if (years) car.annee = years;
+  }
+
+  // Filet de sécurité grossier : un 0–100 totalement hors rapport poids/puissance
+  // trahit un mélange de finitions (ex. chiffres de la version Competition).
+  const mass = toNum(hasVal(car.chassis?.masse) ? car.chassis.masse : null);
+  const zc = toNum(hasVal(car.performances?.zero_cent) ? car.performances.zero_cent : null);
+  const chFinal = toNum(hasVal(m.puissance_ch) ? m.puissance_ch : null);
+  if (mass && zc && chFinal) {
+    const expected = 0.9 * (mass / chFinal) + 1.0;
+    if (zc < expected * 0.5 || zc > expected * 2) {
+      alerts.push("Le 0–100 km/h annoncé colle mal au rapport poids/puissance : vérifiez la finition exacte.");
+    }
+  }
+
+  // Un stage ne peut pas faire moins que la version d'origine.
+  for (const key of ['stage1', 'stage2', 'stage3']) {
+    const st = car.tuning?.[key];
+    if (!st || !chFinal) continue;
+    const stCh = toNum(hasVal(st.puissance_ch) ? st.puissance_ch : null);
+    if (stCh && stCh < chFinal) { st.puissance_ch = 'N/A'; st.gain_ch = 'N/A'; }
+    else if (stCh && !hasVal(st.gain_ch)) st.gain_ch = String(Math.round(stCh - chFinal));
+  }
+
+  car._alerts = alerts;
+  return car;
+}
+
+// Fiche vide / hors-sujet : l'IA n'a identifié aucun véhicule exploitable.
+function isEmptyFiche(car) {
+  if (!car || car.error === 'NOT_A_CAR') return true;
+  const named = hasVal(car.nom) || hasVal(car.marque) || hasVal(car.modele);
+  const speced = hasVal(car.moteur?.puissance_ch) || hasVal(car.moteur?.cylindree) || hasVal(car.chassis?.masse);
+  return !named || !speced;
+}
+
 // Fiche technique IA (avec cache local et partage des requêtes identiques en cours).
-function fetchFiche(query, carburant = '', stage = '', tech = {}) {
+function fetchFiche(rawQuery, carburant = '', stage = '', tech = {}) {
+  const query = normalizeCarQuery(rawQuery);
   const params = { query, carburant, stage, tech };
-  const cacheKey = hashCode(JSON.stringify(params));
+  // La clé porte la requête canonique en clair : deux voitures différentes ne
+  // peuvent plus se retrouver sur la même entrée à cause d'une collision de hash.
+  const slug = canonicalQuery(rawQuery).replace(/\s+/g, '-').slice(0, 48);
+  const cacheKey = slug + '-' + hashCode(JSON.stringify(params));
   const cached = getCache(cacheKey);
   if (cached) return Promise.resolve(cached);
 
@@ -1083,6 +1277,9 @@ function badge(e){
 // Échappe le HTML des données IA (évite qu'une réponse casse la mise en page ou injecte du code).
 function esc(x){return String(x).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function v(x){return (x===0||x)?esc(x):'—';}
+// Valeur + unité : l'unité n'est accolée que si la donnée existe (les champs
+// numériques sont désormais renvoyés bruts, sans unité, par l'IA).
+function vu(x, unit){ return hasVal(x) ? esc(x) + (unit ? ' ' + unit : '') : '—'; }
 
 function ficheTab(cardId, tab){
   document.querySelectorAll('#'+cardId+' .fiche-tab').forEach(t=>t.classList.remove('active'));
@@ -1108,6 +1305,15 @@ function renderCard(c){
   const cardId = 'card-'+Math.random().toString(36).slice(2,7);
   window.carCache[cardId] = c;
 
+  // Tuile conso : on isole le nombre de son unité pour garder un chiffre lisible.
+  const consoN = toNum(hasVal(co.mixte) ? co.mixte : null);
+  const consoUnit = /kwh/i.test(String(co.mixte || '')) ? 'kWh/100 km' : 'L/100 km';
+  const co2N = toNum(hasVal(co.co2) ? co.co2 : null);
+  const consoHero = {
+    val: consoN !== null ? consoN : '—',
+    unit: (consoN !== null ? consoUnit : '') + (co2N !== null ? (consoN !== null ? ' · ' : '') + 'CO₂ ' + co2N + ' g/km' : ''),
+  };
+
   // ── PANEL SPECS ──
   const panelSpecs = `
   <div class="hero-grid">
@@ -1115,7 +1321,7 @@ function renderCard(c){
     <div class="hero-item"><div class="h-label">Couple</div><div class="h-val">${v(m.couple_nm)}</div><div class="h-unit">N·m</div></div>
     <div class="hero-item"><div class="h-label">0–100 km/h</div><div class="h-val">${v(p.zero_cent)}</div><div class="h-unit">secondes</div></div>
     <div class="hero-item"><div class="h-label">Vitesse max</div><div class="h-val">${v(p.vitesse_max)}</div><div class="h-unit">km/h</div></div>
-    <div class="hero-item"><div class="h-label">Conso. mixte</div><div class="h-val">${v(co.mixte)}</div><div class="h-unit">CO₂ ${v(co.co2)}</div></div>
+    <div class="hero-item"><div class="h-label">Conso. mixte</div><div class="h-val">${consoHero.val}</div><div class="h-unit">${consoHero.unit}</div></div>
     <div class="hero-item"><div class="h-label">Masse</div><div class="h-val">${v(dim.masse)}</div><div class="h-unit">kg</div></div>
   </div>
   <div class="section"><div class="sec-title">Motorisation</div><div class="kv">
@@ -1160,11 +1366,11 @@ function renderCard(c){
     return `<div class="stage-card">
       <div class="stage-card-head ${sc}">
         <span class="stage-label ${sc}">${s.label}</span>
-        <span class="stage-gain ${sc}">${v(st.gain_ch)} ch / ${v(st.gain_nm)} N·m</span>
+        <span class="stage-gain ${sc}">${vu(st.gain_ch,'ch')} / ${vu(st.gain_nm,'N·m')}</span>
       </div>
       <div class="stage-card-body">
-        <div class="stage-stat-row"><span class="stage-stat-k">Puissance</span><span class="stage-stat-v">${v(st.puissance_ch)} ch</span></div>
-        <div class="stage-stat-row"><span class="stage-stat-k">Couple</span><span class="stage-stat-v">${v(st.couple_nm)} N·m</span></div>
+        <div class="stage-stat-row"><span class="stage-stat-k">Puissance</span><span class="stage-stat-v">${vu(st.puissance_ch,'ch')}</span></div>
+        <div class="stage-stat-row"><span class="stage-stat-k">Couple</span><span class="stage-stat-v">${vu(st.couple_nm,'N·m')}</span></div>
         <div class="stage-stat-row"><span class="stage-stat-k">Prix estimé</span><span class="stage-stat-v">${v(st.prix_estime)}</span></div>
       </div>
       <div class="stage-fiabilite">${fiabiliteIcon(st.fiabilite)} <span style="color:var(--text2)">${v(st.fiabilite)}</span></div>
@@ -1213,11 +1419,45 @@ function renderCard(c){
   </div>` : ''}
   <div class="footer-note" style="margin-top:1rem;">Données basées sur les périodicités constructeur standard.</div>`;
 
+  // ── BANDEAU DE FIABILITÉ ──
+  // L'utilisateur doit voir d'un coup d'œil SUR QUELLE VERSION porte la fiche
+  // et à quel point l'identification est sûre.
+  const subline = [c.annee, c.type, c.pays, c.prix].filter(hasVal).map(esc).join(' · ') || '—';
+  const identBits = [
+    c.generation && !/^g[ée]n[ée]ration$/i.test(c.generation) ? c.generation : '',
+    c.finition,
+    c.code_moteur ? 'moteur ' + c.code_moteur : '',
+  ].filter(hasVal).map(esc).join(' · ');
+
+  const confRaw = deaccent(String(c.confiance || '')).toLowerCase();
+  const conf = confRaw.includes('haut') ? 'high' : confRaw.includes('faibl') ? 'low' : confRaw.includes('moyen') ? 'mid' : '';
+  const confLabel = { high: 'Version identifiée avec certitude', mid: 'Version probable — à confirmer', low: 'Identification incertaine' }[conf];
+  const trustBar = conf ? `<div class="trust trust-${conf}">
+    <span class="trust-dot"></span>
+    <span class="trust-txt"><strong>${confLabel}</strong>${hasVal(c.precision_note) ? ' — ' + esc(c.precision_note) : ''}</span>
+  </div>` : '';
+
+  const variants = (Array.isArray(c.variantes_proches) ? c.variantes_proches : [])
+    .filter(hasVal).slice(0, 4)
+    .map(x => String(x).trim())
+    .filter(x => x.toLowerCase() !== String(c.nom || '').toLowerCase());
+  const variantBar = variants.length ? `<div class="trust-variants">
+    <span class="tv-label">Pas la bonne version ?</span>
+    ${variants.map(x => `<button type="button" class="tv-chip" data-q="${esc(x)}">${esc(x)}</button>`).join('')}
+  </div>` : '';
+
+  const alertBar = (c._alerts || []).length ? `<div class="trust trust-warn">
+    <span class="trust-dot"></span>
+    <span class="trust-txt">${c._alerts.map(esc).join(' ')}</span>
+  </div>` : '';
+
   return`<div class="card fade" id="${cardId}">
   <div class="card-head">
     <div class="car-name">${v(c.nom)} ${badge(c.energie)}</div>
-    <div class="car-sub">${v(c.annee)} · ${v(c.type)} · ${v(c.pays)} · ${v(c.prix)}</div>
+    <div class="car-sub">${subline}</div>
+    ${identBits ? `<div class="car-ident">${identBits}</div>` : ''}
   </div>
+  ${trustBar}${alertBar}${variantBar}
   <div class="fiche-tabs">
     <button class="fiche-tab active" data-tab="specs" onclick="ficheTab('${cardId}','specs')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -1274,7 +1514,7 @@ function resetFilters(){
 }
 
 // ── FICHE ──
-function qf(t){document.getElementById('q1').value=t;searchFiche();}
+function qf(t){setSearchMode('car');document.getElementById('q1').value=t;searchFiche();}
 
 // ── RECHERCHES RÉCENTES ──
 const RECENT_KEY = 'autospec_recent_searches';
@@ -1298,6 +1538,10 @@ function renderRecentSearches() {
 }
 window.addEventListener('DOMContentLoaded', () => {
   renderRecentSearches();
+  document.addEventListener('click', e => {
+    const chip = e.target.closest?.('.tv-chip[data-q]');
+    if (chip) qf(chip.dataset.q);
+  });
   document.getElementById('recent-searches')?.addEventListener('click', e => {
     const chip = e.target.closest('[data-q]');
     if (chip) qf(chip.dataset.q);
@@ -1317,8 +1561,15 @@ function ficheSkeleton(label) {
 // Numéro de la dernière recherche : une réponse plus ancienne n'écrase jamais la plus récente.
 let ficheSeq = 0;
 async function searchFiche() {
-  const q = document.getElementById('q1').value.trim();
+  const input = document.getElementById('q1');
+  let q = input.value.trim();
   if (!q) return;
+  // Correction visible des fautes de marque / chiffres collés (hors mode plaque) :
+  // l'utilisateur voit exactement sur quoi la recherche a porté.
+  if (searchMode !== 'plate') {
+    const fixed = normalizeCarQuery(q);
+    if (fixed && fixed !== q) { q = fixed; input.value = fixed; }
+  }
 
   const seq = ++ficheSeq;
   const stage = document.getElementById('f-stage').value;
@@ -1326,7 +1577,7 @@ async function searchFiche() {
   const out = document.getElementById('out-fiche');
   const btn = document.getElementById('btn-search');
   if (btn) btn.classList.add('is-loading');
-  document.getElementById('q1').blur(); // ferme le clavier sur mobile
+  input.blur(); // ferme le clavier sur mobile
   // ── SÉQUENCE DE LOADER ──
   const statusMessages = {
     car: [
@@ -1427,14 +1678,15 @@ async function searchFiche() {
 
     const raw = await fetchFiche(finalModel, carb, stage, techData);
     if (seq !== ficheSeq) return;
-    const car = JSON.parse(raw);
-    
-    if (car.error === "NOT_A_CAR" || (car.marque === "N/A" && car.modele === "N/A" && (!car.moteur || car.moteur.cylindree === "N/A"))) {
+    const car = sanitizeFiche(JSON.parse(raw));
+    car._query = finalModel;
+
+    if (isEmptyFiche(car)) {
         out.innerHTML = `
           <div class="card" style="border-color:var(--border); text-align:center; padding:2rem;">
             <div style="font-size:40px; margin-bottom:1rem;">🚫</div>
-            <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Rien n'a été trouvé à ce sujet</div>
-            <div style="color:var(--text3); font-size:13px;">Veuillez entrer une marque et un modèle de véhicule valides.</div>
+            <div style="font-weight:bold; color:var(--text); margin-bottom:0.5rem;">Aucun véhicule identifié</div>
+            <div style="color:var(--text3); font-size:13px;">Aucune donnée fiable pour « ${esc(q)} ».<br/>Précisez la marque, le modèle et l'année — par exemple <strong>Peugeot 308 GT 1.6 THP 2018</strong>.</div>
           </div>
         `;
         return;
@@ -1491,9 +1743,9 @@ async function searchCompare(){
       fetchFiche(qB, carbB, stageB)
     ]);
     if (seq !== compareSeq) return;
-    carA=JSON.parse(rA); carB=JSON.parse(rB);
-    const isErrA = carA.error === "NOT_A_CAR" || (carA.marque === "N/A" && carA.modele === "N/A");
-    const isErrB = carB.error === "NOT_A_CAR" || (carB.marque === "N/A" && carB.modele === "N/A");
+    carA=sanitizeFiche(JSON.parse(rA)); carB=sanitizeFiche(JSON.parse(rB));
+    const isErrA = isEmptyFiche(carA);
+    const isErrB = isEmptyFiche(carB);
     
     if (isErrA || isErrB) {
         out.innerHTML = `
@@ -1537,8 +1789,8 @@ function renderCompare(A,B){
   const rows=[
     {label:'Puissance (ch)',a:v(mA.puissance_ch),b:v(mB.puissance_ch),cmp:cmpNum(mA.puissance_ch,mB.puissance_ch)},
     {label:'Couple (N·m)',a:v(mA.couple_nm),b:v(mB.couple_nm),cmp:cmpNum(mA.couple_nm,mB.couple_nm)},
-    {label:'0–100 km/h',a:v(pA.zero_cent),b:v(pB.zero_cent),cmp:cmpNum(pA.zero_cent,pB.zero_cent,true)},
-    {label:'Vitesse max',a:v(pA.vitesse_max),b:v(pB.vitesse_max),cmp:cmpNum(pA.vitesse_max,pB.vitesse_max)},
+    {label:'0–100 km/h (s)',a:v(pA.zero_cent),b:v(pB.zero_cent),cmp:cmpNum(pA.zero_cent,pB.zero_cent,true)},
+    {label:'Vitesse max (km/h)',a:v(pA.vitesse_max),b:v(pB.vitesse_max),cmp:cmpNum(pA.vitesse_max,pB.vitesse_max)},
     {label:'Masse (kg)',a:v(dA.masse),b:v(dB.masse),cmp:cmpNum(dA.masse,dB.masse,true)},
     {label:'Conso. mixte',a:v(coA.mixte),b:v(coB.mixte),cmp:cmpNum(coA.mixte,coB.mixte,true)},
     {label:'CO₂ (g/km)',a:v(coA.co2),b:v(coB.co2),cmp:cmpNum(coA.co2,coB.co2,true)},
@@ -2102,7 +2354,7 @@ function finalizeProDossier() {
             <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Architecture</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.moteur?.type)}</td></tr>
             <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Cylindrée</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.moteur?.cylindree)}</td></tr>
             <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Puissance max</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.moteur?.puissance_ch)} ch @ ${v(c.moteur?.regime_puissance)}</td></tr>
-            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Couple max</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.moteur?.couple_nm)} @ ${v(c.moteur?.regime_couple)}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Couple max</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${vu(c.moteur?.couple_nm,'N·m')} @ ${v(c.moteur?.regime_couple)}</td></tr>
             <tr><td style="padding:8px 0; color:#555;">Alimentation</td><td style="padding:8px 0; font-weight:bold; text-align:right;">${v(c.moteur?.alimentation)}</td></tr>
           </table>
 
@@ -2110,8 +2362,8 @@ function finalizeProDossier() {
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Mixte</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.consommation?.mixte)}</td></tr>
             <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Émissions CO₂</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.consommation?.co2)}</td></tr>
-            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Réservoir</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.carburant?.reservoir)}</td></tr>
-            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555;">Autonomie ext.</td><td style="padding:8px 0; font-weight:bold; text-align:right;">${v(c.carburant?.autonomie_estimee)}</td></tr>
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Réservoir</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${vu(c.carburant?.reservoir,'L')}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555;">Autonomie ext.</td><td style="padding:8px 0; font-weight:bold; text-align:right;">${vu(c.carburant?.autonomie_estimee,'km')}</td></tr>
           </table>
         </div>
 
@@ -2119,8 +2371,8 @@ function finalizeProDossier() {
         <div style="flex: 1;">
           <div style="font-size: 18px; font-weight: bold; color: #1a1a1a; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Performances & Transmission</div>
           <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 30px;">
-            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Vitesse max</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.performances?.vitesse_max)}</td></tr>
-            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">0 à 100 km/h</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.performances?.zero_cent)}</td></tr>
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Vitesse max</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${vu(c.performances?.vitesse_max,'km/h')}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">0 à 100 km/h</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${vu(c.performances?.zero_cent,'s')}</td></tr>
             <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Boîte</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.transmission?.boite)}</td></tr>
             <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555;">Motricité</td><td style="padding:8px 0; font-weight:bold; text-align:right;">${v(c.transmission?.entrainement)}</td></tr>
           </table>
@@ -2129,8 +2381,8 @@ function finalizeProDossier() {
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">L x l x h</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.chassis?.longueur)} x ${v(c.chassis?.largeur)} x ${v(c.chassis?.hauteur)}</td></tr>
             <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Empattement</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.chassis?.empattement)}</td></tr>
-            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Masse à vide</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.chassis?.masse)}</td></tr>
-            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Volume coffre</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${v(c.chassis?.coffre)}</td></tr>
+            <tr><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Masse à vide</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${vu(c.chassis?.masse,'kg')}</td></tr>
+            <tr style="background:#fdfdfd;"><td style="padding:8px 0; color:#555; border-bottom: 1px solid #eee;">Volume coffre</td><td style="padding:8px 0; font-weight:bold; text-align:right; border-bottom: 1px solid #eee;">${vu(c.chassis?.coffre,'L')}</td></tr>
             <tr><td style="padding:8px 0; color:#555;">Pneus (AV/AR)</td><td style="padding:8px 0; font-weight:bold; text-align:right;">${v(c.pneus?.avant)} / ${v(c.pneus?.arriere)}</td></tr>
           </table>
         </div>
