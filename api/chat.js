@@ -14,7 +14,7 @@ const AI_FALLBACK_MODEL = "openai/gpt-oss-20b";
 const AI_MAX_TOKENS = 4000;
 // Incrémenter ce numéro dès que le prompt ou le gabarit JSON change : les
 // fiches mises en cache par l'ancienne version cessent alors d'être servies.
-const FICHE_PROMPT_VERSION = 2;
+const FICHE_PROMPT_VERSION = 3;
 
 export default async function handler(req, res) {
   // CORS Headers
@@ -119,7 +119,9 @@ const FICHE_SYSTEM_PROMPT = [
   "",
   "=== RÈGLE N°2 : IDENTIFICATION ===",
   "Commence par identifier la génération EXACTE (code interne/phase) et la finition. Remplis marque, modele, generation, finition, annee_debut, annee_fin, code_moteur.",
-  "Si l'entrée est ambiguë (pas d'année, pas de version, modèle vendu sur plusieurs générations), choisis la version la plus vendue en Europe correspondant à l'entrée, mets confiance=\"moyenne\" (ou \"faible\" si plusieurs motorisations très différentes sont possibles) et explique ton choix en une phrase dans precision_note.",
+  "Entrée sans année ni mention de version : retiens la VERSION DE BASE de la génération concernée, jamais la plus puissante ni une série spéciale. « Audi RS6 Avant » désigne la RS6 de base (600 ch), pas la performance (630 ch) ; « Golf GTI » désigne la GTI, pas la Clubsport ; « BMW M3 » désigne la M3, pas la Competition ni la CS. Une version n'est retenue que si son nom est écrit dans l'entrée.",
+  "Beaucoup de sportives ont gagné en puissance à mi-carrière, par restylage ou par une variante « performance », « Competition », « Clubsport », « Trophy », « S », « GT ». Dès que le modèle demandé connaît ce cas et que l'entrée ne tranche pas, confiance ne dépasse PAS \"moyenne\", precision_note dit laquelle a été retenue et pourquoi, et variantes_proches liste les autres.",
+  "Si plusieurs générations correspondent et que rien ne permet de choisir, confiance=\"faible\" et explique-le dans precision_note.",
   "confiance vaut \"haute\" UNIQUEMENT si l'entrée désigne une seule motorisation sans ambiguïté et que tu connais ses chiffres officiels.",
   "variantes_proches : 2 à 4 requêtes complètes et distinctes (format \"Marque Modèle Finition Année\") correspondant aux autres versions plausibles de cette entrée. Tableau vide si l'entrée est déjà parfaitement précise.",
   "",
@@ -247,6 +249,35 @@ async function requestWithFallback(apiKey, payload) {
   return attempt;
 }
 
+// ── CONTRÔLE DE LA LANGUE ──
+// Le prompt impose le français aux valeurs, mais rien ne le vérifiait : un
+// « Rear-wheel drive » passait en production jusqu'à ce qu'un utilisateur le
+// signale. Ces termes sont ceux que le modèle produit le plus souvent quand
+// il oublie la consigne ; la liste n'a pas besoin d'être exhaustive, elle
+// doit attraper les cas fréquents.
+const TERMES_ANGLAIS = /\b(?:rear|front|all)[-\s]?wheel[-\s]drive\b|\binline[-\s]?\d\b|\btwin[-\s]?turbo\b|\bnaturally[-\s]aspirated\b|\bsupercharged\b|\b\d+[-\s]speed\b|\bdual[-\s]clutch\b|\bmacpherson[-\s]strut\b|\bmulti[-\s]?link\b|\bventilated[-\s]discs?\b|\btiming[-\s](?:chain|belt)\b|\bpetrol\b|\bgasoline\b|\bhatchback\b|\bstation[-\s]wagon\b|\bsedan\b|\bsaloon\b|\bestate\b|\bcurb[-\s]weight\b|\bkerb[-\s]weight\b|\btop[-\s]speed\b|\bfuel[-\s]tank\b|\bhorsepower\b|\bplug[-\s]in[-\s]hybrid\b/i;
+
+function contenuFiche(data) {
+  const c = data?.choices?.[0]?.message?.content;
+  return typeof c === "string" ? c.replace(/```[\w]*\n?/g, "").replace(/```/g, "").trim() : null;
+}
+
+// On ne regarde que les VALEURS : les clés du gabarit sont en anglais par
+// nature (puissance_ch, zero_cent) et déclencheraient de fausses alertes.
+function valeursEnAnglais(raw) {
+  if (!raw) return null;
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (_) { return null; }
+  let trouve = null;
+  (function parcours(n) {
+    if (trouve) return;
+    if (typeof n === "string") { const m = n.match(TERMES_ANGLAIS); if (m) trouve = m[0]; return; }
+    if (Array.isArray(n)) return n.forEach(parcours);
+    if (n && typeof n === "object") return Object.values(n).forEach(parcours);
+  })(parsed);
+  return trouve;
+}
+
 function isFailedGeneration(err) {
   const e = err || {};
   const msg = String(e.message || "").toLowerCase();
@@ -312,14 +343,14 @@ async function handleAiProxy(req, res) {
     await writeFiche(cacheKey, body.query, raw, data?.model || AI_MODEL, FICHE_PROMPT_VERSION);
   };
 
-  const send = async (attempt) => {
+  const send = async (attempt, options) => {
     if (!attempt.ok) {
       await quota.refund();
       return res.status(attempt.status).json({
         error: attempt.data?.error?.message || "Erreur Groq inconnue",
       });
     }
-    await cacheIfUsable(attempt.data);
+    if (options?.cacher !== false) await cacheIfUsable(attempt.data);
     return res.status(200).json({ ...attempt.data, quota: quotaInfo });
   };
 
@@ -345,6 +376,27 @@ async function handleAiProxy(req, res) {
       ...basePayload,
       response_format: { type: "json_object" },
     });
+
+    // Langue non respectée : une seule relance, avec le terme fautif cité.
+    // Au-delà, on sert quand même la fiche — une donnée en anglais reste
+    // préférable à une erreur — mais on ne la met pas en cache.
+    if (firstAttempt.ok) {
+      const fautif = valeursEnAnglais(contenuFiche(firstAttempt.data));
+      if (fautif) {
+        console.warn(`[langue] terme anglais détecté (« ${fautif} ») — relance`);
+        const relance = await requestWithFallback(GROQ_API_KEY, {
+          ...basePayload,
+          response_format: { type: "json_object" },
+          messages: [
+            ...messages,
+            { role: "system", content: `La réponse précédente contenait « ${fautif} ». TOUTES les valeurs textuelles doivent être en français. Recommence.` },
+          ],
+        });
+        if (relance.ok && !valeursEnAnglais(contenuFiche(relance.data))) return await send(relance);
+        return await send(relance.ok ? relance : firstAttempt, { cacher: false });
+      }
+    }
+
     if (firstAttempt.ok || !isFailedGeneration(firstAttempt.data?.error)) {
       return await send(firstAttempt);
     }
