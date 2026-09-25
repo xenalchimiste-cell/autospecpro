@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { COULEURS_JANTE, ETRIERS, FEUX, CLE_ACCUEIL, normaliserConfig } from './lib/garage.js';
 
 const HALF_L = 2.47;          // demi-longueur (m)
 const AXLE_X = 1.48;          // position des essieux (empattement ~2,96 m)
@@ -633,6 +634,54 @@ export function piecesGarage(mats, { aileron = 'aucun', kit = 'origine', echappe
   return g;
 }
 
+// ── Habillage ──
+// Applique une configuration du garage à une voiture déjà construite. Le
+// garage et le showroom de l'accueil passent tous deux par ici : la voiture
+// « mise à l'accueil » est donc exactement celle qu'on a préparée.
+// Peinture et hauteur de caisse restent à l'appelant, qui les anime en fondu.
+// `v` = { car, body, mats, wheels, spinners, pieces } ; `cles` limite le
+// travail aux réglages qui ont changé.
+function jeter(objet) {
+  objet?.traverse?.((o) => { if (o.geometry) o.geometry.dispose(); });
+}
+
+export function habillerVoiture(v, cfg, { cles = null, intensiteFeux = 1 } = {}) {
+  const a = (...k) => !cles || k.some(x => cles.includes(x));
+  const { mats } = v;
+  if (a('jante', 'pouces', 'deport')) {
+    for (const w of v.wheels) { v.car.remove(w); jeter(w); }
+    const r = monterRoues(v.car, mats, { jante: cfg.jante, pouces: cfg.pouces, deport: cfg.deport / 100 });
+    v.wheels = r.wheels;
+    v.spinners = r.spinners;
+  }
+  if (a('couleurJante')) {
+    const c = COULEURS_JANTE.find(x => x.id === cfg.couleurJante);
+    mats.jante.color.set(c.hex); mats.jante.metalness = c.metal; mats.jante.roughness = c.rugosite;
+  }
+  if (a('etriers')) mats.caliper.color.set(ETRIERS.find(x => x.id === cfg.etriers).hex);
+  if (a('feux')) mats.led.color.set(FEUX.find(x => x.id === cfg.feux).hex).multiplyScalar(intensiteFeux);
+  if (a('chromes')) {
+    const noir = cfg.chromes === 'noir';
+    mats.chrome.color.set(noir ? 0x17171b : 0xe8e8ee);
+    mats.chrome.metalness = noir ? 0.6 : 1;
+    mats.chrome.roughness = noir ? 0.28 : 0.12;
+  }
+  if (a('aileron', 'kit', 'echappement')) {
+    if (v.pieces) { v.body.remove(v.pieces); jeter(v.pieces); }
+    v.pieces = piecesGarage(mats, cfg);
+    v.body.add(v.pieces);
+  }
+  return v;
+}
+
+// Voiture choisie dans le garage pour l'accueil, ou null.
+export function lireVoitureAccueil() {
+  try {
+    const brut = localStorage.getItem(CLE_ACCUEIL);
+    return brut ? normaliserConfig(JSON.parse(brut)) : null;
+  } catch { return null; }
+}
+
 // ── Showroom ──
 
 export function buildStage() {
@@ -713,8 +762,10 @@ export function mountHero3D(container) {
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  // Même tone mapping que le garage : la voiture « mise à l'accueil » doit
+  // garder sa teinte (ACES délavait les jaunes et virait les rouges).
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.className = 'hero-3d-canvas';
   container.prepend(renderer.domElement);
@@ -735,14 +786,18 @@ export function mountHero3D(container) {
   scene.add(rim);
 
   const firstSwatch = container.querySelector('[data-paint]');
-  const startColor = firstSwatch ? firstSwatch.dataset.paint : '#3c3d42';
-  const startFinish = FINISHES[firstSwatch?.dataset.finish] || FINISHES.matte;
+  const perso = lireVoitureAccueil();
+  const startColor = perso ? perso.peinture : (firstSwatch ? firstSwatch.dataset.paint : '#3c3d42');
+  const startFinish = { ...(perso ? FINISHES[perso.finition] : FINISHES[firstSwatch?.dataset.finish]) || FINISHES.matte };
   // DoubleSide : la peinture sert aussi aux panneaux plaqués (toit), dont l'orientation varie.
   const paint = new THREE.MeshPhysicalMaterial({ color: startColor, side: THREE.DoubleSide, ...startFinish });
   const targetColor = new THREE.Color(startColor);
   const targetFinish = { ...startFinish };
 
-  const { car, spinners } = buildCar(paint, scene.environment);
+  const voiture = buildCar(paint, scene.environment);
+  const { car } = voiture;
+  voiture.pieces = null;
+  let hauteurCible = 0;
   const { stage, ring } = buildStage();
   scene.add(stage, car);
 
@@ -770,12 +825,38 @@ export function mountHero3D(container) {
   controls.addEventListener('start', () => hint && hint.classList.add('hidden'));
 
   // Sélecteur de couleur / finition
-  container.querySelectorAll('[data-paint]').forEach((btn) => {
+  const pastilles = container.querySelectorAll('[data-paint]');
+  pastilles.forEach((btn) => {
     btn.addEventListener('click', () => {
       targetColor.set(btn.dataset.paint);
       Object.assign(targetFinish, FINISHES[btn.dataset.finish] || FINISHES.gloss);
-      container.querySelectorAll('[data-paint]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      pastilles.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
     });
+  });
+
+  // Voiture du garage : habillage complet, ou retour à celle d'origine.
+  // Le garage prévient par un événement quand on y clique sur « Mettre à
+  // l'accueil » : pas besoin de recharger la page.
+  const retour = container.querySelector('.hero-3d-origine');
+  function porter(cfg) {
+    const base = cfg || normaliserConfig(null);
+    habillerVoiture(voiture, base);
+    hauteurCible = base.hauteur / 100;
+    if (cfg) {
+      targetColor.set(cfg.peinture);
+      Object.assign(targetFinish, FINISHES[cfg.finition] || FINISHES.gloss);
+      pastilles.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.paint === cfg.peinture)));
+    } else if (firstSwatch) {
+      firstSwatch.click();
+    }
+    if (retour) retour.hidden = !cfg;
+  }
+  porter(perso);
+  voiture.body.position.y = hauteurCible;
+  window.addEventListener('autospec:voiture-accueil', (e) => porter(e.detail));
+  retour?.addEventListener('click', () => {
+    try { localStorage.removeItem(CLE_ACCUEIL); } catch { /* rien à retirer */ }
+    porter(null);
   });
 
   function resize() {
@@ -824,10 +905,11 @@ export function mountHero3D(container) {
 
     const k = 1 - Math.exp(-dt * 5);
     paint.color.lerp(targetColor, k);
+    voiture.body.position.y += (hauteurCible - voiture.body.position.y) * k;
     for (const prop of Object.keys(targetFinish)) paint[prop] = lerp(paint[prop], targetFinish[prop], k);
 
     if (!reducedMotion) {
-      for (const s of spinners) s.rotation.z -= dt * 2.2;
+      for (const s of voiture.spinners) s.rotation.z -= dt * 2.2;
       ring.material.opacity = 0.65 + 0.2 * Math.sin(now / 900);
     }
 

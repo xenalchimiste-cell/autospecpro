@@ -119,6 +119,9 @@ export const TRANSMISSIONS = [
 
 export const MASSE_BASE = 1750;
 
+// Clé du stockage où le garage dépose la voiture « mise à l'accueil ».
+export const CLE_ACCUEIL = 'autospec_voiture_accueil';
+
 export const CONFIG_DEFAUT = Object.freeze({
   peinture: '#3c3d42', finition: 'matte',
   jante: 'origine', couleurJante: 'argent', pouces: 19, etriers: 'gris',

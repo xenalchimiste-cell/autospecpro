@@ -223,6 +223,14 @@ nav::after {
   transition: opacity .5s;
 }
 .hero-3d-hint.hidden { opacity: 0; }
+.hero-3d-origine {
+  pointer-events: auto; cursor: pointer;
+  font-family: var(--font-body); font-size: 11px; font-weight: 600; color: var(--text2);
+  background: rgba(var(--bg-rgb), .85); border: 1px solid var(--border2);
+  padding: 5px 10px; border-radius: 99px;
+}
+.hero-3d-origine:hover { color: var(--text); border-color: var(--text); }
+.hero-3d-origine[hidden] { display: none; }
 
 /* ── SECTION TITLES ── */
 .page-title {
@@ -3731,8 +3739,10 @@ body::before { background-image: none; }
 .garage-moteur-opt strong { font-size: 13px; }
 .garage-moteur-opt span { font-size: 11px; font-weight: 500; opacity: .75; }
 
-.garage-actions { display: flex; gap: 6px; padding: .8rem 1.1rem; border-top: 1px solid var(--border2); }
+.garage-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: .8rem 1.1rem; border-top: 1px solid var(--border2); }
 .garage-actions .btn { flex: 1; height: 40px; padding: 0 10px; font-size: 12px; }
+.garage-actions .garage-accueil { flex-basis: 100%; }
+.garage-accueil.est-accueil { background: var(--bg); color: var(--green); border: 1px solid var(--green); box-shadow: none; }
 
 .garage-banc {
   grid-area: banc;

@@ -5,11 +5,11 @@
 // autres pages.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { buildCar, buildStage, monterRoues, piecesGarage, FINISHES } from './hero3d.js';
+import { buildCar, buildStage, habillerVoiture, lireVoitureAccueil, FINISHES } from './hero3d.js';
 import {
   PEINTURES, FINITIONS, JANTES, COULEURS_JANTE, POUCES, ETRIERS, FEUX, CHROMES,
   AILERONS, KITS, HAUTEUR_CM, DEPORT_CM, MOTEURS, PREPAS, ECHAPPEMENTS, TRANSMISSIONS,
-  CONFIG_DEFAUT, normaliserConfig, configAleatoire, moteurDe, performances,
+  CONFIG_DEFAUT, CLE_ACCUEIL, normaliserConfig, configAleatoire, moteurDe, performances,
 } from './lib/garage.js';
 import { creerMoteurSonore } from './garage-son.js';
 import { environnementStudio, textureParticules, creerOmbreContact, creerComposition, HAUTE_QUALITE } from './rendu3d.js';
@@ -288,10 +288,6 @@ function fondCompense(css) {
   return c.multiplyScalar(pic / cible);
 }
 
-function jeter(objet) {
-  objet.traverse?.((o) => { if (o.geometry) o.geometry.dispose(); });
-}
-
 // Applique la configuration à la scène. `cles` limite le travail aux pièces
 // qui ont changé : reconstruire les roues à chaque changement de peinture
 // serait du gaspillage.
@@ -307,28 +303,8 @@ function appliquer(cles = null) {
     Object.assign(s.finitionCible, FINISHES[cfg.finition] || FINISHES.gloss);
     s.paint.normalScale.setScalar(PAILLETTES[cfg.finition] ?? 0);
   }
-  if (a('jante', 'pouces', 'deport')) {
-    for (const w of s.wheels) { s.car.remove(w); jeter(w); }
-    s.wheels = monterRoues(s.car, mats, { jante: cfg.jante, pouces: cfg.pouces, deport: cfg.deport / 100 }).wheels;
-  }
-  if (a('couleurJante')) {
-    const c = COULEURS_JANTE.find(x => x.id === cfg.couleurJante);
-    mats.jante.color.set(c.hex); mats.jante.metalness = c.metal; mats.jante.roughness = c.rugosite;
-  }
-  if (a('etriers')) mats.caliper.color.set(ETRIERS.find(x => x.id === cfg.etriers).hex);
-  if (a('feux')) mats.led.color.set(FEUX.find(x => x.id === cfg.feux).hex).multiplyScalar(4);
-  if (a('chromes')) {
-    const noir = cfg.chromes === 'noir';
-    mats.chrome.color.set(noir ? 0x17171b : 0xe8e8ee);
-    mats.chrome.metalness = noir ? 0.6 : 1;
-    mats.chrome.roughness = noir ? 0.28 : 0.12;
-  }
+  habillerVoiture(s, cfg, { cles, intensiteFeux: 4 });
   if (a('hauteur')) s.hauteurCible = cfg.hauteur / 100;
-  if (a('aileron', 'kit', 'echappement')) {
-    if (s.pieces) { s.body.remove(s.pieces); jeter(s.pieces); }
-    s.pieces = piecesGarage(mats, cfg);
-    s.body.add(s.pieces);
-  }
   if (a('moteur', 'echappement')) son.configurer(moteurDe(cfg), cfg.echappement);
   if (a('hauteur', 'jante', 'pouces', 'deport', 'aileron', 'kit')) s.ombreSale = 90;
 }
@@ -354,6 +330,29 @@ function changer(cle, valeur) {
   if (perso && cle !== 'peinture') perso.value = cfg.peinture;
   if (changees.includes('moteur')) rendreCompteTours();
   rendreStats();
+  majBoutonAccueil();
+}
+
+// La voiture préparée devient celle du showroom de l'accueil. Le showroom,
+// s'il est déjà affiché, se met à jour tout de suite grâce à l'événement.
+function mettreAccueil() {
+  try { localStorage.setItem(CLE_ACCUEIL, JSON.stringify(cfg)); } catch {
+    window.showToast?.("Impossible d'enregistrer : le stockage du navigateur est bloqué.", 'error');
+    return;
+  }
+  window.dispatchEvent(new CustomEvent('autospec:voiture-accueil', { detail: { ...cfg } }));
+  majBoutonAccueil();
+  window.showToast?.("Votre voiture est maintenant sur la page d'accueil.", 'success');
+}
+
+// Le bouton dit si la voiture affichée est déjà celle de l'accueil.
+function majBoutonAccueil() {
+  const b = racine?.querySelector('[data-action="accueil"]');
+  if (!b) return;
+  const accueil = lireVoitureAccueil();
+  const deja = accueil && Object.keys(cfg).every(k => cfg[k] === accueil[k]);
+  b.textContent = deja ? "Sur l'accueil ✓" : "Mettre à l'accueil";
+  b.classList.toggle('est-accueil', !!deja);
 }
 
 function toutReappliquer() {
@@ -362,6 +361,7 @@ function toutReappliquer() {
   rendreStats();
   rendreCompteTours();
   sauverConfig();
+  majBoutonAccueil();
 }
 
 // ── MONTAGE ──
@@ -374,6 +374,7 @@ function construireInterface(el) {
       <div class="garage-onglets" role="tablist" aria-label="Personnalisation"></div>
       <div class="garage-contenu" role="tabpanel"></div>
       <div class="garage-actions">
+        <button type="button" class="btn btn-primary garage-accueil" data-action="accueil">Mettre à l'accueil</button>
         <button type="button" class="btn btn-outline" data-action="aleatoire">Configuration aléatoire</button>
         <button type="button" class="btn btn-outline" data-action="origine">Revenir à l'origine</button>
       </div>
@@ -405,6 +406,7 @@ function brancherEvenements(el) {
     }
     const action = e.target.closest('[data-action]')?.dataset.action;
     if (action === 'contact') son.enMarche() ? son.couper() : son.demarrer();
+    else if (action === 'accueil') mettreAccueil();
     else if (action === 'aleatoire') { cfg = configAleatoire(); toutReappliquer(); }
     else if (action === 'origine') { cfg = { ...CONFIG_DEFAUT }; toutReappliquer(); }
   });
