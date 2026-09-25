@@ -672,6 +672,7 @@ const PAGES = {
   compare:      { group: 'outils',     label: 'Comparateur',       tier: 'passionne' },
   sim:          { group: 'outils',     label: 'Simulateur',        tier: 'passionne' },
   entretien:    { group: 'outils',     label: "Coût d'entretien",  tier: 'pro' },
+  garage:       { group: 'outils',     label: 'Garage' },
   community:    { group: 'communaute', label: 'Fil' },
   messages:     { group: 'communaute', label: 'Messages' },
   quiz:         { group: 'communaute', label: 'Quiz' },
@@ -743,6 +744,18 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
   if (id === 'admin') loadAdminData();
   // Le quiz vit dans src/jeux.js ; quitter la page arrête son chrono.
   if (id === 'quiz') window.quizOuvrir?.(); else window.quizQuitter?.();
+  // Le garage (Three.js + son) n'est téléchargé qu'à sa première ouverture.
+  if (id === 'garage') ouvrirGarage();
+  else window.garageModule?.quitterGarage();
+}
+
+function ouvrirGarage() {
+  import('./garage.js')
+    .then(m => { window.garageModule = m; m.ouvrirGarage(); })
+    .catch(() => {
+      const el = document.getElementById('garage-app');
+      if (el) el.innerHTML = '<div class="err">Le garage n\'a pas pu se charger. Vérifiez votre connexion puis réessayez.</div>';
+    });
 }
 
 // ── MENU COMPTE ──

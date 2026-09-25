@@ -360,6 +360,7 @@
       <button class="subnav-item" data-page="compare" data-tier="passionne" onclick="showPage('compare')">Comparateur<span class="subnav-tier">Passionné</span></button>
       <button class="subnav-item" data-page="sim" data-tier="passionne" onclick="showPage('sim')">Simulateur<span class="subnav-tier">Passionné</span></button>
       <button class="subnav-item" data-page="entretien" data-tier="pro" onclick="showPage('entretien')">Coût d'entretien<span class="subnav-tier">Pro</span></button>
+      <button class="subnav-item" data-page="garage" onclick="showPage('garage')">Garage</button>
     </div>
 
     <div class="page-sub">Deux voitures côte à côte : moteur, performances, consommation.</div>
@@ -443,6 +444,7 @@
       <button class="subnav-item" data-page="compare" data-tier="passionne" onclick="showPage('compare')">Comparateur<span class="subnav-tier">Passionné</span></button>
       <button class="subnav-item" data-page="sim" data-tier="passionne" onclick="showPage('sim')">Simulateur<span class="subnav-tier">Passionné</span></button>
       <button class="subnav-item" data-page="entretien" data-tier="pro" onclick="showPage('entretien')">Coût d'entretien<span class="subnav-tier">Pro</span></button>
+      <button class="subnav-item" data-page="garage" onclick="showPage('garage')">Garage</button>
     </div>
 
     <div class="page-sub">Réglez puissance, couple et masse pour estimer les performances.</div>
@@ -495,12 +497,25 @@
     <p style="font-size:11px;color:var(--text3);text-align:center;">Simulation basée sur des formules physiques — valeurs indicatives.</p>
   </div>
 
+  <!-- ══════════ GARAGE ══════════ -->
+  <div class="page" id="page-garage">
+    <div class="subnav" role="tablist" aria-label="Outils">
+      <button class="subnav-item" data-page="compare" data-tier="passionne" onclick="showPage('compare')">Comparateur<span class="subnav-tier">Passionné</span></button>
+      <button class="subnav-item" data-page="sim" data-tier="passionne" onclick="showPage('sim')">Simulateur<span class="subnav-tier">Passionné</span></button>
+      <button class="subnav-item" data-page="entretien" data-tier="pro" onclick="showPage('entretien')">Coût d'entretien<span class="subnav-tier">Pro</span></button>
+      <button class="subnav-item" data-page="garage" onclick="showPage('garage')">Garage</button>
+    </div>
+    <div class="page-sub">Préparez la voiture pièce par pièce, puis démarrez-la pour l'écouter.</div>
+    <div id="garage-app" class="garage"><div class="garage-chargement">Ouverture du garage…</div></div>
+  </div>
+
   <!-- ══════════ ENTRETIEN ══════════ -->
   <div class="page" id="page-entretien">
     <div class="subnav" role="tablist" aria-label="Outils">
       <button class="subnav-item" data-page="compare" data-tier="passionne" onclick="showPage('compare')">Comparateur<span class="subnav-tier">Passionné</span></button>
       <button class="subnav-item" data-page="sim" data-tier="passionne" onclick="showPage('sim')">Simulateur<span class="subnav-tier">Passionné</span></button>
       <button class="subnav-item" data-page="entretien" data-tier="pro" onclick="showPage('entretien')">Coût d'entretien<span class="subnav-tier">Pro</span></button>
+      <button class="subnav-item" data-page="garage" onclick="showPage('garage')">Garage</button>
     </div>
 
     <div class="page-sub">Estimez ce que votre voiture vous coûtera sur une année.</div>
