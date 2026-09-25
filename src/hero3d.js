@@ -55,7 +55,10 @@ function section(cfg, x) {
 function loftGeometry(cfg) {
   const { slices, ring, boxiness: n, tumble } = cfg;
   const positions = new Float32Array((slices + 1) * ring * 3);
-  let k = 0;
+  // Coordonnées de texture (longueur, tour de section) : elles servent aux
+  // paillettes de la peinture dans le garage.
+  const uvs = new Float32Array((slices + 1) * ring * 2);
+  let k = 0, q = 0;
   for (let i = 0; i <= slices; i++) {
     const x = cfg.x0 + (cfg.x1 - cfg.x0) * (i / slices);
     const { yc, hy, hz } = section(cfg, x);
@@ -66,6 +69,7 @@ function loftGeometry(cfg) {
       const y = yc + hy * Math.sign(s) * Math.pow(Math.abs(s), 2 / n);
       if (s > 0) z *= 1 - tumble * s; // flancs qui rentrent vers le haut
       positions[k++] = x; positions[k++] = y; positions[k++] = z;
+      uvs[q++] = (i / slices) * 2; uvs[q++] = j / ring;
     }
   }
   const indices = [];
@@ -78,6 +82,7 @@ function loftGeometry(cfg) {
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geo.setIndex(indices);
   geo.computeVertexNormals();
   return geo;
@@ -532,6 +537,23 @@ export function buildCar(paint, envMap) {
   body.add(tube(trim, 0.012, mats.chrome));
   body.add(surfacePanel((u, v) => rear(lerp(0.2, 0.34, v), (2 * u - 1) * 0.78), 16, 4, mats.black));
 
+  // Pare-boue : sans eux, on voyait le sol à travers les passages de roue.
+  // Plastique mat, arc un peu raccourci pour que ses extrémités restent
+  // cachées derrière la carrosserie.
+  const plastique = new THREE.MeshStandardMaterial({ color: 0x0b0b0d, roughness: 0.95, metalness: 0, side: THREE.DoubleSide });
+  for (const x of [-AXLE_X, AXLE_X]) {
+    for (const side of [1, -1]) {
+      const pareBoue = new THREE.Mesh(new THREE.CylinderGeometry(0.53, 0.53, 0.34, 32, 1, true, -Math.PI / 2 + 0.2, Math.PI - 0.4), plastique);
+      pareBoue.rotation.x = -Math.PI / 2; // demi-cylindre tourné vers le haut
+      pareBoue.position.set(x, 0.17, side * 0.66);
+      body.add(pareBoue);
+      // Fond du passage de roue, côté intérieur : on ne voit plus à travers.
+      const fond = new THREE.Mesh(new THREE.CircleGeometry(0.53, 32, 0, Math.PI), plastique);
+      fond.position.set(x, 0.17, side * 0.49);
+      body.add(fond);
+    }
+  }
+
   // ── Roues ──
   const { wheels, spinners } = monterRoues(car, mats);
 
@@ -681,7 +703,7 @@ export function buildStage() {
     stage.add(halo);
   }
 
-  return { stage, ring };
+  return { stage, ring, shadow };
 }
 
 // ── Montage ──

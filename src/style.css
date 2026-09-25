@@ -3670,7 +3670,7 @@ body::before { background-image: none; }
 .garage-scene {
   grid-area: scene; position: relative;
   height: min(62vh, 560px); min-height: 320px;
-  background: var(--bg2); border: 1px solid var(--border2);
+  background: var(--bg); border: 1px solid var(--border2);
   overflow: hidden;
 }
 .garage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .5s; touch-action: none; }

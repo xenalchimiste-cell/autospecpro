@@ -5,7 +5,6 @@
 // autres pages.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildCar, buildStage, monterRoues, piecesGarage, FINISHES } from './hero3d.js';
 import {
   PEINTURES, FINITIONS, JANTES, COULEURS_JANTE, POUCES, ETRIERS, FEUX, CHROMES,
@@ -13,6 +12,11 @@ import {
   CONFIG_DEFAUT, normaliserConfig, configAleatoire, moteurDe, performances,
 } from './lib/garage.js';
 import { creerMoteurSonore } from './garage-son.js';
+import { environnementStudio, textureParticules, creerOmbreContact, creerComposition, HAUTE_QUALITE } from './rendu3d.js';
+
+// Intensité des paillettes selon la finition : nulles sur le mat, à peine
+// perceptibles sur le brillant, franches sur le métallisé et le nacré.
+const PAILLETTES = { matte: 0, gloss: 0.04, metal: 0.28, nacre: 0.2 };
 
 const CLE_STOCKAGE = 'autospec_garage';
 const sansMouvement = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -161,28 +165,40 @@ function majCompteTours({ regime, etat }) {
 // ── SCÈNE 3D ──
 function monterScene(conteneur) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, HAUTE_QUALITE ? 1.75 : 1.5));
+  // Tone mapping « neutre » : il respecte les teintes de carrosserie là où
+  // ACES fait virer les rouges à l'orange et les jaunes au blanc.
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.domElement.className = 'garage-canvas';
   conteneur.prepend(renderer.domElement);
 
   const scene = new THREE.Scene();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  pmrem.dispose();
-  const cle = new THREE.DirectionalLight(0xffffff, 1.6);
+  const fond = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#fbfbf8';
+  scene.background = fondCompense(fond);
+  scene.environment = environnementStudio(renderer);
+  // Le studio éclaire presque tout ; une lumière directe garde un peu de relief.
+  const cle = new THREE.DirectionalLight(0xffffff, 0.7);
   cle.position.set(4, 7, 3);
-  const contre = new THREE.DirectionalLight(0xffffff, 0.9);
-  contre.position.set(-5, 3, -4);
-  scene.add(cle, contre);
+  scene.add(cle);
 
   const fin = FINISHES[cfg.finition] || FINISHES.gloss;
-  const paint = new THREE.MeshPhysicalMaterial({ color: cfg.peinture, side: THREE.DoubleSide, ...fin });
+  const paint = new THREE.MeshPhysicalMaterial({ color: cfg.peinture, side: THREE.DoubleSide, ...fin, normalMap: textureParticules() });
+  paint.normalScale.setScalar(PAILLETTES[cfg.finition] ?? 0);
   const { car, body, wheels, mats } = buildCar(paint, scene.environment);
-  const { stage } = buildStage();
-  scene.add(stage, car);
+  mats.glass.envMapIntensity = 0.9;
+  // Le métal poli ne fait que refléter : face aux murs sombres du studio,
+  // les jantes argent sortaient gris anthracite.
+  mats.jante.envMapIntensity = 1.8;
+  mats.chrome.envMapIntensity = 1.5;
+  // Les feux sont les seules surfaces assez lumineuses pour déclencher le halo.
+  mats.tail.color.multiplyScalar(1.8);
+  mats.tailLed.color.multiplyScalar(2.2);
+  const { stage, shadow } = buildStage();
+  shadow.visible = false; // remplacée par l'ombre de contact
+  const ombre = creerOmbreContact(renderer, scene);
+  scene.add(stage, car, ombre.groupe);
 
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   camera.position.set(-5.2, 2.2, 6.4);
@@ -202,16 +218,22 @@ function monterScene(conteneur) {
   const s = {
     renderer, scene, camera, controls, car, body, wheels, mats, paint,
     pieces: null,
+    // Nombre d'images pendant lesquelles recalculer l'ombre : elle ne bouge
+    // qu'après un changement (hauteur, roues, pièces), pas à chaque image.
+    ombreSale: 90,
     couleurCible: new THREE.Color(cfg.peinture),
     finitionCible: { ...fin },
     hauteurCible: 0,
     rafId: null, visible: false, horloge: new THREE.Clock(),
   };
 
+  const composition = creerComposition(renderer, scene, camera);
+
   function redimensionner() {
     const w = conteneur.clientWidth, h = conteneur.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
+    composition.taille(w, h, renderer.getPixelRatio());
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
@@ -237,7 +259,8 @@ function monterScene(conteneur) {
     body.position.y += vibre;
 
     controls.update(dt);
-    renderer.render(scene, camera);
+    if (s.ombreSale > 0) { ombre.maj([stage]); s.ombreSale--; }
+    composition.rendre(dt);
     body.position.y -= vibre;
     conteneur.classList.add('ready');
     if (s.visible && !document.hidden) s.rafId = requestAnimationFrame(image);
@@ -250,6 +273,19 @@ function monterScene(conteneur) {
   new IntersectionObserver((e) => { s.visible = e.some(x => x.isIntersecting); s.relancer(); }).observe(conteneur);
   document.addEventListener('visibilitychange', s.relancer);
   return s;
+}
+
+// Le fond de la scène passe par le tone mapping, qui comprime les teintes
+// claires : le blanc cassé de la page ressortait gris. On inverse la courbe
+// « Neutral » de Three.js pour que le fond rendu tombe pile sur celui de la
+// page. Valable pour une couleur claire et presque neutre, ce qu'est --bg.
+function fondCompense(css) {
+  const c = new THREE.Color(css); // linéaire
+  const cible = Math.max(c.r, c.g, c.b);
+  const debut = 0.76, d = 1 - debut;
+  if (cible <= debut) return c;
+  const pic = d * d / (1 - cible) - d + debut;
+  return c.multiplyScalar(pic / cible);
 }
 
 function jeter(objet) {
@@ -267,7 +303,10 @@ function appliquer(cles = null) {
   const { mats } = s;
 
   if (a('peinture')) s.couleurCible.set(cfg.peinture);
-  if (a('finition')) Object.assign(s.finitionCible, FINISHES[cfg.finition] || FINISHES.gloss);
+  if (a('finition')) {
+    Object.assign(s.finitionCible, FINISHES[cfg.finition] || FINISHES.gloss);
+    s.paint.normalScale.setScalar(PAILLETTES[cfg.finition] ?? 0);
+  }
   if (a('jante', 'pouces', 'deport')) {
     for (const w of s.wheels) { s.car.remove(w); jeter(w); }
     s.wheels = monterRoues(s.car, mats, { jante: cfg.jante, pouces: cfg.pouces, deport: cfg.deport / 100 }).wheels;
@@ -277,7 +316,7 @@ function appliquer(cles = null) {
     mats.jante.color.set(c.hex); mats.jante.metalness = c.metal; mats.jante.roughness = c.rugosite;
   }
   if (a('etriers')) mats.caliper.color.set(ETRIERS.find(x => x.id === cfg.etriers).hex);
-  if (a('feux')) mats.led.color.set(FEUX.find(x => x.id === cfg.feux).hex);
+  if (a('feux')) mats.led.color.set(FEUX.find(x => x.id === cfg.feux).hex).multiplyScalar(4);
   if (a('chromes')) {
     const noir = cfg.chromes === 'noir';
     mats.chrome.color.set(noir ? 0x17171b : 0xe8e8ee);
@@ -291,6 +330,7 @@ function appliquer(cles = null) {
     s.body.add(s.pieces);
   }
   if (a('moteur', 'echappement')) son.configurer(moteurDe(cfg), cfg.echappement);
+  if (a('hauteur', 'jante', 'pouces', 'deport', 'aileron', 'kit')) s.ombreSale = 90;
 }
 
 function changer(cle, valeur) {
