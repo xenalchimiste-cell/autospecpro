@@ -1,10 +1,12 @@
-const CACHE_NAME = 'autospec-pro-v8';
+const CACHE_NAME = 'autospec-pro-v9';
 const ASSETS = [
   '/',
   '/index.html',
   '/src/style.css',
   '/src/lib/fiche.js',
+  '/src/lib/quiz.js',
   '/src/app.js',
+  '/src/jeux.js',
   '/manifest.json',
   '/icons/icon.png'
 ];

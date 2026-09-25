@@ -674,6 +674,7 @@ const PAGES = {
   entretien:    { group: 'outils',     label: "Coût d'entretien",  tier: 'pro' },
   community:    { group: 'communaute', label: 'Fil' },
   messages:     { group: 'communaute', label: 'Messages' },
+  quiz:         { group: 'communaute', label: 'Quiz' },
   'user-profile': { group: 'communaute', label: 'Profil' },
   account:      { group: 'compte',     label: 'Mon compte' },
   plans:        { group: 'compte',     label: 'Abonnement' },
@@ -740,6 +741,8 @@ function showPage(id, btn, fromDrawer=false, source='nav'){
   closeAcctMenu();
   if(fromDrawer) closeDrawer();
   if (id === 'admin') loadAdminData();
+  // Le quiz vit dans src/jeux.js ; quitter la page arrête son chrono.
+  if (id === 'quiz') window.quizOuvrir?.(); else window.quizQuitter?.();
 }
 
 // ── MENU COMPTE ──

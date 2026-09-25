@@ -548,6 +548,7 @@
     <div class="subnav" role="tablist" aria-label="Communauté">
       <button class="subnav-item" data-page="community" onclick="showPage('community')">Fil</button>
       <button class="subnav-item" data-page="messages" onclick="showPage('messages')">Messages<span class="subnav-count" id="msg-count-sub"></span></button>
+      <button class="subnav-item" data-page="quiz" onclick="showPage('quiz')">Quiz</button>
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1.5rem;">
@@ -651,11 +652,23 @@
     </div>
   </div>
 
+  <!-- ══════════ QUIZ ══════════ -->
+  <div class="page" id="page-quiz">
+    <div class="subnav" role="tablist" aria-label="Communauté">
+      <button class="subnav-item" data-page="community" onclick="showPage('community')">Fil</button>
+      <button class="subnav-item" data-page="messages" onclick="showPage('messages')">Messages<span class="subnav-count"></span></button>
+      <button class="subnav-item" data-page="quiz" onclick="showPage('quiz')">Quiz</button>
+    </div>
+    <div class="page-sub">Dix questions, vingt secondes chacune. Répondez vite : la rapidité rapporte des points.</div>
+    <div id="quiz-app" aria-live="polite"></div>
+  </div>
+
   <!-- ══════════ PAGE MESSAGES ══════════ -->
   <div id="page-messages" class="page">
     <div class="subnav" role="tablist" aria-label="Communauté">
       <button class="subnav-item" data-page="community" onclick="showPage('community')">Fil</button>
       <button class="subnav-item" data-page="messages" onclick="showPage('messages')">Messages<span class="subnav-count" id="msg-count-sub"></span></button>
+      <button class="subnav-item" data-page="quiz" onclick="showPage('quiz')">Quiz</button>
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1.5rem;">
@@ -1319,7 +1332,9 @@
   </button>
 
   <script src="src/lib/fiche.js"></script>
+  <script src="src/lib/quiz.js"></script>
   <script src="src/app.js"></script>
+  <script src="src/jeux.js"></script>
   <script type="module">
     // Showroom 3D : Three.js (~170 Ko gzip) n'est téléchargé que lorsque la zone approche de l'écran.
     const el = document.getElementById('hero-3d');
